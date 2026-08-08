@@ -1,0 +1,183 @@
+html {
+  /* Typography -> NOTE: Choose 8 sans, 4 serif, 2 display serif, 2 mono fonts from google fonts and show them grouped in the dropdowns. Include an additional system option for sans, serif and mono. */
+  --ha-font-size-scale: 1;
+
+  --ha-font-family-body: Roboto, Noto, sans-serif; /* KNOB - Label: "Body font family" */
+  --ha-font-family-code: monospace; /* KNOB - Label: "Code font family" */
+  --ha-font-family-longform:
+    ui-sans-serif, system-ui, sans-serif; /* KNOB - Label: "Longform font family" */
+  --ha-font-family-heading: Roboto, Noto, sans-serif; /* KNOB - Label: "Headings font family" */
+
+  --ha-font-weight-body: var(--ha-font-weight-normal);
+  --ha-font-weight-heading: var(--ha-font-weight-bold);
+  --ha-font-weight-action: var(--ha-font-weight-medium);
+
+  /* Box Shadows -> NOTE: Derive using --ha-color-neutral-05 as base */
+  --ha-box-shadow-s: 0 1px 2px 0 #00000014, 0 1px 3px 0 #0000001f; /* DERIVED */
+  --ha-box-shadow-m: 0 3px 6px -1px #0000001a, 0 8px 16px -2px #00000026; /* DERIVED */
+  --ha-box-shadow-l: 0 6px 12px -3px #0000001f, 0 16px 32px -6px #0003; /* DERIVED */
+
+  /* Inputs -> NOTE: Derive using --ha-color-neutral-05 as base in place of "000000" */
+  --input-idle-line-color: #0000006b; /* DERIVED */
+  --input-hover-line-color: #000000de; /* DERIVED */
+  --input-disabled-line-color: #0000000f; /* DERIVED */
+  --input-outlined-idle-border-color: #00000061; /* DERIVED */
+  --input-outlined-hover-border-color: #000000de; /* DERIVED */
+  --input-outlined-disabled-border-color: #0000000f; /* DERIVED */
+  --input-fill-color: var(--ha-color-neutral-95);
+  --input-disabled-fill-color: var(--ha-color-neutral-90);
+  --input-ink-color: #000000de; /* DERIVED */
+  --input-label-ink-color: #0009; /* DERIVED */
+  --input-disabled-ink-color: #0000005e; /* DERIVED */
+  --input-dropdown-icon-color: #0000008a; /* DERIVED */
+
+  /* Base Colors -> NOTE: Generate ramps from the [KNOB] shade, show only the [KNOB] shade to the user */
+  --ha-color-primary-05: #001721; /* DERIVED */
+  --ha-color-primary-10: #002e3e; /* DERIVED */
+  --ha-color-primary-20: #004156; /* DERIVED */
+  --ha-color-primary-30: #006787; /* DERIVED */
+  --ha-color-primary-40: #009ac7; /* KNOB - Label: "Primary color" */
+  --ha-color-primary-50: #18bcf2; /* DERIVED */
+  --ha-color-primary-60: #37c8fd; /* DERIVED */
+  --ha-color-primary-70: #7bd4fb; /* DERIVED */
+  --ha-color-primary-80: #b9e6fc; /* DERIVED */
+  --ha-color-primary-90: #dff3fc; /* DERIVED */
+  --ha-color-primary-95: #eff9fe; /* DERIVED */
+
+  --ha-color-orange-05: #280700; /* DERIVED */
+  --ha-color-orange-10: #3b0f00; /* DERIVED */
+  --ha-color-orange-20: #5e1c00; /* DERIVED */
+  --ha-color-orange-30: #7e2900; /* DERIVED */
+  --ha-color-orange-40: #9d3800; /* DERIVED */
+  --ha-color-orange-50: #c94e00; /* DERIVED */
+  --ha-color-orange-60: #f36d00; /* DERIVED */
+  --ha-color-orange-70: #ff9342; /* KNOB - Label: "Warning color" */
+  --ha-color-orange-80: #ffbb89; /* DERIVED */
+  --ha-color-orange-90: #ffe0c8; /* DERIVED */
+  --ha-color-orange-95: #fff0e4; /* DERIVED */
+
+  --ha-color-red-05: #2a040b; /* DERIVED */
+  --ha-color-red-10: #3e0913; /* DERIVED */
+  --ha-color-red-20: #631323; /* DERIVED */
+  --ha-color-red-30: #8a132c; /* DERIVED */
+  --ha-color-red-40: #b30532; /* DERIVED */
+  --ha-color-red-50: #dc3146; /* KNOB - Label: "Error color" */
+  --ha-color-red-60: #f3676c; /* DERIVED */
+  --ha-color-red-70: #fd8f90; /* DERIVED */
+  --ha-color-red-80: #ffb8b6; /* DERIVED */
+  --ha-color-red-90: #ffdedc; /* DERIVED */
+  --ha-color-red-95: #fff0ef; /* DERIVED */
+
+  --ha-color-green-05: #031608; /* DERIVED */
+  --ha-color-green-10: #052310; /* DERIVED */
+  --ha-color-green-20: #0a3a1d; /* DERIVED */
+  --ha-color-green-30: #0a5027; /* DERIVED */
+  --ha-color-green-40: #036730; /* DERIVED */
+  --ha-color-green-50: #00883c; /* DERIVED */
+  --ha-color-green-60: #00ac49; /* KNOB - Label: "Success color" */
+  --ha-color-green-70: #5dc36f; /* DERIVED */
+  --ha-color-green-80: #93da98; /* DERIVED */
+  --ha-color-green-90: #c2f2c1; /* DERIVED */
+  --ha-color-green-95: #e3f9e3; /* DERIVED */
+
+  /* Neutral Ramp -> NOTE: Show all shades of the ramp to the user */
+  /* KNOB - Label: "Base tone" -> NOTE: present the user with presets from Tailwind "Neutral, Stone, Zinc, Mauve, Olive, Mist, Taupe", plus a Custom option which allows to choose Warmth (warm-cool) and Tint (green-magenta) */
+  --ha-color-neutral-05: #141414; /* DERIVED */
+  --ha-color-neutral-10: #202020; /* DERIVED */
+  --ha-color-neutral-20: #363636; /* DERIVED */
+  --ha-color-neutral-30: #4a4a4a; /* DERIVED */
+  --ha-color-neutral-40: #5e5e5e; /* DERIVED */
+  --ha-color-neutral-50: #7a7a7a; /* DERIVED */
+  --ha-color-neutral-60: #989898; /* DERIVED */
+  --ha-color-neutral-70: #b1b1b1; /* DERIVED */
+  --ha-color-neutral-80: #ccc; /* DERIVED */
+  --ha-color-neutral-90: #e6e6e6; /* DERIVED */
+  --ha-color-neutral-95: #f3f3f3; /* DERIVED */
+
+  /* Extended Palette */
+  /* KNOB - Label: "Home Assistant colors" -> NOTE: present the user with presets: MUI (existing), Tailwind 3, Tailwind 4, Chakra UI, Bulma, plus Pastel and Hearth (will need to be generated from scratch), plus a Custom option which allows to choose L and C of OKLCH with MUI as base. Single knob affects all colors. */
+  --red-color: #f44336; /* DERIVED */
+  --pink-color: #e91e63; /* DERIVED */
+  --purple-color: #926bc7; /* DERIVED */
+  --deep-purple-color: #6e41ab; /* DERIVED */
+  --indigo-color: #3f51b5; /* DERIVED */
+  --blue-color: #2196f3; /* DERIVED */
+  --light-blue-color: #03a9f4; /* DERIVED */
+  --cyan-color: #00bcd4; /* DERIVED */
+  --teal-color: #009688; /* DERIVED */
+  --green-color: #4caf50; /* DERIVED */
+  --light-green-color: #8bc34a; /* DERIVED */
+  --lime-color: #cddc39; /* DERIVED */
+  --yellow-color: #ffeb3b; /* DERIVED */
+  --amber-color: #ffc107; /* DERIVED */
+  --orange-color: #ff9800; /* DERIVED */
+  --deep-orange-color: #ff6f22; /* DERIVED */
+  --brown-color: #795548; /* DERIVED */
+  --blue-grey-color: #607d8b; /* DERIVED */
+
+  /* Grey Simplified Palette */
+  --light-grey-color: var(--ha-color-neutral-70);
+  --grey-color: var(--ha-color-neutral-60);
+  --dark-grey-color: var(--ha-color-neutral-50);
+
+  /* Text Colors */
+  --primary-text-color: var(--ha-color-text-primary);
+  --secondary-text-color: var(--ha-color-text-secondary);
+  --disabled-text-color: var(--ha-color-text-disabled);
+
+  --text-primary-color: var(--primary-text-color);
+  --text-light-primary-color: var(--secondary-text-color);
+  --disabled-color: var(--disabled-text-color);
+
+  --primary-color: var(--ha-color-primary-40);
+  --dark-primary-color: var(--ha-color-primary-30);
+  --darker-primary-color: var(--ha-color-primary-20);
+  --light-primary-color: var(--ha-color-primary-50);
+
+  --accent-color: #ff9800; /* KNOB - Label: "Accent color" */
+
+  --error-color: var(--ha-color-red-50);
+  --warning-color: var(--ha-color-orange-70);
+  --success-color: var(--ha-color-green-60);
+  --info-color: #039be5; /* KNOB - Label: "Info color" */
+
+  /* Lines -> NOTE: Derive using --ha-color-neutral-05 as base in place of "000000" */
+  --divider-color: #0000001f; /* KNOB - Label: "Border color" -> NOTE: user can choose from Neutral Ramp (but keep "1f" opacity)  */
+  --outline-color: var(--divider-color);
+  --outline-hover-color: #0000003d; /* DERIVED: --divider-color RGB + "3d" opacity */
+  --shadow-color: #00000029; /* DERIVED: --divider-color RGB + "29" opacity */
+
+  /* -> NOTE: derive rgb from previous values */
+  --rgb-primary-color: 0, 154, 199; /* DERIVED */
+  --rgb-accent-color: 255, 152, 0; /* DERIVED */
+  --rgb-primary-text-color: 33, 33, 33; /* DERIVED */
+  --rgb-secondary-text-color: 114, 114, 114; /* DERIVED */
+  --rgb-text-primary-color: 255, 255, 255; /* DERIVED */
+  --rgb-card-background-color: 255, 255, 255; /* DERIVED */
+  --rgb-warning-color: 255, 166, 0; /* DERIVED */
+  --rgb-error-color: 219, 68, 55; /* DERIVED */
+  --rgb-success-color: 67, 160, 71; /* DERIVED */
+  --rgb-info-color: 3, 155, 229; /* DERIVED */
+
+  --scrollbar-thumb-color: var(--ha-color-neutral-70);
+
+  /* Backgrounds */
+  --card-background-color: #fff; /* KNOB - Label: "Card background" -> NOTE: user can choose from Neutral Ramp 80, 90, 95 + white */
+  --primary-background-color: #fafafa; /* KNOB - Label: "Primary background" -> NOTE: user can choose from Neutral Ramp 80, 90, 95 + white */
+  --secondary-background-color: #e5e5e5; /* DERIVED: 5% darker than primary  */
+  --clear-background-color: var(--card-background-color);
+
+  --label-badge-grey: var(--ha-color-neutral-60);
+
+  --state-icon-color: var(--ha-color-primary-30);
+
+  /* Energy Colors -> NOTE: keep as is for the moment */
+  --energy-grid-consumption-color: #488fc2;
+  --energy-grid-return-color: #8353d1;
+  --energy-solar-color: #ff9800;
+  --energy-non-fossil-color: #0f9d58;
+  --energy-battery-out-color: #4db6ac;
+  --energy-battery-in-color: #f06292;
+  --energy-gas-color: #8e021b;
+  --energy-water-color: #00bcd4;
+}

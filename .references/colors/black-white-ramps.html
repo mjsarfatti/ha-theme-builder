@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Black/white ramp comparison</title>
+<style>
+  :root{
+    --bg:#15161a; --panel:#1c1e24; --line:#2a2d35; --text:#e7e8ea; --muted:#8b8f9a;
+    --accent:#f59e0b; --sw-ring: rgba(255,255,255,0.12); --btn-bg:#1c1e24; --btn-active:#2a2d35;
+  }
+  html[data-theme="light"]{
+    --bg:#fafafa; --panel:#ffffff; --line:#e4e4e7; --text:#18181b; --muted:#71717a;
+    --accent:#b45309; --sw-ring: rgba(0,0,0,0.12); --btn-bg:#f0f0f1; --btn-active:#e4e4e7;
+  }
+  *{box-sizing:border-box}
+  html, body{ background:var(--bg); }
+  body{
+    margin:0; padding:40px 24px 80px; color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:24px; max-width:1200px;
+  }
+  .theme-switch{
+    display:flex; gap:2px; background:var(--btn-bg); border:1px solid var(--line);
+    border-radius:8px; padding:2px; flex:none;
+  }
+  .theme-switch button{
+    all:unset; cursor:pointer; font-size:12px; color:var(--muted); padding:6px 12px;
+    border-radius:6px; line-height:1;
+  }
+  .theme-switch button.active{ background:var(--btn-active); color:var(--text); }
+  h1{ font-size:20px; font-weight:600; margin:0 0 4px; letter-spacing:.2px; }
+  p.sub{ color:var(--muted); font-size:13px; margin:0 0 28px; max-width:640px; line-height:1.5; }
+  .legend{
+    display:flex; gap:18px; font-size:12px; color:var(--muted); margin-bottom:20px; flex-wrap:wrap;
+  }
+  table{ border-collapse:collapse; width:1200px; font-size:13px; table-layout:fixed; }
+  th, td{ padding:8px 14px; text-align:left; border-bottom:1px solid var(--line); width:120px; overflow:hidden; }
+  th{
+    color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    position:sticky; top:0; background:var(--bg); white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
+  }
+  th[data-col]{ cursor:pointer; }
+  th[data-col]:hover{ color:var(--accent); }
+  tr:hover td{ background:rgba(127,127,127,0.07); }
+  .pos{ font-weight:600; color:var(--text); white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+
+  .jstooltip{
+    position:fixed; z-index:50; pointer-events:none;
+    background:#0d0d0f; color:#fff; font-size:12px; font-weight:500;
+    padding:6px 10px; border-radius:8px; white-space:nowrap;
+    opacity:0; transform:translate(-50%, -4px); transition: opacity .12s ease, transform .12s ease, left .12s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .jstooltip::after{
+    content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#0d0d0f;
+  }
+  .jstooltip.visible{ opacity:1; transform:translate(-50%, -8px); }
+  .cell{
+    display:flex; align-items:center; gap:9px; white-space:nowrap;
+    cursor:pointer; margin:-8px -10px; padding:8px 10px; border-radius:6px;
+  }
+  .sw{ width:34px; height:22px; border-radius:6px; flex:none; border:1px solid var(--sw-ring); }
+  .hex{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:var(--text);
+    opacity:0; transition: opacity .15s ease;
+  }
+  .cell:hover .hex{ opacity:1; }
+  footer{ margin-top:24px; color:var(--muted); font-size:12px; max-width:640px; line-height:1.6; }
+  code{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--panel); padding:1px 5px; border-radius:4px; border:1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Black/white ramp comparison</h1>
+    <p class="sub">Rows are step position (0–100, unequal spacing near the ends). Each column is a ramp. Click a swatch to copy its hex, click a column header to copy the whole ramp as CSS custom properties.</p>
+  </div>
+  <div class="theme-switch" id="themeSwitch">
+    <button data-mode="auto">Auto</button>
+    <button data-mode="light">Light</button>
+    <button data-mode="dark">Dark</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div>hover a swatch to reveal its hex · click to copy · click a column header to copy the whole ramp as CSS</div>
+</div>
+
+<table>
+<thead>
+<tr id="headerRow">
+  <th>HA Color</th>
+  <th data-col="0">Home Assistant</th>
+  <th data-col="1">Rounded Theme</th>
+  <th data-col="2">Slate (Tailwind)</th>
+  <th data-col="3">Gray (Tailwind)</th>
+  <th data-col="4">Zinc (Tailwind)</th>
+  <th data-col="5">Stone (Tailwind)</th>
+  <th data-col="6">Mauve (Tailwind)</th>
+  <th data-col="7">Olive (Tailwind)</th>
+  <th data-col="8">Mist (Tailwind)</th>
+  <th data-col="9">Taupe (Tailwind)</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<footer>
+  Rounded Theme = Home Assistant's OKLCH lightness at each of its 13 steps, with a violet-blue tint (H≈269.5°) whose chroma follows the source tinted ramp's own chroma-vs-lightness curve. The 8 Tailwind columns follow the same recipe against Tailwind's own published OKLCH values (50–950, 11 stops each): sorted by L, chroma curve extended with pinned black/white anchors and 3-point smoothed, hue taken as its own function of L rather than a flat average since several of these ramps (slate, gray in particular) drift several degrees across their range. <code>zinc-50</code> and <code>mauve-50</code> ship at exactly <code>C=0</code> in Tailwind's own values, so those two points were excluded from the hue curve (undefined hue at zero chroma) but kept in the chroma curve.
+</footer>
+
+<details style="max-width:640px; margin-top:20px; font-size:12.5px; color:var(--muted); line-height:1.7;">
+<summary style="cursor:pointer; color:var(--text); font-weight:600; font-size:13px;">Methodology — deriving a HA-compatible ramp from any tinted neutral set (click to expand)</summary>
+<div style="margin-top:14px;">
+
+<p><strong>Goal:</strong> given an arbitrary set of "neutral" colors from some other system — any number of steps, any spacing, possibly slightly tinted, possibly missing true black and/or white — produce a 13-step ramp at HA's exact positions (00, 05, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100) that keeps HA's own lightness progression but carries the input's tint character.</p>
+
+<p><strong>Why this works regardless of step count or spacing:</strong> the whole method is keyed on <em>lightness</em>, not on position index. A ramp with 6 steps and a ramp with 40 uneven steps both reduce to the same thing — a scattered set of (L, C, H) points in OKLCH space — so the input's own labeling scheme never has to line up with HA's.</p>
+
+<p><strong>1. Convert everything to OKLCH.</strong> HA's 13 real hex values, and every color in the input set, both via the standard sRGB → linear → OKLab → OKLCH pipeline.</p>
+
+<p><strong>2. Sort the input by L, not by its original order.</strong> Discard whatever position/index scheme the input uses. What matters from here on is only each color's own lightness — this is what makes the method indifferent to how many steps the input has or how they're spaced.</p>
+
+<p><strong>3. Build C(L) and H(L) curves from the input.</strong> Treat the input's (L, C) pairs as samples of a chroma-vs-lightness function, and its (L, H) pairs as samples of a hue-vs-lightness function. If hue barely moves across the set (the common case for a "tinted gray" — a few degrees of drift), collapse it to a single average H and skip the hue curve. If hue drifts meaningfully, keep it as a function of L like chroma, interpolated the same way.</p>
+
+<p><strong>4. Anchor the ends.</strong> If the input already contains true black (L≈0) and white (L≈100), use its own C there — nearly always 0, but not assumed. If the input <em>doesn't</em> reach one or both ends, pin C=0 at the missing end(s) rather than extrapolating a trend off the last real sample: chroma curves from small hand-picked hex sets tend to swing unpredictably under extrapolation, and forcing true neutrality at full black/white matches how virtually every real neutral system behaves at its extremes anyway.</p>
+
+<p><strong>5. Smooth C(L) before sampling from it.</strong> Small, hand-tuned neutral ramps are usually built by eyeballing or rounding hex values one step at a time, not from a single continuous formula — so the raw C(L) curve usually has some rounding noise: a step that dips lower or spikes higher than its neighbors for no perceptual reason. A light moving average (e.g. 3-point) over the L-sorted chroma values removes this without flattening the input's real, larger-scale shape (a genuine dip-in-the-middle or fade-at-the-ends survives smoothing; single-step noise doesn't). Re-pin the endpoints to C=0 after smoothing, since a moving average will otherwise leak a little chroma into them from their neighbors.</p>
+
+<p><strong>6. Sample onto HA's 13 target lightnesses.</strong> For each of HA's own 13 real L values, look up C (and H, if it varies) from the smoothed input curves via linear interpolation — or, for any HA lightness that falls outside the input's L range entirely, via the pinned endpoint value rather than extrapolating past data the input never provided.</p>
+
+<p><strong>7. Recombine and convert back.</strong> Take (HA's own L, sampled C, sampled H) per step, convert OKLCH → OKLab → linear sRGB → sRGB, clamp to [0,1] per channel, and output as hex. HA's L is always used verbatim and never touched — only chroma and hue are borrowed from the input.</p>
+
+<p><strong>Caveat:</strong> this whole approach assumes the input set is trying to be a neutral (or near-neutral) ramp in the first place — i.e. its hue stays roughly consistent across steps. If the input mixes genuinely different hues at different lightnesses (not just noise, but an intentional warm-to-cool shift or similar), a single averaged hue will wash that out; use the per-L hue curve from step 3 instead of collapsing to a scalar.</p>
+
+</div>
+</details>
+
+<script>
+const rows = [
+  ["black",       "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"],
+  ["neutral-05",  "#141414", "#121418", "#0C1325", "#0D1421", "#141416", "#161412", "#171218", "#141410", "#111516", "#171312"],
+  ["neutral-10",  "#202020", "#1D2029", "#152034", "#172030", "#202023", "#231F1D", "#251D26", "#212119", "#1B2123", "#251F1C"],
+  ["neutral-20",  "#363636", "#313642", "#29374C", "#2C3747", "#35353B", "#3A3532", "#3D323E", "#37372C", "#2F383A", "#3D3431"],
+  ["neutral-30",  "#4a4a4a", "#454A57", "#3B4B62", "#404B5B", "#494952", "#4E4944", "#524554", "#4B4B3D", "#414C4F", "#534744"],
+  ["neutral-40",  "#5e5e5e", "#595E6B", "#4F5F77", "#555F6F", "#5D5D67", "#635D57", "#665968", "#5F5F4E", "#536164", "#675B57"],
+  ["neutral-50",  "#7a7a7a", "#767A84", "#6B7B93", "#737A8A", "#797983", "#7F7974", "#827583", "#7B7B6A", "#6F7D80", "#837772"],
+  ["neutral-60",  "#989898", "#9498A3", "#8A9AAF", "#9199A5", "#9797A0", "#9D9792", "#9F94A0", "#99998A", "#8E9B9E", "#A19591"],
+  ["neutral-70",  "#b1b1b1", "#ACB1BE", "#A4B3C6", "#ABB2BD", "#B0B0B8", "#B5B0AC", "#B7ADB8", "#B2B2A4", "#A9B3B6", "#B9AFAB"],
+  ["neutral-80",  "#cccccc", "#C7CCD8", "#C1CEDE", "#C7CDD5", "#CBCBD2", "#D0CBC8", "#D1C9D1", "#CDCDC2", "#C6CED0", "#D2CAC8"],
+  ["neutral-90",  "#e6e6e6", "#E2E6EF", "#E0E7F0", "#E4E6EB", "#E6E6E8", "#E8E6E4", "#E8E5E8", "#E7E7E0", "#E3E7E8", "#E9E5E4"],
+  ["neutral-95",  "#f3f3f3", "#F1F3F9", "#EFF4F9", "#F2F3F6", "#F3F3F4", "#F4F3F2", "#F4F3F4", "#F3F3EF", "#F1F4F4", "#F5F2F2"],
+  ["white",       "#ffffff", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"],
+];
+
+const headerCells = Array.from(document.querySelectorAll('#headerRow th[data-col]'));
+const colOrder = headerCells.map(th => parseInt(th.dataset.col, 10));
+
+const tbody = document.getElementById('tbody');
+rows.forEach(([pos, ...cols]) => {
+  const tr = document.createElement('tr');
+  const posTd = document.createElement('td');
+  posTd.className = 'pos';
+  posTd.textContent = pos;
+  tr.appendChild(posTd);
+
+  colOrder.forEach(colIdx => {
+    const hex = cols[colIdx];
+    const td = document.createElement('td');
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+
+    const sw = document.createElement('span');
+    sw.className = 'sw';
+    sw.style.background = hex;
+
+    const hexLabel = document.createElement('span');
+    hexLabel.className = 'hex';
+    hexLabel.textContent = hex;
+
+    cell.appendChild(sw);
+    cell.appendChild(hexLabel);
+
+    cell.addEventListener('click', () => {
+      copyText(hex, () => {
+        const original = hexLabel.textContent;
+        hexLabel.textContent = 'Copied!';
+        setTimeout(() => { hexLabel.textContent = original; }, 800);
+      });
+    });
+
+    td.appendChild(cell);
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+});
+
+function copyText(text, cb){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(cb).catch(() => fallbackCopy(text, cb));
+  } else {
+    fallbackCopy(text, cb);
+  }
+}
+function fallbackCopy(text, cb){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (cb) cb();
+}
+
+const tooltipEl = document.createElement('div');
+tooltipEl.className = 'jstooltip';
+tooltipEl.textContent = 'Copy CSS';
+document.body.appendChild(tooltipEl);
+
+function showTooltip(target){
+  const r = target.getBoundingClientRect();
+  tooltipEl.style.left = (r.left + r.width / 2) + 'px';
+  tooltipEl.style.top = (r.top - 10) + 'px';
+  tooltipEl.style.transform = 'translate(-50%, -100%)';
+  tooltipEl.classList.add('visible');
+}
+function hideTooltip(){ tooltipEl.classList.remove('visible'); }
+
+headerCells.forEach(th => {
+  th.addEventListener('mouseenter', () => showTooltip(th));
+  th.addEventListener('mouseleave', hideTooltip);
+  th.addEventListener('click', () => {
+    hideTooltip();
+    const colIdx = parseInt(th.dataset.col, 10);
+    const css = rows.map(([pos, ...cols]) => `  --${pos}: ${cols[colIdx]};`).join('\n');
+    const finish = () => {
+      const original = th.textContent;
+      th.textContent = 'Copied!';
+      setTimeout(() => { th.textContent = original; }, 900);
+    };
+    copyText(css, finish);
+  });
+});
+
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+let mode = 'auto';
+function applyTheme(){
+  const resolved = mode === 'auto' ? (mq.matches ? 'dark' : 'light') : mode;
+  document.documentElement.setAttribute('data-theme', resolved);
+  document.querySelectorAll('#themeSwitch button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+document.querySelectorAll('#themeSwitch button').forEach(btn => {
+  btn.addEventListener('click', () => { mode = btn.dataset.mode; applyTheme(); });
+});
+mq.addEventListener('change', () => { if (mode === 'auto') applyTheme(); });
+applyTheme();
+</script>
+
+</body>
+</html>

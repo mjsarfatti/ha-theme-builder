@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Home Assistant palette — alternative systems</title>
+<style>
+  :root{
+    --bg:#15161a; --panel:#1c1e24; --line:#2a2d35; --text:#e7e8ea; --muted:#8b8f9a;
+    --accent:#f59e0b; --sw-ring: rgba(255,255,255,0.12); --btn-bg:#1c1e24; --btn-active:#2a2d35;
+  }
+  html[data-theme="light"]{
+    --bg:#fafafa; --panel:#ffffff; --line:#e4e4e7; --text:#18181b; --muted:#71717a;
+    --accent:#b45309; --sw-ring: rgba(0,0,0,0.12); --btn-bg:#f0f0f1; --btn-active:#e4e4e7;
+  }
+  *{box-sizing:border-box}
+  html, body{ background:var(--bg); }
+  body{
+    margin:0; padding:40px 24px 80px; color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:24px; max-width:1180px;
+  }
+  .theme-switch{
+    display:flex; gap:2px; background:var(--btn-bg); border:1px solid var(--line);
+    border-radius:8px; padding:2px; flex:none;
+  }
+  .theme-switch button{
+    all:unset; cursor:pointer; font-size:12px; color:var(--muted); padding:6px 12px;
+    border-radius:6px; line-height:1;
+  }
+  .theme-switch button.active{ background:var(--btn-active); color:var(--text); }
+  h1{
+    font-size:20px; font-weight:600; margin:0 0 4px; letter-spacing:.2px;
+  }
+  p.sub{
+    color:var(--muted); font-size:13px; margin:0 0 28px; max-width:680px; line-height:1.5;
+  }
+  .legend{
+    display:flex; gap:18px; font-size:12px; color:var(--muted); margin-bottom:20px; flex-wrap:wrap;
+  }
+  .legend span.dotk{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle}
+  table{
+    border-collapse:collapse; width:1080px; font-size:13px;
+    table-layout:fixed;
+  }
+  th, td{
+    padding:8px 10px; text-align:left; border-bottom:1px solid var(--line);
+    width:120px; overflow:hidden;
+  }
+  th{
+    color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    position:sticky; top:0; background:var(--bg);
+    transition: color .12s ease;
+    text-overflow:ellipsis; white-space:nowrap; overflow:hidden;
+  }
+  th[data-col]:hover{ color:var(--accent); }
+  tr:hover td{ background:rgba(127,127,127,0.07); }
+  .name{ font-weight:600; color:var(--text); white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+  .cell{ display:flex; align-items:center; gap:9px; white-space:nowrap; overflow:visible; cursor:pointer; margin:-8px -10px; padding:8px 10px; }
+  .sw{
+    width:22px; height:22px; border-radius:6px; flex:none;
+  }
+  .sw-derived{ cursor:pointer; position:relative; }
+  .sw-derived::after{
+    content:''; position:absolute; inset:0; border-radius:6px;
+    box-shadow: 0 0 0 1.5px var(--bg), 0 0 0 3px var(--accent);
+    opacity:0; transition:opacity .12s ease;
+    pointer-events:none;
+  }
+  .sw-derived:hover::after{ opacity:0.55; }
+  .sw-derived input[type="color"]{
+    position:absolute; inset:0; width:100%; height:100%; padding:0; border:none;
+    opacity:0; cursor:pointer; z-index:1;
+  }
+  .hex-input{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:var(--text);
+    background:transparent; border:none; outline:none; width:64px; padding:0;
+  }
+  .hex-input:focus{ text-decoration:underline; text-decoration-color:var(--accent); }
+  .hex{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:var(--text);
+    opacity:0; transition: opacity .15s ease;
+  }
+  .cell:hover .hex{ opacity:1; }
+  .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--accent); margin-left:2px; flex:none;
+    opacity:0; transition: opacity .15s ease;
+  }
+  .cell:hover .dot{ opacity:1; }
+  .note{ color:var(--muted); font-size:11px; }
+  footer{ margin-top:28px; color:var(--muted); font-size:12px; max-width:680px; line-height:1.6; }
+  code{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--panel); padding:1px 5px; border-radius:4px; border:1px solid var(--line); }
+
+  /* custom JS-driven tooltip (replaces native title attr) */
+  .jstooltip{
+    position:fixed; z-index:50; pointer-events:none;
+    background:#0d0d0f; color:#fff; font-size:12px; font-weight:500;
+    padding:6px 10px; border-radius:8px; white-space:nowrap;
+    opacity:0; transform:translate(-50%, -4px); transition: opacity .12s ease, transform .12s ease, left .12s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .jstooltip::after{
+    content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#0d0d0f;
+  }
+  .jstooltip.visible{ opacity:1; transform:translate(-50%, -8px); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Home Assistant colors, translated</h1>
+    <p class="sub">Reasoned in OKLCH (hue preserved, lightness/chroma adapted to each system's own character). A dot marks a color that doesn't exist natively in that system and was derived to fit the mood of its neighbors.</p>
+  </div>
+  <div class="theme-switch" id="themeSwitch">
+    <button data-mode="auto">Auto</button>
+    <button data-mode="light">Light</button>
+    <button data-mode="dark">Dark</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div><span class="dotk"></span>derived (no native match — interpolated from neighboring hues). Click a derived swatch to adjust it.</div>
+  <div>no dot = real, existing swatch in that system</div>
+  <div>hover a swatch to reveal its hex, click the hex to copy it · click a column header to copy the whole column as CSS</div>
+</div>
+
+<table>
+<thead>
+<tr id="headerRow">
+  <th>HA color</th>
+  <th data-col="0">Home Assistant</th>
+  <th data-col="1">Tailwind v3</th>
+  <th data-col="2">Tailwind v4</th>
+  <th data-col="4">Material Accent</th>
+  <th data-col="5">Ant Design</th>
+  <th data-col="6">Chakra UI</th>
+  <th data-col="3">Bulma</th>
+  <th data-col="7">Rounded Theme</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<footer>
+  Notes — every derived color was checked against its own two neighbors in the sequence (in OKLCH): the fraction each HA color sits between its neighbors along hue, and how much its lightness/chroma deviates from a straight line between them, was recomputed and re-applied per system rather than eyeballed — a few derived values shifted slightly from an earlier pass once checked this way (most visibly Chakra's indigo, which HA renders as a real local dip in lightness, not a midpoint blend). Brown and blue-grey are treated as native throughout (no dot) since every system lands close enough natively. <strong>Tailwind</strong>: HA's palette is Material Design under the hood, so most names map 1:1 (light-blue→sky, blue-grey→slate — Tailwind's own official rename of blueGray). Tailwind doesn't subdivide as finely as Material at the yellow/amber and orange/deep-orange boundaries, and in practice HA leans on <em>amber</em> and <em>deep-orange</em> far more than plain yellow/orange (better contrast on light backgrounds), so those two get the real Tailwind swatches (<code>yellow</code>→amber, <code>orange</code>→deep-orange) while yellow and orange are derived to sit correctly around them. Same logic for lime/light-green: Tailwind's <code>lime</code> goes to light-green, lime is derived. <strong>Bulma</strong> ships only 8 hues total (red, orange, yellow, green, turquoise, cyan, blue, purple) — everything else here is derived; <code>$orange</code> is used for deep-orange (same reasoning as above), with amber and orange re-derived around it. Indigo lands almost exactly on Bulma's own <code>$blue</code>, and HA blue lands on Bulma's <code>$cyan</code>. <strong>Material Accent</strong> is the accent (A100/200/400/700) column per hue family, each picked to best match the lightness/chroma of the HA 500-shade; brown and blue-grey have no true Material accent (Google never defined one), so the regular 500 is shown. <strong>Ant Design</strong> ships 12 hues (red, volcano, orange, gold, yellow, lime, green, cyan, blue, geekblue, purple, magenta) and — unlike Tailwind/Bulma — already keeps yellow/gold and orange/volcano distinct, so no swap was needed there: <code>gold</code>→amber and <code>volcano</code>→deep-orange are both direct, close hue matches. <code>geekblue</code> lands almost exactly on HA indigo. <strong>Chakra UI</strong> ships 10 hues (gray, red, orange, yellow, green, teal, blue, cyan, purple, pink) with no indigo, lime, gold, or volcano equivalents, so it hits the same yellow/amber and orange/deep-orange conflict as Tailwind/Bulma — resolved the same way. Chakra's neutral <code>gray</code> carries a slight cool/blue cast that lines up with HA's blue-grey, so that one's used directly.
+  <br><br>
+  <strong>Rounded Theme</strong> derives from a small 6-color custom palette (red, orange, yellow, green, blue, purple RGB triplets — each an obvious hue match to its HA slot, all within ~8–17° and sitting in a tight pastel band, L≈0.77–0.92, C≈0.10–0.13 in OKLCH). It uses the "shape-matched" method documented below.
+</footer>
+
+<details style="max-width:1180px; margin-top:20px; font-size:12.5px; color:var(--muted); line-height:1.7;">
+<summary style="cursor:pointer; color:var(--text); font-weight:600; font-size:13px;">Methodology — "shape-matched" derivation (click to expand)</summary>
+<div style="margin-top:14px;">
+
+<p><strong>Goal:</strong> given a partial palette (some of the 18 HA hues have a real/native counterpart in the target system, some don't), fill in the missing ones so that each derived color sits in the same <em>relative position</em> to its neighbors — in lightness and chroma — that the real HA color occupies relative to its own neighbors. Not a plain color blend: a blend imports only hue and position; this imports HA's actual local shape (a dip, a bump, a sharp desaturation) and reproduces it proportionally, however vivid or muted the target system's own colors happen to be.</p>
+
+<p><strong>0. Fixed reference: the 18-color sequence.</strong> All reasoning happens along one fixed order, which follows the hue wheel from HA's own values:</p>
+<code style="display:block; padding:8px 10px; margin:6px 0 10px; white-space:pre-wrap;">red, pink, purple, deep-purple, indigo, blue, light-blue, cyan, teal, green, light-green, lime, yellow, amber, orange, deep-orange, brown, blue-grey</code>
+<p>Index 0 = red … index 17 = blue-grey. Every "neighbor" reference below means adjacent indices in this exact list.</p>
+
+<p><strong>1. Convert everything to OKLCH.</strong> Take the HA hex for all 18 colors, and the target system's hex for whichever ones are native/real, and convert each to OKLCH (L 0–1, C, H in degrees). Standard sRGB → linear → OKLab → OKLCH pipeline (Björn Ottosson's reference formulas).</p>
+
+<p><strong>2. Unwrap HA's hue sequence.</strong> Hue is circular (0–360°) but the 18-color sequence moves steadily in one direction around the wheel (decreasing, in HA's case), crossing the 0°/360° boundary once between pink and purple. Before doing any arithmetic, unwrap it into a continuously decreasing (or increasing) number line, e.g.:</p>
+<code style="display:block; padding:8px 10px; margin:6px 0 10px; white-space:pre-wrap;">red 28.8, pink 9.6, purple 302.0→−58.0, deep-purple 299.8→−60.2, indigo 271.4→−88.6, … deep-orange 43.8→−316.2</code>
+<p>Without this step, hue-fraction math silently breaks for any pair straddling the wrap.</p>
+
+<p><strong>3. Mark native cells, process the rest left to right.</strong> Cells with a real target-system value are "native" from the start. Go through the derived (missing) indices in order, index by index. Once a derived cell is computed, immediately mark it native too — later cells are allowed to reference it as a solid anchor. This matters: it's why the process is order-dependent and must run left→right, not all at once.</p>
+
+<p><strong>4. Choose the reference pair (a, b) for index i:</strong></p>
+<ul style="margin:4px 0 10px; padding-left:20px;">
+<li>Default: <code>a = i−1</code>, <code>b = i+1</code> — interpolate between the immediate previous and next colors.</li>
+<li>If <code>i+1</code> is <em>not yet native</em> (still waiting to be derived) — i.e. two derived cells sit back to back — shift the whole window back: <code>a = i−2</code>, <code>b = i−1</code> instead. This avoids referencing an unreliable/not-yet-computed neighbor.</li>
+<li>Edge case: if <code>i</code> is the last index in the sequence (no <code>i+1</code> exists at all, e.g. blue-grey), always use <code>a = i−2</code>, <code>b = i−1</code>.</li>
+</ul>
+
+<p><strong>5. Compute the hue fraction t, from HA only:</strong></p>
+<code style="display:block; padding:8px 10px; margin:6px 0 10px;">t = (Hu[i] − Hu[a]) / (Hu[b] − Hu[a])</code>
+<p>using the unwrapped HA hues from step 2. Note <code>t</code> is not clamped to [0,1] — when the reference pair was shifted back per step 4, <code>t</code> will legitimately be &gt;1 (extrapolation beyond b, in the direction away from a). This is expected and fine for hue; see the caveat at the end for why it can misbehave for chroma in extreme cases.</p>
+
+<p><strong>6. Compute HA's own predicted vs. actual L and C at that t</strong> — this is the "shape":</p>
+<code style="display:block; padding:8px 10px; margin:6px 0 10px; white-space:pre-wrap;">pred_L = HA_L[a] + t·(HA_L[b] − HA_L[a])
+pred_C = HA_C[a] + t·(HA_C[b] − HA_C[a])
+r_L = HA_L[i] / pred_L        (how much brighter/darker the real HA color is vs. a straight line between its neighbors)
+r_C = HA_C[i] / pred_C        (same, for saturation)</code>
+
+<p><strong>7. Apply the same t and the same ratios to the target system:</strong></p>
+<code style="display:block; padding:8px 10px; margin:6px 0 10px; white-space:pre-wrap;">target_pred_L = target_L[a] + t·(target_L[b] − target_L[a])
+target_pred_C = target_C[a] + t·(target_C[b] − target_C[a])
+target_L[i] = target_pred_L · r_L
+target_C[i] = target_pred_C · r_C
+target_H[i] = HA_H[i]     (hue is always taken directly from HA, unchanged — never interpolated)</code>
+
+<p><strong>8. Convert back to hex</strong> (OKLCH → OKLab → linear sRGB → sRGB, clamped to [0,1] per channel) and store; mark the cell native; move to the next derived index.</p>
+
+<p><strong>Why ratios, not absolute deltas:</strong> multiplying by <code>r_L</code>/<code>r_C</code> scales proportionally to whatever range the target system actually uses, so it works whether the target's colors are pale pastels or saturated brand colors — a steep HA drop (e.g. brown/blue-grey collapsing to near-zero chroma) reproduces as a steep drop in the target too, even if every target anchor is a vivid, high-chroma color. A plain linear blend (no ratio) doesn't have this property, which is why it was dropped as a method — it flattens exactly the contrasts this process exists to preserve, and can extrapolate to implausible results at sequence boundaries with nothing to correct it.</p>
+
+<p><strong>Caveat:</strong> when the reference pair requires heavy extrapolation (<code>t</code> far outside [0,1] — most likely at the very start/end of the sequence, or several back-to-back derived cells in a row) chroma in particular can occasionally overshoot. If a result looks visibly off, the fix used elsewhere in this table was to re-derive that one cell using the true (not shifted-back) real neighbors once they exist, or to interpolate directly from the nearest real anchors on both sides rather than chaining through several derived cells in sequence.</p>
+
+</div>
+</details>
+
+<script>
+const rows = [
+  ["red",         "#f44336", "#ef4444", "#fb2c36", "#f14668", "#ff1744", "#f5222d", "#e53e3e", "#ff918a"],
+  ["pink",        "#e91e63", "#ec4899", "#f6339a", "#dd3687•", "#f50057", "#eb2f96", "#d53f8c", "#ff8299•"],
+  ["purple",      "#926bc7", "#a855f7", "#ad46ff", "#b86bff", "#e040fb", "#722ed1", "#805ad5", "#efb1ff"],
+  ["deep-purple", "#6e41ab", "#8b5cf6", "#8e51ff", "#964be7•", "#6200ea", "#581395•", "#6b30a6•", "#a57fe3•"],
+  ["indigo",      "#3f51b5", "#6366f1", "#615fff", "#485fc7", "#304ffe", "#2f54eb", "#3444ab•", "#6a7eca•"],
+  ["blue",        "#2196f3", "#3b82f6", "#2b7fff", "#3e8ed0", "#448aff", "#1677ff", "#3182ce", "#90bfff"],
+  ["light-blue",  "#03a9f4", "#0ea5e9", "#00a6f4", "#43a3de•", "#00b0ff", "#3d9bff•", "#30a1df•", "#91d0fc•"],
+  ["cyan",        "#00bcd4", "#06b6d4", "#00b8db", "#49cee4•", "#00b8d4", "#00c6e4•", "#00b5d8", "#a6d2da•"],
+  ["teal",        "#009688", "#14b8a6", "#00bba7", "#00d1b2", "#00bfa5", "#13c2c2", "#319795", "#80b9b0•"],
+  ["green",       "#4caf50", "#22c55e", "#00c950", "#48c78e", "#00c853", "#52c41a", "#38a169", "#cef595"],
+  ["light-green", "#8bc34a", "#84cc16", "#7ccf00", "#a1cd75•", "#64dd17", "#a0d911", "#6bbf5a•", "#f4ffc3•"],
+  ["lime",        "#cddc39", "#c5d600•", "#c5d500•", "#d0dc7e•", "#aeea00", "#cfdf00•", "#d1db43•", "#f4ff96•"],
+  ["yellow",      "#ffeb3b", "#f7de00•", "#f7de00•", "#ffe08a", "#ffea00", "#fadb14", "#f4df57•", "#ffda78"],
+  ["amber",       "#ffc107", "#eab308", "#f0b100", "#f6cb55•", "#ffc400", "#faad14", "#d69e2e", "#f2ca75•"],
+  ["orange",      "#ff9800", "#f3920d•", "#f68f00•", "#f09010•", "#ff9100", "#fa8c16", "#ec9122•", "#ffb581"],
+  ["deep-orange", "#ff6f22", "#f97316", "#ff6900", "#ff470f", "#ff6e40", "#fa541c", "#dd6b20", "#ffab86•"],
+  ["brown",       "#795548", "#78716c", "#79716b", "#694e44•", "#795548", "#795346•", "#765448•", "#877169•"],
+  ["blue-grey",   "#607d8b", "#64748b", "#62748e", "#5d7682•", "#607d8b", "#5d7682•", "#718096•", "#80919a•"],
+];
+
+// column order is driven by the header's data-col attributes, so the header
+// can be reordered (e.g. Bulma moved) without touching the underlying row data
+const headerCells = Array.from(document.querySelectorAll('#headerRow th[data-col]'));
+const colOrder = headerCells.map(th => parseInt(th.dataset.col, 10));
+
+const tbody = document.getElementById('tbody');
+rows.forEach(([name, ...cols]) => {
+  const tr = document.createElement('tr');
+  const nameTd = document.createElement('td');
+  nameTd.className = 'name';
+  nameTd.textContent = name;
+  tr.appendChild(nameTd);
+
+  colOrder.forEach(colIdx => {
+    const val = cols[colIdx];
+    const derived = val.endsWith('•');
+    const hex = derived ? val.slice(0,-1) : val;
+    let currentHex = hex;
+    const td = document.createElement('td');
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+
+    const sw = document.createElement('span');
+    sw.className = derived ? 'sw sw-derived' : 'sw';
+    sw.style.background = hex;
+
+    let colorInput = null;
+    if (derived) {
+      colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = hex;
+      colorInput.title = 'Adjust this derived color';
+      colorInput.addEventListener('click', (e) => e.stopPropagation());
+      sw.appendChild(colorInput);
+    }
+
+    const hexLabel = document.createElement('span');
+    hexLabel.className = 'hex';
+    hexLabel.textContent = hex;
+
+    cell.appendChild(sw);
+    cell.appendChild(hexLabel);
+    if (derived) {
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.title = 'derived';
+      cell.appendChild(dot);
+
+      colorInput.addEventListener('input', () => {
+        currentHex = colorInput.value;
+        sw.style.background = currentHex;
+        hexLabel.textContent = currentHex;
+      });
+    }
+
+    cell.addEventListener('click', () => {
+      copyText(currentHex, () => {
+        const original = hexLabel.textContent;
+        hexLabel.textContent = 'Copied!';
+        setTimeout(() => { hexLabel.textContent = original; }, 800);
+      });
+    });
+
+    td.appendChild(cell);
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+});
+
+// --- shared clipboard helper ---
+function copyText(text, cb){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(cb).catch(() => fallbackCopy(text, cb));
+  } else {
+    fallbackCopy(text, cb);
+  }
+}
+function fallbackCopy(text, cb){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (cb) cb();
+}
+
+// --- custom JS tooltip (replaces native title) ---
+const tooltipEl = document.createElement('div');
+tooltipEl.className = 'jstooltip';
+tooltipEl.textContent = 'Copy CSS';
+document.body.appendChild(tooltipEl);
+
+function showTooltip(target){
+  const r = target.getBoundingClientRect();
+  tooltipEl.style.left = (r.left + r.width / 2) + 'px';
+  tooltipEl.style.top = (r.top - 10) + 'px';
+  tooltipEl.style.transform = 'translate(-50%, -100%)';
+  tooltipEl.classList.add('visible');
+}
+function hideTooltip(){ tooltipEl.classList.remove('visible'); }
+
+// --- click a header to copy that column as CSS custom properties ---
+function slug(name){ return name; } // row names are already kebab-case
+headerCells.forEach(th => {
+  th.style.cursor = 'pointer';
+  th.addEventListener('mouseenter', () => showTooltip(th));
+  th.addEventListener('mouseleave', hideTooltip);
+  th.addEventListener('click', () => {
+    hideTooltip();
+    const colIdx = parseInt(th.dataset.col, 10);
+    const css = rows.map(([name, ...cols]) => {
+      const val = cols[colIdx];
+      const hex = val.endsWith('•') ? val.slice(0,-1) : val;
+      return `  --${slug(name)}-color: ${hex};`;
+    }).join('\n');
+    const finish = () => {
+      const original = th.textContent;
+      th.textContent = 'Copied!';
+      setTimeout(() => { th.textContent = original; }, 900);
+    };
+    copyText(css, finish);
+  });
+});
+
+// --- theme switch (auto / light / dark) ---
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+let mode = 'auto';
+
+function applyTheme(){
+  const resolved = mode === 'auto' ? (mq.matches ? 'dark' : 'light') : mode;
+  document.documentElement.setAttribute('data-theme', resolved);
+  document.querySelectorAll('#themeSwitch button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+
+document.querySelectorAll('#themeSwitch button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    mode = btn.dataset.mode;
+    applyTheme();
+  });
+});
+
+mq.addEventListener('change', () => { if (mode === 'auto') applyTheme(); });
+
+applyTheme();
+</script>
+
+</body>
+</html>
