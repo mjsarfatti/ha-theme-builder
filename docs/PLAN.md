@@ -74,7 +74,7 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
    (keep HA defaults, per template.css note), state-color editing, custom
    ramp/palette options, shareable URLs (M7 backlog).
 
-### Font shortlist (PM draft — sign-off during M2 UX review)
+### Font shortlist (✅ approved 2026-08-09)
 
 Per template.css: 8 sans, 4 serif, 2 display serif, 2 mono from Google Fonts, plus
 a system option for sans, serif, and mono.
@@ -86,11 +86,10 @@ a system option for sans, serif, and mono.
 - **Mono (2):** JetBrains Mono, IBM Plex Mono
 - **System:** system sans (`system-ui` stack), system serif, system mono
 
-⚠️ **Known product risk:** a YAML theme can set `--ha-font-family-*`, but HA does
-not load Google Fonts — only Roboto ships with the frontend. A chosen web font will
-render in our preview but fall back on the user's HA instance unless the font is
-installed on the device or loaded via `extra_module_url`. The export step (M6) must
-ship the font-loading snippet + instructions alongside the YAML. To validate in M2.
+✅ **Font loading (decided):** HA only ships Roboto — a YAML theme can set
+`--ha-font-family-*` but cannot load a web font. The export step (M6) therefore
+ships a font-loading snippet (`extra_module_url`) + instructions alongside the
+YAML whenever a non-system, non-Roboto font is selected.
 
 ## 4. Architecture
 
@@ -196,14 +195,12 @@ M1; UX spec frozen at end of M2; changes after that require a PM decision.
 - **Review gate:** PM reviews each PR against acceptance criteria + a code-review
   pass; user has final say on M2 (spec sign-off) and anything visual (M3–M6).
 
-## 7. Decision log & open questions
+## 7. Decision log
 
 Resolved with the user (2026-08-09): GitHub Pages ✅ · pnpm ✅ · preview = artifact
 mock sections with simultaneous light/dark ✅ · presets only, from
 `.references/colors/`, no custom options in v1 ✅ · Hearth/Pastel dropped ✅ · no
-native color pickers, palette-aware picker required ✅ · PM drafts font list ✅.
+native color pickers, palette-aware picker required ✅ · font shortlist approved ✅ ·
+export ships `extra_module_url` font-loading instructions ✅.
 
-Open:
-1. **Font shortlist** (§3) — approve/amend during M2 review.
-2. **Font-loading risk** (§3) — confirm we're OK shipping `extra_module_url`
-   instructions as the answer, or fonts stay preview-only with a warning.
+No open questions. Next decision points arrive with the M2 UX spec review.
