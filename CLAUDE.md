@@ -43,6 +43,18 @@ are about to write a version number or a flag from memory, stop and check it.
   `NOTE:` comments are product requirements), the colour-ramp and palette pages
   (preset source data), and the Claude design artifact (preview blueprint). Read it
   constantly; never modify it.
+- **Home Assistant's own source is the final authority.** `ha_theme_analysis.md`
+  and `template.css` are *derived* documents, and each already has at least one
+  confirmed error (the analysis doc's §7.5 gives the contrast threshold as 4.5
+  where HA uses 6; `template.css` aliases `text-primary-color` to the body text
+  colour when in HA it is the text drawn *on* the primary colour). When they
+  contradict each other, contradict themselves, or simply look wrong, go and read
+  the real thing — `raw.githubusercontent.com` is reachable, so
+  `https://raw.githubusercontent.com/home-assistant/frontend/dev/<path>` works
+  directly. The files worth knowing:
+  `src/resources/theme/color/color.globals.ts` (the public theme variables) and
+  `src/common/dom/apply_themes_on_element.ts` (the YAML→CSS engine and all the
+  derivation maths). Cite the file and line when a decision rests on it.
 - **`src/engine/` is pure TypeScript.** No React imports, no DOM access. It maps a
   seed config to token maps and YAML, and it is unit-tested. The UI is a thin shell
   over it.
