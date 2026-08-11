@@ -1,6 +1,7 @@
 # HA Theme Builder — UX Spec (M2)
 
-> Status: **for sign-off** · Author: Claude (M2) · Last updated: 2026-08-09
+> Status: **for sign-off** · Author: Claude (M2) · Last updated: 2026-08-11
+> Revalidated against the merged M1 engine (`src/engine/`) and the Base UI shadcn scaffold.
 > Wireframe: [`docs/wireframe/index.html`](./wireframe/index.html) — open the file directly in a
 > browser (no server, no build step). Deliberately low fidelity; it is a communication device, not
 > a head start on production code. **Real data:** all ten neutral ramps and all eight extended
@@ -17,8 +18,14 @@ able to build from this alone.
   pick differently, say so in the PR rather than changing it silently.
 - ***Alternative considered*** = rejected on purpose. Do not silently adopt it.
 
-Every library, component and API named here was **verified against the live registry / upstream
-source on 2026-08-09** — see §6.4 for exactly what was checked. Re-verify before you build.
+Every library, component and API named here was **verified against the live registry, the upstream
+sources and the merged engine on 2026-08-11** — see §6.4 for exactly what was checked. Re-verify
+before you build.
+
+**Where this spec and `src/engine/` disagree, the engine wins.** Its API is frozen (CLAUDE.md) and
+this document was first drafted before it existed. Every default, id, label and ordering below has
+since been read out of the source, but if you find another gap, fix the spec — do not work around
+the engine.
 
 ---
 
@@ -63,7 +70,7 @@ Everything below serves that sentence. The three biggest decisions all fall out 
 └───────────────┴──────────────────────────────────────────────────────────┘
 ```
 
-- The **app bar** is fixed. It holds the product name, a **Reset to Home Assistant defaults**
+- The **app bar** is fixed. It holds the product name, a **Reset to defaults**
   button (disabled until something changes), and the primary **Export theme** button.
 - The **sidebar** is a fixed-width `<aside>` with its own scroll container. It never collapses
   on desktop and it is never behind an accordion (see §3.1).
@@ -120,8 +127,9 @@ plus a one-line plain-English description of what the section controls. No secti
 **Export is a `Sheet` sliding in from the right**, opened by the app bar's primary button.
 It contains:
 
-- **Theme name** — an `Input`, default `my_theme`, slugified for the YAML key (lowercase,
-  underscores). Live-validated: must match `^[a-z][a-z0-9_]*$`.
+- **Theme name** — an `Input`, default **`My Theme`** (`DEFAULT_CONFIG.name`). It becomes the YAML
+  key verbatim; `toYaml` does not slugify and HA accepts spaces, so the only rule is **not empty**.
+  Do not add a slug regex — an earlier draft of this spec invented one the engine does not want.
 - **`Tabs`** with two tabs (`TabsTrigger`s inside a `TabsList` — never directly in `Tabs`):
   - **YAML** — the generated theme in a `ScrollArea`'d `<pre>`, with **Copy** and
     **Download themes.yaml** buttons pinned above it.
@@ -131,7 +139,8 @@ It contains:
 
 The sheet is ~560px wide, dismissible with Esc and the backdrop, and MUST carry a `SheetTitle`
 (shadcn requires one for accessibility; `sr-only` if you do not want it visible). Copy fires a
-`sonner` toast — `toast.success("Copied to clipboard")`.
+toast — this is a **Base UI** project, so use shadcn's `toast` component
+(`toast.add({ title: "Copied to clipboard" })`), **not** Sonner.
 
 **The artifact's "Generated values" scroll section is cut.** One home for export, always reachable,
 no scrolling to the bottom of a 4000px page to find it.
@@ -253,16 +262,27 @@ orange, deep-orange, brown, blue-grey). Tooltip: `Amber · #ffc107`.
 popover is open. This is the mechanism that makes the picker palette-aware; it is not decorative.
 
 *Recommended refinement:* the popover should **not** close when the user changes a preset in the
-sidebar behind it — that is the one moment where you want to watch the swatches change. Radix
-closes on outside interaction by default; exclude the two preset lists:
+sidebar behind it — that is the one moment where you want to watch the swatches change. Base UI
+closes on outside press by default; cancel that one case:
 
 ```tsx
-<PopoverContent
-  onInteractOutside={(e) => {
-    if ((e.target as HTMLElement).closest("[data-preset-list]")) e.preventDefault()
+<Popover
+  open={open}
+  onOpenChange={(next, details) => {
+    if (
+      !next &&
+      details.reason === "outsidePress" &&
+      (details.event.target as HTMLElement)?.closest("[data-preset-list]")
+    ) {
+      details.cancel()
+      return
+    }
+    setOpen(next)
   }}
 >
 ```
+
+(`reason`, `event` and `cancel()` are all on Base UI's `ChangeEventDetails` — verified, §6.4.)
 
 If this proves fiddly, letting the popover close is an acceptable fallback — the user reopens it
 and sees the new swatches. Do not spend a day on it.
@@ -301,15 +321,14 @@ rules below are what they lose; raise it rather than silently changing the behav
   the committed value is unchanged. `Escape` reverts the field to the committed value.
 - Dragging the saturation square updates the field live.
 
-**Reset** — restores this knob's Home Assistant default. Visible only when the value differs from
-the default.
+**Reset** — restores this knob's value from `DEFAULT_CONFIG`. Visible only when it differs.
 
 **Keyboard and a11y — MUST:**
 
 | | |
 |---|---|
 | Trigger | `<button>`, `aria-haspopup="dialog"`, `aria-expanded`, accessible name `"Primary color, currently #009ac7"` |
-| Open | `Enter` / `Space`. Radix moves focus into the popover; focus lands on the hex `Input`. |
+| Open | `Enter` / `Space`. Base UI moves focus into the popover; focus lands on the hex `Input`. |
 | Close | `Escape` closes and returns focus to the trigger. Click-outside closes and commits. |
 | Between groups | `Tab` moves group to group: hex → ramp strip → palette grid → recent → saturation → hue. |
 | Within a group | **Roving tabindex.** One swatch per group is in the tab order; `←`/`→` (and `↑`/`↓` in the palette grid) move the roving focus and, per WAI-ARIA radiogroup semantics, select as they move. `Home`/`End` jump to first/last. |
@@ -355,32 +374,39 @@ Labels in `code` are verbatim from `template.css` and MUST be used as-is.
 
 **1 · Typography**
 
-| Label | Control | Default |
-|---|---|---|
-| `Body font family` | Grouped `Select` | Roboto |
-| `Headings font family` | Grouped `Select` | Roboto |
-| `Longform font family` | Grouped `Select` | System sans |
-| `Code font family` | Grouped `Select` | System mono |
+| Label | Control | Writes | Default (`DEFAULT_CONFIG.fonts`) |
+|---|---|---|---|
+| `Body font family` | Grouped `Select` | `fonts.body` | `"roboto"` |
+| `Headings font family` | Grouped `Select` | `fonts.heading` | `"roboto"` |
+| `Longform font family` | Grouped `Select` | `fonts.longform` | `"system-sans"` |
+| `Code font family` | Grouped `Select` | `fonts.code` | `"system-mono"` |
 
 Order within the group is **Body, Headings, Longform, Code** — most-used first — which differs
 from `template.css`'s declaration order. Labels are unchanged.
 
-All four dropdowns share **one identical list**, grouped with `SelectGroup` + `SelectLabel`
-(per the `template.css` NOTE: "show them grouped in the dropdowns"). Every `SelectItem` and
-`SelectLabel` MUST sit inside a `SelectGroup` — never directly in `SelectContent` (shadcn
-composition rule). Five groups:
+All four dropdowns share **one identical list**, built from the engine's `FONTS` array grouped by
+`FontOption.category`, with `FONT_CATEGORY_LABELS` supplying the group headings. **Do not hardcode
+the list or the group names** — the engine owns both, and the key order of `FONT_CATEGORY_LABELS`
+is the display order:
 
-- **System** — System sans, System serif, System mono
-- **Sans** — Roboto, Inter, Figtree, DM Sans, Nunito Sans, Manrope, Outfit, Rubik
-- **Serif** — Source Serif 4, Lora, Merriweather, Bitter
-- **Display serif** — Fraunces, Playfair Display
-- **Mono** — JetBrains Mono, IBM Plex Mono
+| Group heading | Items (`FONTS`, in array order) |
+|---|---|
+| **Sans-serif** | Roboto, Inter, Figtree, DM Sans, Nunito Sans, Manrope, Outfit, Rubik |
+| **Serif** | Source Serif 4, Lora, Merriweather, Bitter |
+| **Display serif** | Fraunces, Playfair Display |
+| **Monospace** | JetBrains Mono, IBM Plex Mono |
+| **System** | System sans, System serif, System mono |
 
-**Each `SelectItem` MUST be rendered in its own typeface** at ~15px. That is the entire preview
-for this knob and it is worth loading all sixteen webfonts into the builder to get. Load them
-from Google Fonts at weights 400/500/700 with `display=swap`, in the builder's own `index.html`.
-This is builder-side only and has nothing to do with the exported theme — the export ships its
-own `extra_module_url` snippet (§1.4).
+19 items. Note **System is last, not first** — an earlier draft of this spec had it first and the
+group headings shortened ("Sans", "Mono"); the engine's order and wording win. Every `SelectItem`
+and `SelectLabel` MUST sit inside a `SelectGroup`, never directly in `SelectContent` (shadcn
+composition rule).
+
+**Each `SelectItem` MUST be rendered in its own typeface** at ~15px. That is the entire preview for
+this knob and it is worth loading the sixteen webfonts into the builder to get. The set to load is
+exactly `FONTS.filter(f => f.needsWebfont)`; load them from Google Fonts at 400/500/700 with
+`display=swap` in the builder's own `index.html`. Builder-side only, unrelated to the exported
+theme — that ships its own `extra_module_url` snippet driven by `theme.webfonts` (§1.4).
 
 Each knob carries one line of helper text, because "longform" means nothing to a HA user:
 
@@ -393,20 +419,22 @@ Each knob carries one line of helper text, because "longform" means nothing to a
 
 **2 · Brand & status colors** — six popover pickers (§2.2), in this order:
 
-| Label | Writes | Default |
-|---|---|---|
-| `Primary color` | `--ha-color-primary-40` | `#009ac7` |
-| `Accent color` | `--accent-color` | `#ff9800` |
-| `Error color` | `--ha-color-red-50` | `#dc3146` |
-| `Warning color` | `--ha-color-orange-70` | `#ff9342` |
-| `Success color` | `--ha-color-green-60` | `#00ac49` |
-| `Info color` | `--info-color` | `#039be5` |
+| Label | Config field | Seeds | Default |
+|---|---|---|---|
+| `Primary color` | `colors.primary` | `--ha-color-primary-40` | `#009ac7` |
+| `Accent color` | `colors.accent` | `--accent-color` (standalone) | `#ff9800` |
+| `Error color` | `colors.error` | `--ha-color-red-50` | `#dc3146` |
+| `Warning color` | `colors.warning` | `--ha-color-orange-70` | `#ff9342` |
+| `Success color` | `colors.success` | `--ha-color-green-60` | `#00ac49` |
+| `Info color` | `colors.info` | `--info-color` (standalone) | `#039be5` |
 
 Group helper text: *"Each of these seeds a full ramp. You pick one shade; the rest are generated."*
+True for primary/error/warning/success; accent and info are standalone values with no ramp.
 
 ---
 
 **3 · Base tone** — the neutral ramp preset picker. `Label: "Base tone"`.
+Config field `neutralRamp: NeutralRampId`, default `"ha"`. Options are `NEUTRAL_RAMPS` (§3.3).
 
 Group helper text: *"Every background, border and text colour comes from this ramp."*
 
@@ -414,16 +442,25 @@ Group helper text: *"Every background, border and text colour comes from this ra
 
 **4 · Surfaces** — the three constrained knobs (§2.5), in this order:
 
-| Label | Control |
-|---|---|
-| `Card background` | 4-swatch row |
-| `Primary background` | 4-swatch row |
-| `Border color` | 11-segment ramp strip |
+| Label | Config field | Control | Default |
+|---|---|---|---|
+| `Card background` | `cardBackground: SurfaceChoice` | 4-swatch row | `"white"` |
+| `Primary background` | `primaryBackground: SurfaceChoice` | 4-swatch row | `"neutral-95"` |
+| `Border color` | `borderColor: NeutralSlotId` | 11-segment ramp strip | **`"neutral-05"`** |
+
+`SurfaceChoice` is exactly `"white" | "neutral-95" | "neutral-90" | "neutral-80"`; `NeutralSlotId`
+is `"neutral-05"` … `"neutral-95"` (11 values). Both come from `src/engine/types.ts` — the control
+options are the union members, not a hand-written list.
+
+The border default is the **darkest** slot, not a light one: `--divider-color` is `neutral-05` at
+`1f` alpha, which is how `template.css`'s `#0000001f` gets its tint from the ramp. An earlier draft
+of this spec and the wireframe both had it defaulting to `neutral-80`; wrong.
 
 ---
 
 **5 · Home Assistant colors** — the extended palette preset picker.
 `Label: "Home Assistant colors"` (verbatim from `template.css`; see **Open question O-2**).
+Config field `palette: ExtendedPaletteId`, default `"ha"`. Options are `EXTENDED_PALETTES` (§3.3).
 
 Group helper text: *"These colour entity icons and badges — a light is amber, a lock is red."*
 
@@ -460,9 +497,22 @@ step boundaries, is the comparison — the warm cast of Stone against the blue c
 visible at a glance in a way no name and no single swatch can convey. The extended palette picker
 is the same component with eighteen segments per row and eight rows.
 
+**Both lists are rendered from engine data, in engine array order, using engine labels.** Do not
+hardcode names or reorder for aesthetics:
+
+| Picker | Source | Order (ids) |
+|---|---|---|
+| Base tone | `NEUTRAL_RAMPS` → `.ramp`, 11 slots via `rampEntries` | `ha`, `rounded`, `slate`, `gray`, `zinc`, `stone`, `mauve`, `olive`, `mist`, `taupe` |
+| Home Assistant colors | `EXTENDED_PALETTES` → `.colors`, keyed by `PALETTE_COLOR_NAMES` | `ha`, `tailwind-v3`, `tailwind-v4`, `material-accent`, `ant-design`, `chakra-ui`, `bulma`, `rounded` |
+
+Row labels are `preset.label` verbatim — which for the eight Tailwind-derived ramps includes the
+suffix, e.g. **"Stone (Tailwind)"**, not "Stone". Ramp swatch order is `rampEntries()`: slots
+5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95 — dark to light, no black or white endpoints. Palette
+swatch order is `PALETTE_COLOR_NAMES`.
+
 Implementation: `RadioGroup` / `RadioGroupItem` with the visual indicator suppressed and the strip
 rendered as the `Label` content. Selected row: 2px ring in the builder's accent + a filled radio
-dot. Full keyboard support comes free from Radix (`↑`/`↓` moves and selects).
+dot. Full keyboard support comes free from Base UI (`↑`/`↓` moves and selects).
 
 **Plus a "Compare all" escape hatch.** A text button under each list opens a `Dialog` at ~1100px
 (with a real `DialogTitle` — required, `sr-only` if you do not want it visible)
@@ -543,8 +593,15 @@ on it in `--text-primary-color`. The single most important derived value in this
 "is text on the primary colour legible", and rendering it makes the answer visible instead of
 reported. Hex sits below the chip in muted mono.
 
-A small warning glyph appears on any chip whose label fails 4.5:1 contrast, with a `Tooltip`
-naming the ratio. Non-blocking (§5.3).
+A small warning glyph appears on any chip whose label fails **4.5:1** contrast, with a `Tooltip`
+naming the ratio. Compute it with the engine's own `contrastRatio` — do not write your own.
+Non-blocking (§5.3).
+
+**Two thresholds, do not conflate them.** The engine picks *which* text colour goes on a brand
+colour with `contrastingText()`, whose threshold is **6**, because that is what HA does
+(`derive.ts` / engine README; the analysis doc's §7.5 says 4.5 and is wrong). Our *warning* to the
+user is a separate thing and uses WCAG AA's **4.5**: it fires when even the engine's best choice is
+still hard to read. So 6 selects, 4.5 warns, and a chip can pass selection and still warn.
 
 *Alternative considered:* keeping the artifact's numeric "vs list row: 3.2" contrast readout.
 Rejected — a ratio is a number a HA user has no calibration for; showing them the illegible text
@@ -621,15 +678,24 @@ Moved to the export `Sheet` (§1.4). See **Open question O-4**.
 
 ### 5.1 First load
 
-**There is no empty state.** The page loads with the complete Home Assistant default theme —
-every knob populated, every preview section rendered, the Export button enabled. A user who
-changes nothing and exports gets a valid theme identical to HA's default. (M4 acceptance
-criterion: defaults reproduce the current HA default theme exactly.)
+**There is no empty state.** The page loads `derive()` with no arguments — i.e. `DEFAULT_CONFIG` —
+with every knob populated, every preview section rendered, and the Export button enabled.
+
+That default is **Home Assistant Refined**, *not* the theme HA ships today. PLAN §3 decision 9
+(✅ 2026-08-11) settled this: `template.css` is a redesign, ~40 variables per mode differ from
+stock, and the product models only the refined theme. So the UI must **never** call the load state
+"the Home Assistant default" — it is the starting point, and stock HA is an M7 starter preset.
+
+Consequences for copy, all of them MUST:
+
+- The reset button reads **"Reset to defaults"**, not "Reset to Home Assistant defaults".
+- Nothing in the UI claims the untouched export matches a stock HA install, because it does not.
+- The theme name field starts at `DEFAULT_CONFIG.name` = **`My Theme`** (§1.4).
 
 The only first-load affordance is one line under the app title:
 *"Turn the knobs on the left. Everything updates live, in light and dark at once."*
-It is not dismissible and not a modal. **Reset to Home Assistant defaults** is disabled until at
-least one knob differs from its default.
+It is not dismissible and not a modal. **Reset to defaults** is disabled until at least one knob
+differs from `DEFAULT_CONFIG`.
 
 ### 5.2 No loading state
 
@@ -663,7 +729,7 @@ not destructive. Never a toast; toasts are for things that already happened.
   predictable but arguably surprising — **Open question O-3**.
 - **Changing the extended palette** re-renders the palette swatch group in open popovers and the
   §4.5 section. It does not touch any other knob.
-- **Reset to Home Assistant defaults** shows an **`AlertDialog`** — not a `Dialog`; it is a
+- **Reset to defaults** shows an **`AlertDialog`** — not a `Dialog`; it is a
   destructive confirmation — and clears the Recent list.
 
 ---
@@ -675,10 +741,20 @@ not destructive. Never a toast; toasts are for things that already happened.
 1. Build the two-column grid and the sticky column header first; every section drops into it.
    Sections that render once span both columns (`col-span-2`) and carry a `Both modes` `Badge`.
 2. **Scoped variables only.** Set the generated CSS custom properties with
-   `element.style.setProperty('--x', v)` on the light panel container and the dark panel container.
+   **`toCssProperties(theme, mode)`** on the light panel container and the dark panel container.
+   It already returns `--`-prefixed keys and already merges `common` with that mode's overrides,
+   so you never touch `theme.light` / `theme.dark` yourself (those are *disjoint* partial maps —
+   `theme.light` alone is missing every mode-independent variable). Use `modeVars` if you need the
+   same map with bare keys.
+
+   ```ts
+   for (const [prop, value] of Object.entries(toCssProperties(theme, "light"))) {
+     lightPanelEl.style.setProperty(prop, value)
+   }
+   ```
+
    **Never on `:root` or `document.documentElement`** — the builder's own shadcn/Tailwind theme
-   lives there and must not be touched (analysis §7.7, PLAN §3.4). Two containers, two variable
-   sets, one from `engine.derive().light` and one from `.dark`.
+   lives there and must not be touched (analysis §7.7, CLAUDE.md).
 3. Preview components style themselves **exclusively** with `var(--ha-*)` / legacy theme vars.
    No Tailwind colour utilities inside a preview panel — `bg-white`, `text-neutral-500`,
    `border-gray-200` are all bugs. Layout utilities (`flex`, `gap-4`, `grid`) are fine.
@@ -692,9 +768,21 @@ not destructive. Never a toast; toasts are for things that already happened.
 7. Everything in the preview panels must survive the user setting `--divider-color` to fully
    transparent or `--primary-background-color` to white — panel separation must not depend on a
    theme variable alone. Give each panel a fallback outline in the *builder's* border colour.
+8. The **Neutral ramp** section renders `theme.ramps.neutral` via `rampEntries()`, not the raw
+   preset — with a non-default base tone they are the same, but going through the derived theme is
+   what keeps the section honest if that ever changes. The **Home Assistant colors** section reads
+   the palette values out of `modeVars(theme, "light")` under the `{name}-color` keys, iterating
+   `PALETTE_COLOR_NAMES` for order.
 
 ### 6.2 For M4 — knob sidebar
 
+0. **The store shape is `ThemeConfig`, verbatim.** Do not invent a parallel UI state shape — every
+   knob writes one field of the engine's own config, the whole thing is JSON-serialisable, and
+   `resolveConfig()` / `DEFAULT_CONFIG` give you the load state and the "is it dirty?" comparison
+   for free. Field names and option unions are in §3.2 and `src/engine/types.ts`.
+   `derive()` throws `TypeError` on a malformed seed hex and `RangeError` on an unknown font /
+   ramp / palette id — it never silently substitutes, so the hex field must validate before it
+   commits (§2.4) and preset ids must come from the preset arrays, never from a string literal.
 1. Fifteen knobs, five groups, §3.2. Labels verbatim from `template.css`.
 2. **Zero `<input type="color">`.** Grep for it before opening the PR.
 3. Three distinct colour controls, not one: popover picker (×6), inline ramp strip (×1),
@@ -704,18 +792,29 @@ not destructive. Never a toast; toasts are for things that already happened.
    tone in the sidebar behind it, and watching the strip change.
 5. Hex commits on Enter/blur, not per keystroke (§2.4).
 6. The border colour value is `${rampHex}1f` — and its strip renders at that alpha (§2.5).
-7. Font `SelectItem`s render in their own typeface; load all sixteen webfonts in the builder's
-   `index.html` (§3.2).
+7. Font `SelectItem`s render in their own typeface; the list, its grouping and its order all come
+   from `FONTS` + `FONT_CATEGORY_LABELS`, never a hardcoded array (§3.2). Load
+   `FONTS.filter(f => f.needsWebfont)` in the builder's `index.html`.
 8. Roving tabindex on every swatch group. This is the only non-trivial a11y work in M4 and it is
-   an acceptance criterion. Radix's `RadioGroup` gives it for free — prefer it over hand-rolling.
+   an acceptance criterion. Base UI's `RadioGroup` gives it for free — prefer it over hand-rolling.
 9. Knob changes should feel instant. Debounce only the saturation-square drag (to ~16ms /
    `requestAnimationFrame`); everything else is discrete.
 
 ### 6.3 shadcn components expected
 
+**This is a Base UI project, not Radix.** `components.json` pins `"style": "base-nova"`, the
+components import from `@base-ui/react/*`, and `radix-ui` is no longer a dependency. Consequences:
+composition uses Base UI's `render` prop, **not** Radix's `asChild`; `onOpenChange(open, details)`
+with `details.cancel()` replaces `onInteractOutside`; and toasts come from `toast`, not Sonner.
+Read the `shadcn` skill before writing UI.
+
+**Install via the CLI only** — `pnpm dlx shadcn@latest add <name>`. Never hand-write or hand-port a
+component (CLAUDE.md). Editing `src/components/ui/` afterwards is fine, but say so in the PR.
+
 Already in the repo: `button`, `card`.
 
-To add (all confirmed present in the shadcn registry on 2026-08-09 — §6.4):
+To add (every one confirmed to return 200 from
+`https://ui.shadcn.com/r/styles/base-nova/<name>.json` on 2026-08-11 — §6.4):
 
 | Component | Used for |
 |---|---|
@@ -734,13 +833,10 @@ To add (all confirmed present in the shadcn registry on 2026-08-09 — §6.4):
 | `scroll-area` | Sidebar, YAML block |
 | `alert` | Contrast warnings, install instructions (`AlertTitle` + `AlertDescription`) |
 | `badge` | `Light` / `Dark` / `Both modes` tags (never a hand-styled `<span>`) |
-| `sonner` | "Copied to clipboard" |
+| `toast` | "Copied to clipboard" — the Base UI toast. **Not `sonner`**, which is the Radix/React-Aria choice; it is still in the registry, so it is easy to install the wrong one. |
 
-**`sonner` gotcha:** the registry's `ui/sonner.tsx` declares a `next-themes` dependency and calls
-`useTheme()` from it. This is a Vite app, not Next. Delete the `next-themes` import and hardcode
-`theme="light"` (or read the builder's own theme) rather than installing `next-themes`.
-
-Third-party: **`react-colorful`** (PLAN §3.7). No other UI dependency.
+Third-party to add: **`react-colorful`** (PLAN §3.7), not currently a dependency.
+`pnpm add react-colorful`. No other UI dependency.
 
 Icons: `lucide-react`, already installed. Verified export names in the installed version —
 `CheckIcon`, `TriangleAlertIcon`, `CopyIcon`, `DownloadIcon`, `RotateCcwIcon`, `ChevronDownIcon`.
@@ -759,20 +855,22 @@ rather than mixing both silently.
 
 ### 6.4 Versions verified
 
-Checked against the npm registry and the upstream sources on **2026-08-09**. Re-verify before
+Re-checked on **2026-08-11**, against the live `ui.shadcn.com` registry (reachable now; it was not
+when this spec was first written), the npm registry, and the installed packages. Re-verify before
 building if significant time has passed — do not take these on trust from this document alone.
 
 | Thing | Verified |
 |---|---|
-| `react-colorful` | **5.8.0**, published 2026-07-13. Peer deps `react >=16.8.0` — React 19 is fine. Exports whole pickers only (`HexColorPicker`, `HexColorInput`, `RgbColorPicker`, …); **no** saturation/hue sub-exports. Arrow keys move in 5% steps; interactive areas are `tabIndex=0` `role="slider"` with `aria-valuetext`; `aria-label` is hardcoded `"Color"`. `validHex` accepts 3- and 6-digit. |
-| `radix-ui` (unified) | **1.6.7**, already a dependency. Peers include `^19.0` — fine. |
-| `lucide-react` | **1.31.0**, already a dependency. Both `TriangleAlert` and `TriangleAlertIcon` are exported; same dual naming for the rest. |
-| `sonner` | **2.0.8**. |
-| shadcn registry | All fifteen components listed in §6.3 present in the current registry index. `Field` exposes `Field`, `FieldContent`, `FieldDescription`, `FieldError`, `FieldGroup`, `FieldLabel`, `FieldLegend`, `FieldSeparator`, `FieldSet`, `FieldTitle`. `RadioGroup` exposes `RadioGroup`, `RadioGroupItem`. |
+| `@base-ui/react` | **1.7.0**, installed. `radix-ui` has been removed — every Radix reference in the first draft of this spec was wrong. `PopoverRootChangeEventDetails` carries `reason` (incl. `"outsidePress"`), `event` and `cancel()`, which is what §2.3's refinement uses. |
+| shadcn style | `components.json` → `"style": "base-nova"`. All 16 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
+| `react-colorful` | **5.8.0**, published 2026-07-13, **not yet a dependency**. Peer deps `react >=16.8.0` — React 19 is fine. Exports whole pickers only (`HexColorPicker`, `HexColorInput`, …); **no** saturation/hue sub-exports. Arrow keys move in 5% steps; interactive areas are `tabIndex=0` `role="slider"` with `aria-valuetext`; `aria-label` is hardcoded `"Color"`. `validHex` accepts 3- and 6-digit. |
+| `lucide-react` | **1.31.0**, installed. Both `TriangleAlert` and `TriangleAlertIcon` are exported; same dual naming for the rest. |
+| `culori` | **4.0.2**, installed — the engine's only dependency. The UI has no reason to import it directly; the colour helpers it needs (`contrastRatio`, `normalizeHex`, `isHex`, `withAlpha`, …) are re-exported from `@/engine`. |
+| Engine facts | `DEFAULT_CONFIG` read from `src/engine/derive.ts`; `FONTS` / `FONT_CATEGORY_LABELS` from `presets/fonts.ts`; `NEUTRAL_RAMPS`, `EXTENDED_PALETTES`, `PALETTE_COLOR_NAMES` from `presets/`. Every default, id, label and ordering in §3.2/§3.3 was read out of the source, not carried over from the pre-engine draft. |
 
-`ui.shadcn.com`, `unpkg.com` and `cdn.jsdelivr.net` are blocked by this environment's egress
-policy. The npm registry and `raw.githubusercontent.com` are reachable, and there is a local
-shadcn skill at `.claude/skills/shadcn/` with the composition, icon and styling rules — use those.
+Egress this session: `ui.shadcn.com`, `registry.npmjs.org` and `raw.githubusercontent.com` all
+reachable. The local shadcn skill at `.claude/skills/shadcn/` has the composition, icon and styling
+rules, including the Base-UI-vs-Radix differences.
 
 ---
 
@@ -786,7 +884,8 @@ shadcn skill at `.claude/skills/shadcn/` with the composition, icon and styling 
 | **O-4** | I cut the always-visible "Generated values" YAML section in favour of an export sheet. Do you want the live YAML back as a permanent panel? | **No** — one home for export. If you want the trust signal, a small "12 variables changed" counter on the Export button is cheaper. |
 | **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Agree? | **Yes** — it is the answer to the question the user actually has. |
 | **O-6** | Font shortlist sign-off (PLAN §3, already ✅ 2026-08-09): 8 sans / 4 serif / 2 display serif / 2 mono / 3 system = 19 items in one grouped list, shared by all four font knobs. Confirm 19 items in a single dropdown is acceptable (it is ~500px tall, scrolled). | **Yes**, with items rendered in their own typeface. If it feels long, the display serifs are the first to go. |
-| **O-7** | Recent colours are session-only (lost on reload). Persist to `localStorage`? | **No** in v1 — PLAN §3.9 puts shareable/persisted config in M7 backlog; adding one localStorage key here invites the rest. |
+| **O-7** | Recent colours are session-only (lost on reload). Persist to `localStorage`? | **No** in v1 — PLAN §3 decision 10 puts shareable/persisted config in the M7 backlog; adding one localStorage key here invites the rest. |
+| **O-8** *(new)* | The ramp picker rows are labelled from `preset.label`, so eight of the ten read **"Stone (Tailwind)"**, "Zinc (Tailwind)" and so on. In a sidebar 300px wide that suffix eats a third of the row and repeats eight times, and the user does not care where the ramp came from. Strip it in the UI, or change the engine labels? | **Strip it in the UI** — show "Stone", keep the provenance in the compare-all dialog. But the engine owns the label and its API is frozen, so this is your call, not mine. Doing nothing is also fine. |
 
 ---
 
@@ -804,3 +903,31 @@ shadcn skill at `.claude/skills/shadcn/` with the composition, icon and styling 
 | Export | Section at the bottom | Sheet from the app bar |
 | Font preview | None | Type specimen in "Text & type" + fonts rendered in the dropdown |
 | Ramp/palette choice | A `<select>` of names | Ten/eight stacked strips + a compare-all table |
+
+---
+
+## 9. Revalidation log — 2026-08-11
+
+This spec was drafted in parallel with M1, before `src/engine/` existed and while the scaffold was
+still Radix. Both landed. What that invalidated, and what changed:
+
+| Was | Now | Where |
+|---|---|---|
+| Radix primitives, `onInteractOutside`, `asChild` | **Base UI** (`@base-ui/react` 1.7.0), `onOpenChange(open, details)` + `details.cancel()`, `render` | §2.3, §2.4, §3.3, §6.2, §6.3 |
+| `sonner` for toasts (+ a `next-themes` workaround) | **`toast`** — the Base UI one. The workaround was for a component we no longer use. | §1.4, §6.3 |
+| Theme name `my_theme`, slugified to `^[a-z][a-z0-9_]*$` | **`My Theme`** (`DEFAULT_CONFIG.name`), no slug rule — `toYaml` does not slugify and HA accepts spaces | §1.4 |
+| Font groups **System first**, headings "Sans"/"Mono" | Engine order — **System last** — and `FONT_CATEGORY_LABELS` wording: "Sans-serif", "Monospace" | §3.2 |
+| Ramp order `ha, gray, slate, …`, labels "Stone" | `NEUTRAL_RAMPS` order `ha, rounded, slate, gray, …`, labels "Stone (Tailwind)" | §3.3, O-8 |
+| Palette order with Bulma 4th | `EXTENDED_PALETTES` order — Bulma is 7th | §3.3 |
+| Border colour default unstated (wireframe used `neutral-80`) | **`neutral-05`**, the darkest slot — that is where `#0000001f` comes from | §3.2 |
+| "loads with the complete Home Assistant default theme" | **Home Assistant Refined**, PLAN §3 decision 9. Reset button reworded; no UI claims parity with stock HA. | §5.1 |
+| Contrast "4.5" used ambiguously | **6 selects** (`contrastingText`, HA's rule), **4.5 warns** (WCAG AA). Use the engine's `contrastRatio`. | §4.3, §5.3 |
+| Data flow described loosely | `derive()` / `toCssProperties()` / `modeVars()` named, plus the trap that `theme.light` is a *partial* map | §6.1 |
+| Store shape unstated | The store **is** `ThemeConfig`; `derive()` throws rather than substituting | §6.2 |
+
+The wireframe's inlined preset data is now diffed against the engine cell by cell — 10 ramps × 11
+slots, 8 palettes × 18 hues, hue order, 5 font groups and their membership, 6 brand defaults — and
+matches exactly.
+
+Unchanged and still believed right: the whole of §1 (layout), §2.1–2.2 (which knob gets which
+control, popover anatomy), §3.1 (five always-open groups), §4 (the content audit), and O-1…O-7.

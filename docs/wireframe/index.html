@@ -265,7 +265,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 <div class="app">
 
   <div class="wf-banner">
-    <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the theme engine</div>
+    <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
     <div>Try: a colour row · Base tone · Compare all · Export theme</div>
   </div>
 
@@ -274,7 +274,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
     <div class="brand">HA Theme Builder<small>Turn the knobs on the left. Everything updates live, in light and dark at once.</small></div>
     <div class="spacer"></div>
     <span class="tag">§1.1</span>
-    <button class="btn" disabled>Reset to Home Assistant defaults</button>
+    <button class="btn" disabled>Reset to defaults</button>
     <button class="btn primary" id="btnExport">Export theme</button>
   </div>
 
@@ -530,7 +530,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
   <h3>Export theme <span class="tag">§1.4</span></h3>
   <div class="field">
     <label for="themeName">Theme name</label>
-    <input id="themeName" value="my_theme" spellcheck="false">
+    <input id="themeName" value="My Theme" spellcheck="false">
   </div>
   <div class="tabs" id="expTabs">
     <button aria-selected="true" data-tab="yaml">YAML</button>
@@ -541,7 +541,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
       <button class="btn">Copy</button>
       <button class="btn">Download themes.yaml</button>
     </div>
-    <div class="box" style="height:340px">generated YAML<br>frontend: &rarr; themes: &rarr; my_theme: &rarr; modes: {light, dark}</div>
+    <div class="box" style="height:340px">generated YAML — engine toYaml()<br>My Theme: &rarr; modes: {light, dark}</div>
   </div>
   <div id="tab-install" style="display:none">
     <div class="box" style="height:150px;margin-bottom:12px">1. Save as themes.yaml next to configuration.yaml<br>2. Add frontend: themes: !include themes.yaml<br>3. Restart, then pick the theme in your profile</div>
@@ -556,17 +556,18 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
 const RAMP_STEPS = ["05","10","20","30","40","50","60","70","80","90","95"];
 
+/* order + labels mirror src/engine/presets/neutral-ramps.ts (NEUTRAL_RAMPS) */
 const RAMPS = [
-  ["Home Assistant", ["#141414","#202020","#363636","#4a4a4a","#5e5e5e","#7a7a7a","#989898","#b1b1b1","#cccccc","#e6e6e6","#f3f3f3"]],
-  ["Gray",           ["#0D1421","#172030","#2C3747","#404B5B","#555F6F","#737A8A","#9199A5","#ABB2BD","#C7CDD5","#E4E6EB","#F2F3F6"]],
-  ["Slate",          ["#0C1325","#152034","#29374C","#3B4B62","#4F5F77","#6B7B93","#8A9AAF","#A4B3C6","#C1CEDE","#E0E7F0","#EFF4F9"]],
-  ["Zinc",           ["#141416","#202023","#35353B","#494952","#5D5D67","#797983","#9797A0","#B0B0B8","#CBCBD2","#E6E6E8","#F3F3F4"]],
-  ["Stone",          ["#161412","#231F1D","#3A3532","#4E4944","#635D57","#7F7974","#9D9792","#B5B0AC","#D0CBC8","#E8E6E4","#F4F3F2"]],
-  ["Mauve",          ["#171218","#251D26","#3D323E","#524554","#665968","#827583","#9F94A0","#B7ADB8","#D1C9D1","#E8E5E8","#F4F3F4"]],
-  ["Olive",          ["#141410","#212119","#37372C","#4B4B3D","#5F5F4E","#7B7B6A","#99998A","#B2B2A4","#CDCDC2","#E7E7E0","#F3F3EF"]],
-  ["Mist",           ["#111516","#1B2123","#2F383A","#414C4F","#536164","#6F7D80","#8E9B9E","#A9B3B6","#C6CED0","#E3E7E8","#F1F4F4"]],
-  ["Taupe",          ["#171312","#251F1C","#3D3431","#534744","#675B57","#837772","#A19591","#B9AFAB","#D2CAC8","#E9E5E4","#F5F2F2"]],
-  ["Rounded Theme",  ["#121418","#1D2029","#313642","#454A57","#595E6B","#767A84","#9498A3","#ACB1BE","#C7CCD8","#E2E6EF","#F1F3F9"]]
+  ["Home Assistant",   ["#141414","#202020","#363636","#4a4a4a","#5e5e5e","#7a7a7a","#989898","#b1b1b1","#cccccc","#e6e6e6","#f3f3f3"]],
+  ["Rounded Theme",    ["#121418","#1D2029","#313642","#454A57","#595E6B","#767A84","#9498A3","#ACB1BE","#C7CCD8","#E2E6EF","#F1F3F9"]],
+  ["Slate (Tailwind)", ["#0C1325","#152034","#29374C","#3B4B62","#4F5F77","#6B7B93","#8A9AAF","#A4B3C6","#C1CEDE","#E0E7F0","#EFF4F9"]],
+  ["Gray (Tailwind)",  ["#0D1421","#172030","#2C3747","#404B5B","#555F6F","#737A8A","#9199A5","#ABB2BD","#C7CDD5","#E4E6EB","#F2F3F6"]],
+  ["Zinc (Tailwind)",  ["#141416","#202023","#35353B","#494952","#5D5D67","#797983","#9797A0","#B0B0B8","#CBCBD2","#E6E6E8","#F3F3F4"]],
+  ["Stone (Tailwind)", ["#161412","#231F1D","#3A3532","#4E4944","#635D57","#7F7974","#9D9792","#B5B0AC","#D0CBC8","#E8E6E4","#F4F3F2"]],
+  ["Mauve (Tailwind)", ["#171218","#251D26","#3D323E","#524554","#665968","#827583","#9F94A0","#B7ADB8","#D1C9D1","#E8E5E8","#F4F3F4"]],
+  ["Olive (Tailwind)", ["#141410","#212119","#37372C","#4B4B3D","#5F5F4E","#7B7B6A","#99998A","#B2B2A4","#CDCDC2","#E7E7E0","#F3F3EF"]],
+  ["Mist (Tailwind)",  ["#111516","#1B2123","#2F383A","#414C4F","#536164","#6F7D80","#8E9B9E","#A9B3B6","#C6CED0","#E3E7E8","#F1F4F4"]],
+  ["Taupe (Tailwind)", ["#171312","#251F1C","#3D3431","#534744","#675B57","#837772","#A19591","#B9AFAB","#D2CAC8","#E9E5E4","#F5F2F2"]]
 ];
 
 const HUES = ["red","pink","purple","deep-purple","indigo","blue","light-blue","cyan","teal",
@@ -593,16 +594,18 @@ const PAL_ROWS = [
   ["#795548","#78716c","#79716b","#694e44","#795548","#795346","#765448","#877169"],
   ["#607d8b","#64748b","#62748e","#5d7682","#607d8b","#5d7682","#718096","#80919a"]
 ];
-const PAL_NAMES  = ["Home Assistant","Tailwind v3","Tailwind v4","Bulma","Material Accent","Ant Design","Chakra UI","Rounded Theme"];
-const PAL_SRCIDX = [0,1,2,3,4,5,6,7];
+/* order + labels mirror src/engine/presets/palettes.ts (EXTENDED_PALETTES) */
+const PAL_NAMES  = ["Home Assistant","Tailwind v3","Tailwind v4","Material Accent","Ant Design","Chakra UI","Bulma","Rounded Theme"];
+const PAL_SRCIDX = [0,1,2,4,5,6,3,7];   /* PAL_ROWS column order is the reference table's */
 const PALETTES = PAL_NAMES.map((n,i)=>[n, PAL_ROWS.map(r=>r[PAL_SRCIDX[i]])]);
 
+/* groups + order mirror FONT_CATEGORY_LABELS key order — System is LAST */
 const FONTS = [
-  ["System", ["System sans","System serif","System mono"]],
-  ["Sans", ["Roboto","Inter","Figtree","DM Sans","Nunito Sans","Manrope","Outfit","Rubik"]],
+  ["Sans-serif", ["Roboto","Inter","Figtree","DM Sans","Nunito Sans","Manrope","Outfit","Rubik"]],
   ["Serif", ["Source Serif 4","Lora","Merriweather","Bitter"]],
   ["Display serif", ["Fraunces","Playfair Display"]],
-  ["Mono", ["JetBrains Mono","IBM Plex Mono"]]
+  ["Monospace", ["JetBrains Mono","IBM Plex Mono"]],
+  ["System", ["System sans","System serif","System mono"]]
 ];
 const FONT_DEFAULTS = {"f-body":"Roboto","f-head":"Roboto","f-long":"System sans","f-code":"System mono"};
 
@@ -619,8 +622,10 @@ const BRAND = [
 const state = {
   ramp: 0, pal: 0,
   brand: Object.fromEntries(BRAND.map(b=>[b.id,b.hex])),
+  /* defaults mirror engine DEFAULT_CONFIG: cardBackground "white",
+     primaryBackground "neutral-95", borderColor "neutral-05" */
   cardBg: 3, primaryBg: 2,   /* index into BG4 */
-  border: 8,                  /* ramp step index */
+  border: 0,                  /* ramp step index -> neutral-05 */
   recent: [],
   openKnob: null
 };
