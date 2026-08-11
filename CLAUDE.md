@@ -50,6 +50,11 @@ framework APIs.
   `src/engine/README.md`; changing it costs a PM decision.
 - **Theme variables never go on `:root`** — scoped preview containers only, so
   builder styling can't leak into the preview.
+- **shadcn/ui is unmodified `@latest`.** Base UI primitives, `base-nova` style —
+  the bare `shadcn init --template vite` defaults. Add components with
+  `pnpm dlx shadcn@latest add <name>`; never hand-write one. `pnpm dlx shadcn@latest
+  diff` must stay clean, so don't edit `src/components/ui/` — wrap instead. Base UI
+  composes with `render`, not Radix's `asChild`.
 
 ## Decided — don't relitigate
 
