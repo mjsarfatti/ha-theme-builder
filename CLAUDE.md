@@ -53,11 +53,10 @@ framework APIs.
 - **shadcn/ui comes from the CLI.** Base UI primitives, `base-nova` style — the
   bare `shadcn init --template vite` defaults. Install with `pnpm dlx
   shadcn@latest add <name>`; never hand-write or hand-port a component, which is
-  how M0 shipped a stale theme. Customising `src/components/ui/` is fine and
-  expected — prefer variants, then `className`, then a new `cva` variant, then a
-  wrapper. When you do edit one, say so in the PR and use `add <name> --diff` to
-  merge upstream changes later. Base UI composes with `render`, not Radix's
-  `asChild`.
+  how M0 shipped a stale theme. Editing `src/components/ui/` afterwards is fine —
+  say so in the PR, and use `add <name> --diff` to merge upstream changes later.
+  Read the `shadcn` skill before writing UI; it covers customisation, composition
+  (Base UI uses `render`, not Radix's `asChild`) and the CLI.
 
 ## Decided — don't relitigate
 
