@@ -17,9 +17,9 @@ function expand(value: string): string {
 }
 
 /**
- * Every variable where the engine deliberately departs from the literal value
- * in `template.css`, with the reason. The test asserts each one *is* still a
- * departure, so this list cannot rot into a set of stale excuses.
+ * Every variable where the engine's output differs from the literal value in
+ * `template.css`, with the reason why. A test below asserts each entry still
+ * differs, so an entry that stops applying fails the suite.
  */
 const DEVIATIONS: Record<string, string> = {
   // NOTE: "Derive using --ha-color-neutral-05 as base" — template.css still
