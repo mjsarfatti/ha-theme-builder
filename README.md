@@ -9,9 +9,6 @@ A tool for building and customizing themes for Home Assistant.
 [pnpm](https://pnpm.io/) 11+ (`corepack enable` will pick up the pinned version from
 `packageManager` in `package.json`).
 
-If pnpm warns that it detected a v10 installation layout at `PNPM_HOME`, run
-`pnpm setup` once and restart your shell — v11 expects its bins in `PNPM_HOME/bin`.
-
 ```bash
 pnpm install
 pnpm dev        # start the Vite dev server
