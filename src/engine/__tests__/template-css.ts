@@ -6,9 +6,7 @@
  * makes the "default config reproduces HA's current theme" test a genuine
  * regression net. If the spec file changes, the test notices.
  */
-// Imported through Vite's `?raw` loader rather than node:fs, so the tests need
-// no Node globals and `tsconfig.app.json` can keep its browser-only `types`.
-import templateCssSource from "../../../.references/template.css?raw";
+import { readReference } from "./read-reference.ts";
 
 /**
  * Variables `template.css` references but does not define — they live in HA's
@@ -34,7 +32,7 @@ let cache: Record<string, string> | undefined;
 export function parseTemplateCss(): Record<string, string> {
   if (cache) return cache;
 
-  const source = templateCssSource.replace(/\/\*[\s\S]*?\*\//g, "");
+  const source = readReference("template.css").replace(/\/\*[\s\S]*?\*\//g, "");
   const raw: Record<string, string> = { ...EXTERNALS };
 
   for (const match of source.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/gi)) {

@@ -7,9 +7,6 @@
  */
 import { describe, expect, it } from "vitest";
 
-// Imported through Vite's `?raw` loader — see template-css.ts.
-import neutralRampsPage from "../../../.references/colors/black-white-ramps.html?raw";
-import palettesPage from "../../../.references/colors/ha-color-palettes.html?raw";
 import { isHex, normalizeHex } from "../color.ts";
 import {
   EXTENDED_PALETTES,
@@ -27,6 +24,7 @@ import {
   HA_RED_RAMP,
 } from "../presets/reference-ramps.ts";
 import { RAMP_SLOTS } from "../types.ts";
+import { readReference } from "./read-reference.ts";
 import { parseTemplateCss } from "./template-css.ts";
 
 /** Same two structures `scripts/extract-presets.mjs` reads, parsed independently. */
@@ -48,7 +46,7 @@ function parseTable(html: string) {
 const stripMarker = (v: string) => (v.endsWith("•") ? v.slice(0, -1) : v).toLowerCase();
 
 describe("neutral ramp presets", () => {
-  const { rows, header } = parseTable(neutralRampsPage);
+  const { rows, header } = parseTable(readReference("colors/black-white-ramps.html"));
 
   it("ships every preset the reference page defines, and no extras", () => {
     expect(NEUTRAL_RAMPS.map((r) => r.label)).toEqual(header.map((h) => h.label));
@@ -89,7 +87,7 @@ describe("neutral ramp presets", () => {
 });
 
 describe("extended palette presets", () => {
-  const { rows, header } = parseTable(palettesPage);
+  const { rows, header } = parseTable(readReference("colors/ha-color-palettes.html"));
 
   it("ships every preset the reference page defines, and no extras", () => {
     expect(EXTENDED_PALETTES.map((p) => p.label)).toEqual(header.map((h) => h.label));
