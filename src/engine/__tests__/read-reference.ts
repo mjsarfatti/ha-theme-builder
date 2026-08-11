@@ -1,12 +1,8 @@
 /**
  * Test helper: reads a file out of the read-only `.references/` directory.
  *
- * Vitest runs in Node, so the tests read their source material off disk
- * directly. Going through Vite's `?raw` loader instead would mean fighting two
- * unrelated transforms — `@tailwindcss/vite` claims every `.css` id regardless
- * of the query suffix, and Vitest stubs CSS modules by extension — and a lost
- * fight there returns an empty string, which would quietly turn the regression
- * tests below into assertions about nothing.
+ * Throws on empty content. These files are the fixtures the engine's regression
+ * tests diff against, so an empty read would let those tests pass vacuously.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -18,7 +14,7 @@ const REFERENCES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 export function readReference(relativePath: string): string {
   const source = readFileSync(path.join(REFERENCES, relativePath), "utf8");
   if (source.trim() === "") {
-    throw new Error(`.references/${relativePath} is empty — the tests below would assert nothing`);
+    throw new Error(`.references/${relativePath} is empty — the tests reading it would assert nothing`);
   }
   return source;
 }
