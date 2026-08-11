@@ -70,9 +70,16 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
    custom preset options per decision 6. That's: 4 font families, primary, accent,
    error, warning, success, info, neutral-ramp preset, extended-palette preset,
    border color, card background, primary background.
-9. → **Out of scope for v1:** theme import, per-card themes, energy color knobs
-   (keep HA defaults, per template.css note), state-color editing, custom
-   ramp/palette options, shareable URLs (M7 backlog).
+9. ✅ **The starting point is "Home Assistant Refined", not stock HA** (decided
+   2026-08-11). `template.css` is a *redesign*: ~40 variables per mode differ from
+   what HA ships, because a few values were nudged onto the ramps (`neutral-95`
+   for the page background rather than the off-ramp `#fafafa`; primary-30/20/50
+   for the legacy Material blues; `--ha-color-neutral-05` rather than black as the
+   shadow base). The product models **only** the refined theme — it is the load
+   state and every knob moves away from it.
+10. → **Out of scope for v1:** theme import, per-card themes, energy color knobs
+    (keep HA defaults, per template.css note), state-color editing, custom
+    ramp/palette options, shareable URLs (M7 backlog).
 
 ### Font shortlist (✅ approved 2026-08-09)
 
@@ -160,7 +167,8 @@ light and dark side by side, driven by live engine output.
 All v1 knobs as shadcn controls per the M2 spec, including the custom color picker
 with palette swatches.
 - ✅ Every `KNOB` in `template.css` has its control and label; no native color inputs.
-- ✅ Defaults reproduce the current HA default theme exactly.
+- ✅ Knobs start at `DEFAULT_CONFIG` and the preview shows exactly that —
+  Home Assistant Refined (§3 decision 9). Every control's readout is true on load.
 
 ### M5 — Preview pane: Applied demo
 The artifact's "Applied demo" mock HA card section (and any additional mock HA
@@ -178,7 +186,8 @@ theme-name field, install instructions **including the font-loading snippet**
 ### M7 — Backlog (post-v1)
 Custom neutral ramp (warmth/tint) · custom extended palette (OKLCH L/C) · new
 designed palettes (e.g. Pastel) · shareable config URLs · starter presets · theme
-import · state/energy color groups.
+import · state/energy color groups · **a "Home Assistant (stock)" starter preset**,
+the one place the ~40 off-ramp values from §3 decision 9 make sense.
 
 **Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M5 → M6. Engine API frozen at end of
 M1; UX spec frozen at end of M2; changes after that require a PM decision.
@@ -202,5 +211,9 @@ mock sections with simultaneous light/dark ✅ · presets only, from
 `.references/colors/`, no custom options in v1 ✅ · Hearth/Pastel dropped ✅ · no
 native color pickers, palette-aware picker required ✅ · font shortlist approved ✅ ·
 export ships `extra_module_url` font-loading instructions ✅.
+
+Resolved with the user (2026-08-11), on the M1 review: one starting theme, **Home
+Assistant Refined** = `template.css` ✅ · stock HA is not modelled; a starter preset
+for it goes to M7 ✅ (§3 decision 9).
 
 No open questions. Next decision points arrive with the M2 UX spec review.

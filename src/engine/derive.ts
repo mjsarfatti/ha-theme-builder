@@ -39,12 +39,11 @@ import type {
 } from "./types.ts";
 
 /**
- * The default config: Home Assistant's current theme.
+ * The default config — **Home Assistant Refined**, which is `template.css`.
  *
- * One deliberate departure — `primaryBackground` is `neutral-95` (`#f3f3f3`)
- * where stock HA ships `#fafafa`. `#fafafa` is not on any neutral ramp, and the
- * knob's `NOTE:` restricts the control to "Neutral Ramp 80, 90, 95 + white", so
- * the nearest on-ramp value is used. Everything else matches HA exactly.
+ * Not the theme HA ships today: `template.css` is a redesign that moves stock's
+ * off-ramp values onto the ramps, so `--primary-background-color` is `neutral-95`
+ * rather than `#fafafa`. Around 40 variables per mode differ, all of them small.
  */
 export const DEFAULT_CONFIG: ThemeConfig = {
   name: "My Theme",
@@ -373,7 +372,9 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
   common["light-primary-color"] = primary[50];
 
   // Text *on* the primary/accent colours: HA's own WCAG check, not the alias
-  // `template.css` writes. See README "Deviations".
+  // `template.css` writes. HA's source settles it — `color.globals.ts:10-11`
+  // ships `#ffffff` / `#212121`, and `apply_themes_on_element.ts:91` is the
+  // contrast rule that produces them. See README "Deviations".
   common["text-primary-color"] = contrastingText(primary[KNOB_SLOT.primary]);
   common["text-light-primary-color"] = contrastingText(primary[50]);
   common["accent-color"] = accent;

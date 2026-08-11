@@ -84,6 +84,18 @@ interface ToYamlOptions {
 ### `resolveConfig(partial?): ThemeConfig` · `DEFAULT_CONFIG`
 
 Config plumbing, exported so the UI store can share one notion of "the default".
+`derive()` with no arguments uses it, and that is exactly what the app shows on
+load — see below.
+
+### Home Assistant Refined
+
+`DEFAULT_CONFIG` is **not** the theme HA ships today. It is `template.css`, a
+redesign: around 40 variables per mode differ from stock because a few values
+were nudged onto the ramps — `neutral-95` for the page background instead of the
+off-ramp `#fafafa`, primary-30/20/50 for the legacy Material blues,
+`--ha-color-neutral-05` instead of black as the shadow base.
+
+It is the only theme the product models (PLAN.md §3 decision 9).
 
 ### Colour utilities
 
@@ -206,7 +218,12 @@ on how soft the light choice was. With the defaults this lands on `#202020` over
 The default config reproduces `template.css` exactly except in the places below.
 `derive.test.ts` parses the real `template.css` and asserts both that the
 non-deviating variables match *and* that this list is exhaustive and still
-accurate — it cannot rot into a set of stale excuses.
+accurate: if a change makes one of these match again, the suite fails and the
+entry has to go.
+
+These are deviations from the *spec file*, on top of the ~40 per mode by which
+`template.css` itself already departs from stock HA — see
+[Home Assistant Refined](#home-assistant-refined).
 
 1. **Shadows, inputs and lines are neutral-05-based, not black-based.** Required
    by the `NOTE:` comments ("Derive using `--ha-color-neutral-05` as base in
@@ -222,11 +239,11 @@ accurate — it cannot rot into a set of stale excuses.
    colour" (it backs `--mdc-theme-on-primary`); the aliases look like a
    copy/paste artefact. The contrast rule reproduces both HA defaults exactly.
 
-3. **`primary-background-color` defaults to `#f3f3f3`, not `#fafafa`.** The
+3. **`primary-background-color` derives to `#f3f3f3`, not `#fafafa`.** The
    knob's `NOTE:` restricts the control to "Neutral Ramp 80, 90, 95 + white", and
    `#fafafa` is not on any neutral ramp. `neutral-95` is the nearest on-ramp
-   value. `secondary-background-color` follows at `#e6e6e6`, one unit off HA's
-   `#e5e5e5`.
+   value, and `secondary-background-color` follows at `#e6e6e6`, one unit off
+   stock HA's `#e5e5e5`.
 
 4. **The `rgb-*` values are recomputed from our own colours.** `template.css`'s
    `rgb-*` literals were copied from HA's legacy palette and do not match
