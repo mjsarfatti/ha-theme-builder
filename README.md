@@ -4,8 +4,9 @@ A tool for building and customizing themes for Home Assistant.
 
 ## Development
 
-**Prerequisites:** Node.js 22+ and [pnpm](https://pnpm.io/) 10+ (`corepack enable` will
-pick up the pinned version from `packageManager` in `package.json`).
+**Prerequisites:** Node.js 24+ (the version in `.nvmrc`, which CI reads too) and
+[pnpm](https://pnpm.io/) 11+ (`corepack enable` will pick up the pinned version from
+`packageManager` in `package.json`).
 
 ```bash
 pnpm install
