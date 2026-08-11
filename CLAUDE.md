@@ -1,6 +1,7 @@
 # HA Theme Builder — working rules
 
-Knobs in a sidebar, live preview of tokens and HA cards, paste-ready YAML out.
+A self-contained web app for building Home Assistant themes: a sidebar of knobs, a
+live preview of tokens and HA cards, and paste-ready YAML output.
 
 **Read `docs/PLAN.md` first.** Don't change it without a PM decision.
 
@@ -63,7 +64,7 @@ framework APIs.
 ## Network
 
 Egress allowlist, varies by session — check, don't assume.
-`registry.npmjs.org` and `raw.githubusercontent.com` are reachable;
-`ui.shadcn.com`, `unpkg.com`, `cdn.jsdelivr.net` have been blocked. A 403 on
+`registry.npmjs.org`, `raw.githubusercontent.com` and `ui.shadcn.com` are
+reachable; `unpkg.com` and `cdn.jsdelivr.net` have been blocked. A 403 on
 CONNECT is a policy denial: report the host, never route around it or disable TLS.
 Diagnose with `curl -sS "$HTTPS_PROXY/__agentproxy/status"`.
