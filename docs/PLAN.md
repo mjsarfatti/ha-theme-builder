@@ -4,16 +4,16 @@
 
 ## 1. Product brief
 
-**What:** A self-contained, static web app. A Home Assistant user turns a small
-number of "knobs" (fonts, a handful of seed colors, ramp presets). The app shows a
-live preview of the design tokens and of realistic HA cards. The user then copies or
-downloads a ready-to-paste YAML theme.
+**What:** A self-contained, static web app where a Home Assistant user turns a small
+number of "knobs" (fonts, a handful of seed colors, ramp presets) and instantly sees a
+live preview of design tokens and realistic HA cards — then copies or downloads a
+ready-to-paste YAML theme.
 
-**Why:** HA theming is hostile. It has hundreds of undocumented variables, a
-four-tier token cascade, and derivation rules you must know by heart (rgb companions,
-`text-primary-color` contrast, dark-mode `modes:` blocks). No one shipped a builder
-that works at the *token* level (the new `--ha-color-*` ramps). Existing tools paste
-hex codes into legacy vars.
+**Why:** HA theming is powerful but hostile: hundreds of undocumented variables, a
+four-tier token cascade, derivation rules you have to know by heart (rgb companions,
+`text-primary-color` contrast, dark-mode `modes:` blocks). Nobody has shipped a builder
+that works at the *token* level (the new `--ha-color-*` ramps) rather than pasting hex
+codes into legacy vars.
 
 **For whom:** HA users who want a coherent custom theme without reading frontend source.
 
