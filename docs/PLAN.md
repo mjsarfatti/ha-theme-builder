@@ -24,7 +24,7 @@ the HA UI looks exactly like the preview did — light *and* dark mode.
 
 | Reference | Role — treat as |
 |---|---|
-| `.references/ha_theme_analysis.md` | **Authoritative spec** of the HA theme system: variable taxonomy, cascade, YAML→CSS pipeline, derivation math (Lab brighten/darken, WCAG contrast), gotchas. §7 is a first-pass generator architecture. |
+| `.references/ha_theme_analysis.md` | **The working description** of the HA theme system: variable taxonomy, cascade, YAML→CSS pipeline, derivation math (Lab brighten/darken, WCAG contrast), gotchas. §7 is a first-pass generator architecture. Good for most tasks. HA's own source is the final authority when they conflict. |
 | `.references/template.css` | **The knob spec.** Every var annotated `KNOB` (user-facing control, with label) or `DERIVED` (computed). The inline NOTEs are product requirements. |
 | `.references/colors/ha-color-palettes.html` | **The extended-palette presets, v1-final:** Home Assistant (current), Tailwind v3, Tailwind v4, Bulma, Material Accent, Ant Design, Chakra UI, Rounded Theme. |
 | `.references/colors/black-white-ramps.html` | **The neutral-ramp presets, v1-final:** Home Assistant (current), Gray, Slate, Zinc, Stone, Mauve, Olive, Mist, Taupe (Tailwind-derived), Rounded Theme. |
@@ -40,28 +40,29 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
    (`src/engine/`): `seeds → ramps → derived tokens → YAML`. Fully unit-tested,
    including snapshot tests of YAML output. The UI is a thin shell over it. This is
    the one part where correctness beats speed.
-3. → **Color math in OKLCH** for ramp *generation* (perceptually uniform — the
-   05..95 ramps around each seed color), while reproducing HA's own Lab-based
-   derivations where the analysis doc says HA computes them (`dark-primary-color`,
-   contrast checks) so output matches HA behavior.
-4. ✅ **Preview = the Claude design artifact's mock sections**, rebuilt as React
-   components styled *exclusively* with `--ha-*`/legacy theme vars, rendered inside
-   scoped containers where the generated variables are set (never on `:root` — the
-   builder's own shadcn styling must not leak in, per analysis §7.7). **Light and
-   dark mode are shown at the same time, side by side** — no mode toggle.
-5. → **Both modes generated from day one.** The engine always produces a light +
-   dark pair (`modes:` block); the side-by-side preview makes this visible
-   constantly. Retrofitting dark into the derivation chain later would mean
-   reworking every formula.
+3. → **Color math in OKLCH** for ramp *generation*. OKLCH is perceptually uniform,
+   which suits the 05..95 ramps around each seed color. Where the analysis doc says
+   HA computes a value in Lab (`dark-primary-color`, contrast checks), the engine
+   reproduces that math, so the output matches HA behavior.
+4. ✅ **Preview = the Claude design artifact's mock sections.** Rebuild them as React
+   components. Style them *exclusively* with `--ha-*` and legacy theme vars. Set the
+   generated variables on scoped containers, never on `:root`, so the builder's own
+   shadcn styling cannot leak in (analysis §7.7). **Light and dark mode are shown at
+   the same time, side by side** — no mode toggle.
+5. → **Both modes generated from day one.** The engine always produces a light and
+   dark pair (`modes:` block). The side-by-side preview makes this visible
+   constantly. A later retrofit of dark mode into the derivation chain means that we
+   rework every formula.
 6. ✅ **Presets only, no custom options, in v1.** Neutral ramp and extended palette
    are chosen from the presets in `.references/colors/` — exactly those, nothing
    else. No custom warmth/tint sliders, no custom OKLCH L/C, no from-scratch
-   palettes (Hearth was a typo; Pastel is deferred). Custom options go to the
+   palettes. Hearth was a typo, and Pastel is deferred. Custom options go to the
    backlog (M7).
 7. ✅ **Color picking UX (for primary, accent, error, warning, success, info,
    border, backgrounds):**
    - **Never the browser-native color input.** A custom picker component
-     (e.g. a popover with an `react-colorful`-style area/hue picker + hex field).
+     (for example, a popover with an `react-colorful`-style area and hue picker,
+     plus a hex field).
    - **Palette-aware:** the picker must also offer the swatches from the currently
      selected neutral ramp and extended palette, one tap away, so users can anchor
      seed colors to their chosen system. Exact interaction is a deliverable of the
@@ -71,15 +72,21 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
    error, warning, success, info, neutral-ramp preset, extended-palette preset,
    border color, card background, primary background.
 9. ✅ **The starting point is "Home Assistant Refined", not stock HA** (decided
-   2026-08-11). `template.css` is a *redesign*: ~40 variables per mode differ from
-   what HA ships, because a few values were nudged onto the ramps (`neutral-95`
-   for the page background rather than the off-ramp `#fafafa`; primary-30/20/50
-   for the legacy Material blues; `--ha-color-neutral-05` rather than black as the
-   shadow base). The product models **only** the refined theme — it is the load
-   state and every knob moves away from it.
-10. → **Out of scope for v1:** theme import, per-card themes, energy color knobs
-    (keep HA defaults, per template.css note), state-color editing, custom
-    ramp/palette options, shareable URLs (M7 backlog).
+   2026-08-11). `template.css` is a *redesign*. About 40 variables per mode differ
+   from what HA ships, because a few values moved onto the ramps:
+   - `neutral-95` for the page background, instead of the off-ramp `#fafafa`
+   - primary-30, primary-20 and primary-50 for the legacy Material blues
+   - `--ha-color-neutral-05` instead of black as the shadow base
+
+   The product models **only** the refined theme. It is the load state, and every
+   knob moves away from it.
+10. → **Out of scope for v1:**
+    - Theme import
+    - Per-card themes
+    - Energy color knobs (keep the HA defaults, per the `template.css` note)
+    - State-color editing
+    - Custom ramp and palette options
+    - Shareable URLs (M7 backlog)
 
 ### Font shortlist (✅ approved 2026-08-09)
 
@@ -127,25 +134,25 @@ One milestone = one work package for a coder/design agent: own branch, own PR,
 reviewed against acceptance criteria before dependent work starts.
 
 ### M0 — Scaffold *(small)*
-Vite + shadcn app boots with **pnpm**; lint/typecheck/test/build in CI; auto-deploy
-to GitHub Pages.
-- ✅ `pnpm dev/build/test/lint` all green in CI; live URL serves the default app.
+The Vite and shadcn app boots with **pnpm**. CI runs lint, typecheck, test and
+build. The app deploys to GitHub Pages automatically.
+- ✅ `pnpm dev/build/test/lint` all green in CI. The live URL serves the default app.
 
-### M1 — Theme engine *(the critical one; parallel with M2)*
+### M1 — Theme engine *(the critical one, parallel with M2)*
 `engine/` complete per §4, driven by `template.css` + analysis doc §§4–7.
 - ✅ Every `DERIVED` var in `template.css` computed from its documented source.
-- ✅ Ramp generator: knob shade preserved verbatim at its slot (e.g. primary-40),
-  other shades generated around it.
+- ✅ Ramp generator: the knob shade stays verbatim at its slot (for example,
+  primary-40). The generator builds the other shades around it.
 - ✅ Neutral + extended-palette preset data extracted 1:1 from `.references/colors/`.
 - ✅ YAML output: hex values quoted, rgb companions omitted where HA auto-derives
   them (hex inputs), `modes: {light, dark}` structure, valid per analysis §5.
-- ✅ Unit tests for color math; snapshot test of full YAML for a fixture config.
+- ✅ Unit tests for color math. Snapshot test of full YAML for a fixture config.
 
-### M2 — UX spec *(new; parallel with M1; gates all UI milestones)*
+### M2 — UX spec *(new, parallel with M1, gates all UI milestones)*
 Mostly UX, some UI. Deliverables, reviewed by the user before M3/M4 start:
-- **Layout spec:** knob sidebar + preview pane arrangement; how the side-by-side
-  light/dark presentation works per section (split columns? paired panels?);
-  responsive behavior; where export lives.
+- **Layout spec:** the arrangement of the knob sidebar and the preview pane. How the
+  side-by-side light and dark presentation works per section (split columns? paired
+  panels?). Responsive behavior. Where export lives.
 - **Interaction spec for the color picker** (decision 7): popover anatomy, hex
   entry, palette/ramp swatch tab, recently-used, keyboard behavior.
 - **Knob sidebar IA:** grouping, ordering, and labels (from template.css), preset
@@ -153,20 +160,20 @@ Mostly UX, some UI. Deliverables, reviewed by the user before M3/M4 start:
 - **Preview content audit:** which parts of each artifact section to keep, trim,
   or simplify ("directionally right, too detailed" — decide what stays).
 - **Font shortlist sign-off** (§3 draft) + validation of the font-loading risk.
-- Format: low-fi clickable HTML wireframe + a short written spec — cheap to
-  produce, cheap to throw away. No production code.
-- ✅ User has signed off on the spec; M3/M4 briefs reference it.
+- Format: a low-fi clickable HTML wireframe and a short written spec. Both are cheap
+  to produce and cheap to discard. No production code.
+- ✅ The user approved the spec. The M3 and M4 briefs reference it.
 
 ### M3 — Preview pane: token sections *(after M1 + M2)*
 Surfaces & dividers, Text, Brand & status, Neutral ramp, Extended palette —
 light and dark side by side, driven by live engine output.
-- ✅ Changing any knob visibly updates both modes of every section, no reload.
+- ✅ A change to any knob updates both modes of every section, with no reload.
 - ✅ Matches the M2 spec.
 
-### M4 — Knob sidebar *(after M1 + M2; parallel with M3)*
-All v1 knobs as shadcn controls per the M2 spec, including the custom color picker
+### M4 — Knob sidebar *(after M1 + M2, parallel with M3)*
+All v1 knobs as shadcn controls per the M2 spec, with the custom color picker
 with palette swatches.
-- ✅ Every `KNOB` in `template.css` has its control and label; no native color inputs.
+- ✅ Every `KNOB` in `template.css` has its control and label. No native color inputs.
 - ✅ Knobs start at `DEFAULT_CONFIG` and the preview shows exactly that —
   Home Assistant Refined (§3 decision 9). Every control's readout is true on load.
 
@@ -184,13 +191,19 @@ theme-name field, install instructions **including the font-loading snippet**
   verification by the user — the ultimate acceptance test).
 
 ### M7 — Backlog (post-v1)
-Custom neutral ramp (warmth/tint) · custom extended palette (OKLCH L/C) · new
-designed palettes (e.g. Pastel) · shareable config URLs · starter presets · theme
-import · state/energy color groups · **a "Home Assistant (stock)" starter preset**,
-the one place the ~40 off-ramp values from §3 decision 9 make sense.
+- Custom neutral ramp (warmth and tint)
+- Custom extended palette (OKLCH L and C)
+- New designed palettes, for example Pastel
+- Shareable config URLs
+- Starter presets
+- Theme import
+- State and energy color groups
+- **A "Home Assistant (stock)" starter preset.** This is the one place where the
+  40 off-ramp values from §3 decision 9 make sense.
 
-**Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M5 → M6. Engine API frozen at end of
-M1; UX spec frozen at end of M2; changes after that require a PM decision.
+**Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M5 → M6. The engine API freezes at the
+end of M1. The UX spec freezes at the end of M2. A later change to either one
+requires a PM decision.
 
 ## 6. Ways of working
 
@@ -201,19 +214,27 @@ M1; UX spec frozen at end of M2; changes after that require a PM decision.
 - **Definition of done:** CI green (lint, typecheck, tests, build, all via pnpm) ·
   acceptance criteria demonstrably met (screenshots in the PR for UI work) · no
   scope creep beyond the brief.
-- **Review gate:** PM reviews each PR against acceptance criteria + a code-review
-  pass; user has final say on M2 (spec sign-off) and anything visual (M3–M6).
+- **Review gate:** the PM reviews each PR against the acceptance criteria and does a
+  code-review pass. The user has the final say on M2 (spec approval) and on anything
+  visual (M3–M6).
 
 ## 7. Decision log
 
-Resolved with the user (2026-08-09): GitHub Pages ✅ · pnpm ✅ · preview = artifact
-mock sections with simultaneous light/dark ✅ · presets only, from
-`.references/colors/`, no custom options in v1 ✅ · Hearth/Pastel dropped ✅ · no
-native color pickers, palette-aware picker required ✅ · font shortlist approved ✅ ·
-export ships `extra_module_url` font-loading instructions ✅.
+Resolved with the user on 2026-08-09:
 
-Resolved with the user (2026-08-11), on the M1 review: one starting theme, **Home
-Assistant Refined** = `template.css` ✅ · stock HA is not modelled; a starter preset
-for it goes to M7 ✅ (§3 decision 9).
+- GitHub Pages ✅
+- pnpm ✅
+- Preview = the artifact mock sections, with light and dark at the same time ✅
+- Presets only, from `.references/colors/`. No custom options in v1 ✅
+- Hearth and Pastel dropped ✅
+- No native color pickers. A palette-aware picker is required ✅
+- Font shortlist approved ✅
+- Export ships `extra_module_url` font-loading instructions ✅
+
+Resolved with the user on 2026-08-11, on the M1 review:
+
+- One starting theme, **Home Assistant Refined** = `template.css` ✅
+- The product does not model stock HA. A starter preset for it goes to M7 ✅
+  (§3 decision 9)
 
 No open questions. Next decision points arrive with the M2 UX spec review.
