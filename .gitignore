@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code agent worktrees (transient)
 .claude/worktrees/
+
+# Claude Code local settings (per-machine, not shared)
+.claude/settings.local.json
