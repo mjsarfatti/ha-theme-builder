@@ -5,7 +5,7 @@ live preview of tokens and HA cards, and paste-ready YAML output.
 
 **Read `docs/PLAN.md` first.** Do not change it without a PM decision.
 
-## Verify versions — never assume them
+## Check versions — never assume them
 
 Your training data is out of date. This project failed twice for this reason.
 
