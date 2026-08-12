@@ -98,7 +98,7 @@ select{
   padding:7px 8px;font-size:13px;
 }
 
-/* colour knob trigger row */
+/* color knob trigger row */
 .swatch-row{
   width:100%;display:flex;align-items:center;gap:9px;border:1px solid var(--line);
   border-radius:6px;background:var(--surface);padding:6px 9px;cursor:pointer;text-align:left;
@@ -266,7 +266,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
   <div class="wf-banner">
     <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
-    <div>Try: a colour row · Base tone · Compare all · Export theme</div>
+    <div>Try: a color row · Base tone · Compare all · Export theme</div>
   </div>
 
   <!-- ============ APP BAR ============ -->
@@ -316,7 +316,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
       <section class="group">
         <div class="group-hd">
           <h3>2 · Brand &amp; status colors <span class="tag">§2.2</span></h3>
-          <p>Each of these seeds a full ramp. You pick one shade; the rest are generated.</p>
+          <p>Each of these seeds a full ramp. You pick one shade. The rest are generated.</p>
         </div>
         <div class="group-bd" id="brandKnobs"></div>
       </section>
@@ -325,7 +325,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
       <section class="group">
         <div class="group-hd">
           <h3>3 · Base tone <span class="tag">§3.3</span></h3>
-          <p>Every background, border and text colour comes from this ramp.</p>
+          <p>Every background, border and text color comes from this ramp.</p>
         </div>
         <div class="group-bd">
           <div class="preset" id="rampList" role="radiogroup" aria-label="Base tone"></div>
@@ -351,7 +351,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
           <div class="knob">
             <span class="lbl">Border color</span>
             <div class="strip tall" id="borderStrip" role="radiogroup" aria-label="Border color"></div>
-            <div class="help">Shown at the 12% opacity it is actually used at.</div>
+            <div class="help">Rendered at the 12% opacity that the divider uses.</div>
           </div>
         </div>
       </section>
@@ -360,7 +360,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
       <section class="group">
         <div class="group-hd">
           <h3>5 · Home Assistant colors <span class="tag">§3.3</span></h3>
-          <p>These colour entity icons and badges — a light is amber, a lock is red.</p>
+          <p>These color entity icons and badges — a light is amber, a lock is red.</p>
         </div>
         <div class="group-bd">
           <div class="preset" id="palList" role="radiogroup" aria-label="Home Assistant colors"></div>
@@ -395,7 +395,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
                 <div class="box">Blinds &middot; Open</div>
                 <div class="box">Nest mini &middot; Idle</div>
               </div>
-              <div class="box" style="height:96px;margin-top:10px">second card <span class="tag">new</span><br>entity icons in palette colours &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
+              <div class="box" style="height:96px;margin-top:10px">second card <span class="tag">new</span><br>entity icons in palette colors &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
             </div>
             <div class="panel dk">
               <div class="box dk" style="height:26px;margin-bottom:8px">room header — name · 22.8&deg; · 57%</div>
@@ -406,7 +406,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
                 <div class="box dk">Blinds &middot; Open</div>
                 <div class="box dk">Nest mini &middot; Idle</div>
               </div>
-              <div class="box dk" style="height:96px;margin-top:10px">second card<br>entity icons in palette colours &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
+              <div class="box dk" style="height:96px;margin-top:10px">second card<br>entity icons in palette colors &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
             </div>
           </div>
         </section>
@@ -427,7 +427,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         <section class="sec">
           <div class="sec-hd">
             <h2>Text &amp; type</h2>
-            <p>Three text colours, four typefaces. <span class="tag">§4.2 · type specimen added</span></p>
+            <p>Three text colors, four typefaces. <span class="tag">§4.2 · type specimen added</span></p>
           </div>
           <div class="pair">
             <div class="panel lt">
@@ -447,7 +447,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         <section class="sec">
           <div class="sec-hd">
             <h2>Brand &amp; status</h2>
-            <p>Labels are drawn on the colour, so you can see whether they are legible. <span class="tag">§4.3</span></p>
+            <p>Labels are rendered on the color, so you can see whether they are legible. <span class="tag">§4.3</span></p>
           </div>
           <div class="pair">
             <div class="panel lt"><div class="chips" id="chipsLight"></div></div>
@@ -459,7 +459,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         <section class="sec">
           <div class="sec-hd">
             <h2>Neutral ramp</h2>
-            <p>The backbone. Every background, border and text colour is a step on this ramp. <span class="tag">§4.4</span></p>
+            <p>The backbone. Every background, border and text color is a step on this ramp. <span class="tag">§4.4</span></p>
             <span class="badge">Both modes</span>
           </div>
           <div class="full"><div class="rampgrid" id="rampPreview"></div></div>
@@ -469,7 +469,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         <section class="sec">
           <div class="sec-hd">
             <h2>Home Assistant colors</h2>
-            <p>These colour entity icons and badges — a light is amber, a lock is red. <span class="tag">§4.5 · 19 cards &rarr; 18 swatches</span></p>
+            <p>These color entity icons and badges — a light is amber, a lock is red. <span class="tag">§4.5 · 19 cards &rarr; 18 swatches</span></p>
             <span class="badge">Both modes</span>
           </div>
           <div class="full"><div class="palgrid" id="palPreview"></div></div>
@@ -512,7 +512,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
     <div class="hue"></div>
   </div>
 
-  <div class="warn" id="popWarn">White text on this colour is hard to read. <span style="opacity:.7">(2.1:1 — needs 4.5:1)</span></div>
+  <div class="warn" id="popWarn">White text on this color is hard to read. <span style="opacity:.7">(2.1:1 — needs 4.5:1)</span></div>
 </div>
 
 <!-- ============ SCRIM + DIALOG + SHEET ============ -->
@@ -688,7 +688,7 @@ function buildPresetList(node, data, getSel, setSel){
     const st = el("div","pstrip");
     colors.forEach(c=>{ const s=el("span"); s.style.background=c; st.appendChild(s); });
     it.appendChild(hd); it.appendChild(st);
-    /* stopPropagation so an open colour popover survives a preset change and you can
+    /* stopPropagation so an open color popover survives a preset change and you can
        watch its swatch rows re-render — see UX-SPEC §2.3 */
     it.addEventListener("click",e=>{ e.stopPropagation(); setSel(i); });
     node.appendChild(it);
