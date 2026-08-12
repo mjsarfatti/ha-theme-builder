@@ -24,7 +24,7 @@ the HA UI looks exactly like the preview did — light *and* dark mode.
 
 | Reference | Role — treat as |
 |---|---|
-| `.references/ha_theme_analysis.md` | **Authoritative spec** of the HA theme system: variable taxonomy, cascade, YAML→CSS pipeline, derivation math (Lab brighten/darken, WCAG contrast), gotchas. §7 is a first-pass generator architecture. |
+| `.references/ha_theme_analysis.md` | **The working description** of the HA theme system: variable taxonomy, cascade, YAML→CSS pipeline, derivation math (Lab brighten/darken, WCAG contrast), gotchas. §7 is a first-pass generator architecture. Good for most tasks. HA's own source is the final authority when they conflict. |
 | `.references/template.css` | **The knob spec.** Every var annotated `KNOB` (user-facing control, with label) or `DERIVED` (computed). The inline NOTEs are product requirements. |
 | `.references/colors/ha-color-palettes.html` | **The extended-palette presets, v1-final:** Home Assistant (current), Tailwind v3, Tailwind v4, Bulma, Material Accent, Ant Design, Chakra UI, Rounded Theme. |
 | `.references/colors/black-white-ramps.html` | **The neutral-ramp presets, v1-final:** Home Assistant (current), Gray, Slate, Zinc, Stone, Mauve, Olive, Mist, Taupe (Tailwind-derived), Rounded Theme. |
