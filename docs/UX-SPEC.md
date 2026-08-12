@@ -18,11 +18,11 @@ this document alone.
   pick differently, say so in the PR rather than changing it silently.
 - ***Alternative considered*** = rejected on purpose. Do not silently adopt it.
 
-Every library, component and API named here is **verified on 2026-08-11** against three sources:
+Every library, component and API named here is **checked on 2026-08-11** against three sources:
 the live registry, the upstream sources, and the merged engine. §6.4 lists what was checked.
-Verify it again before you build.
+Check it again before you build.
 
-**Where this spec and `src/engine/` disagree, the engine wins.** Its API is frozen (CLAUDE.md) and
+**Where this spec and `src/engine/` disagree, the engine wins.** Its API is frozen (CLAUDE.md).
 This document was first drafted before the engine existed. Every default, id, label and ordering
 below now comes from the source. If you find another gap, correct the spec. Do not work around
 the engine.
@@ -282,7 +282,7 @@ Base UI closes on outside press by default. Cancel that one case:
 >
 ```
 
-(`reason`, `event` and `cancel()` are all on Base UI's `ChangeEventDetails` — verified, §6.4.)
+(`reason`, `event` and `cancel()` are all on Base UI's `ChangeEventDetails`. Checked, §6.4.)
 
 If this proves fiddly, an acceptable fallback is to let the popover close. The user reopens it
 and sees the new swatches. Do not spend a day on it.
@@ -300,7 +300,7 @@ that swatch gets a 2px ring plus a check glyph, and `aria-checked="true"`.
 That single component renders *both* the saturation/value square and the hue slider. It is not a
 set of primitives that you compose. The package exports no saturation-only or hue-only component. Style
 it by overriding the `.react-colorful*` class names (the package ships its own CSS-in-JS). Size it
-with `.react-colorful { width: 100%; height: 190px }`. Verified details in §6.4.
+with `.react-colorful { width: 100%; height: 190px }`. §6.4 has the checked details.
 
 The library supplies the keyboard support and the accessibility. Each area is `tabIndex=0`, `role="slider"`, moves in 5%
 steps on arrow keys, and carries an `aria-valuetext` (`"Saturation 42%, Brightness 88%"`). **Its
@@ -791,7 +791,7 @@ not destructive. Never a toast. Toasts are for things that already happened.
 3. Three distinct color controls, not one: popover picker (×6), inline ramp strip (×1),
    inline 4-swatch row (×2). §2.1.
 4. The popover's swatch groups read from the *current* ramp and palette preset in the store — they
-   are derived state, not props frozen at mount. To verify, open a popover, change the base
+   are derived state, not props frozen at mount. To check this, open a popover, change the base
    tone in the sidebar behind it, and watching the strip change.
 5. Hex commits on Enter/blur, not per keystroke (§2.4).
 6. The border color value is `${rampHex}1f` — and its strip renders at that alpha (§2.5).
@@ -841,7 +841,7 @@ To add. Every one of them returned 200 from
 Third-party to add: **`react-colorful`** (PLAN §3.7), not currently a dependency.
 `pnpm add react-colorful`. No other UI dependency.
 
-Icons: `lucide-react`, already installed. Verified export names in the installed version —
+Icons: `lucide-react`, already installed. Checked export names in the installed version —
 `CheckIcon`, `TriangleAlertIcon`, `CopyIcon`, `DownloadIcon`, `RotateCcwIcon`, `ChevronDownIcon`.
 (`AlertTriangle` is the old name and still resolves, but prefer `TriangleAlertIcon`.) Icons inside
 a `Button` take `data-icon="inline-start"` / `"inline-end"` and **no sizing classes** — the
@@ -856,14 +856,14 @@ preset rows. I recommend `radio-group` for both, because one pattern then covers
 group in the app. If you find `toggle-group` cleaner for the 4-option case, say so in the PR
 rather than mixing both patterns silently.
 
-### 6.4 Versions verified
+### 6.4 Versions checked
 
 Re-checked on **2026-08-11** against three sources: the live `ui.shadcn.com` registry, the npm
 registry, and the installed packages. The shadcn registry was not reachable when this spec was
 first written, and it is reachable now. If a long time passes after that date, check these facts
 again. Do not trust this document alone for them.
 
-| Thing | Verified |
+| Thing | Checked |
 |---|---|
 | `@base-ui/react` | **1.7.0**, installed. `radix-ui` is no longer a dependency, so every Radix reference in the first draft of this spec was wrong. `PopoverRootChangeEventDetails` carries `reason` (one value is `"outsidePress"`), `event` and `cancel()`. The refinement in §2.3 uses those three. |
 | shadcn style | `components.json` → `"style": "base-nova"`. All 16 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
@@ -952,8 +952,8 @@ Conventions, so that later edits stay consistent:
 - **Approved modals only:** `can`, `will`, `must`. No `should`, `would`, `may`, `might`, `could`.
   A requirement is **MUST**. A recommendation is stated as a fact.
 - **One verb per concept** (Rules 1.11, 9.4). This document uses `render` for the act of a
-  component producing output, and `verify` for a correctness check. It never rotates to `show`,
-  `draw`, `display`, `confirm` or `ensure`.
+  component producing output, and `check` for a correctness test. It never rotates to `show`,
+  `draw`, `display`, `verify`, `confirm` or `ensure`.
 - **25 words per sentence** for descriptive text (Rule 6.3).
 - **Untouchable** (Rules 1.5, 8.6): code blocks, inline code, identifiers, CSS variables, hex
   values, file paths and quoted text. `blue-grey` and `Display serif` keep their spelling because
