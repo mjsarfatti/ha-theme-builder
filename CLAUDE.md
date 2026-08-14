@@ -7,25 +7,17 @@ live preview of tokens and HA cards, and paste-ready YAML output.
 
 ## How to write — everything, always
 
-Applies to PR bodies, PR and issue comments, commit messages, reports to the repo
-owner, and briefs you write for subagents.
+Applies to PR bodies, PR and issue comments, commit messages, messages to and chats
+with the user, and briefs you write for subagents.
 
-- **BLUF.** State the conclusion first. Detail comes after it, or not at all.
-- **Describe the final state, not the work.** A PR body says what the branch
-  contains. It does not narrate rounds of feedback, decisions you reversed, or the
-  order you did things in.
-- **Simplified Technical English principles** (ASD-STE100), without its restricted
-  vocabulary: one idea per sentence, short sentences, active voice, one word for one
-  meaning, no ambiguity.
-- **Plain English**, per Strunk & White: omit needless words, prefer the concrete,
-  use the positive form.
-- **No hedging.** If you checked, say what you found. If you did not check, say so.
-- **No idioms and no metaphors.** Say the thing directly.
-- **Short.** Assume the reader gives it thirty seconds. Write complete grammatical
-  sentences, never clipped fragments.
-
-Files under `docs/` follow ASD-STE100 in full, restricted vocabulary included. See
-`docs/UX-SPEC.md` §10 for the conventions those files keep.
+- **BLUF** (bottom line up front).
+- **Describe the final state, not the work.**
+- **Simplified Technical English (ASD-STE100)**, without vocabulary compliance.
+- **Plain English**, per Strunk & White.
+- **No hedging.**
+- **No idioms and no metaphors.**
+- **Short.** Assume the reader gives it only 30 seconds, but write complete grammar
+  sentences and never skip information for the sake of brevity.
 
 ## Check versions — never assume them
 
