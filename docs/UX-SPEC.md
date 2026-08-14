@@ -225,8 +225,8 @@ all nine is uniform and wrong.
 | Success color | any | **Popover picker** |
 | Info color | any | **Popover picker** |
 | Border color | one of five named steps | **Inline mini-card list** (§2.5) |
-| Card background | neutral 80 / 90 / 95 / white | **Inline 4-swatch row** (§2.5) |
-| Primary background | neutral 80 / 90 / 95 / white | **Inline 4-swatch row** |
+| Card background | neutral 80 / 90 / 95 / 100 | **Inline 4-swatch row** (§2.5) |
+| Primary background | neutral 80 / 90 / 95 / 100 | **Inline 4-swatch row** |
 
 The last three are *choices from a short fixed list*. A list of four options does not need a
 popover, a saturation square, or a hex field. It needs four buttons. Inline in
@@ -396,7 +396,7 @@ outcome, not the ingredient.**
 
 | Step | Config value | What it resolves to |
 |---|---|---|
-| Invisible | `"match-card"` *(new — §2.7, engine-blocked)* | The card surface itself. The border disappears into the card. |
+| Invisible | `"match-card"` *(§2.7, shipped in PR #18)* | The card surface itself. The border disappears into the card. |
 | Hairline | `"neutral-80"` | The faintest step a user can still see. |
 | Subtle | `"neutral-60"` | |
 | Medium | `"neutral-30"` | |
@@ -411,7 +411,7 @@ font dropdown already applies to `FONTS`. It does not touch the engine's own lis
 eleven slots — the KNOB's own light-mode semantics, with the engine's real `mirrorSlot` applied
 for the dark-mode render — at `1f` alpha over every `SurfaceChoice`, in both modes, on the default
 `ha` ramp and on a tinted ramp (`mauve`, to check a tint does not break the ladder). The numbers
-below are the composited result against the default card (`white`), on the `ha` ramp:
+below are the composited result against the default card (`neutral-100`), on the `ha` ramp:
 
 | Slot | Light, composited over `#ffffff` | Dark, composited over `#202020` |
 |---|---|---|
@@ -431,10 +431,10 @@ Two things follow from this table. First, the eleven raw slots really do bunch u
 end — `neutral-80` through `neutral-95` composite within two or three points of each other and of
 the card. This confirms the flag. Four slots spread across the full range, rather than four
 adjacent ones, keep each step visually distinct. Second, **`neutral-90` is disqualified, not just
-skipped.** At the default card (`white`) in dark mode, `neutral-90`'s mirrored render slot is
+skipped.** At the default card (`neutral-100`) in dark mode, `neutral-90`'s mirrored render slot is
 `neutral-10`, which composites to `#202020` — the *exact* hex of the dark card background. That
 is an accidental full match, not the deliberate Invisible step, and it happens on the single most
-common configuration a user sees (`DEFAULT_CONFIG.cardBackground` is `"white"`). No other slot in
+common configuration a user sees (`DEFAULT_CONFIG.cardBackground` is `"neutral-100"`). No other slot in
 the four I picked produces an exact collision on any of the four `SurfaceChoice` values, in either
 mode, on either ramp I checked.
 
@@ -475,7 +475,7 @@ that one step. A helper line under the group states the split once, since it is 
 dark half bottom-right."*
 
 **Card background / Primary background** — a four-button row: `Neutral 80`, `Neutral 90`,
-`Neutral 95`, `White`. Each button is a swatch above a two-line label. Selected state gets a ring
+`Neutral 95`, `Neutral 100`. Each button is a swatch above a two-line label. Selected state gets a ring
 and a check. Helper text under both: *"Dark mode uses the matching dark shade automatically."*
 
 ### 2.6 Recent colors persist across a reload
@@ -506,142 +506,165 @@ not clear the whole list at once.
   already describes. Recent still works for the rest of the session. It does not survive the next
   reload.
 
-### 2.7 Blocked on an engine change
+### 2.7 Shipped: palette-relative colors and border color's Invisible step
 
-Two separate decisions this round both need a change to `src/engine/`, and that API is frozen
-(CLAUDE.md, PLAN §5). Both ride the same future engine work package — one PM decision unfreezes
-the API once, for both, rather than twice. This section specifies both precisely enough for that
-package to build. **Neither is buildable in M3 or M4.** The build notes in §6.2 restate this.
+Both changes below are live in `src/engine/`, in **PR #18**
+(`feat/engine-refs-and-surfaces`). The owner authorized this one unfreeze of
+the engine's otherwise-frozen API (CLAUDE.md, PLAN §5). **M3 and M4 build
+the real behavior now.** §6.2's build notes say so directly — read them
+before you start. Nothing in this section is a proposal any more. Where it
+still names a file and a line, that is a citation of shipped code, not a
+recommendation to an engine package that no longer needs one.
 
-#### Change 1 — palette-relative colors (O-3)
+#### Change 1 — palette-relative colors
 
-Settled with the owner (§7, O-3), reversed from this spec's earlier recommendation. **A color
-picked from an entity-palette swatch follows that preset when the preset changes.** A color typed
-or picked as a free custom value does not follow anything — it stores a literal hex, same as
-today.
-
-**Narrower than the round this was first specified in.** O-3 originally covered a color picked
-from *either* the neutral ramp or the entity palette. A later review comment cut the neutral ramp
-as a swatch source from the six-knob popover entirely (§2.2). A brand or status color can now
-reach the picker only through the entity palette, the free picker, or the hex field, so the
-"follows a preset" behavior below has only one preset left to follow.
-
-M3 and M4 MUST NOT build "follows a preset" now. `ThemeConfig.colors.*` is `Hex` today, and a
-literal hex has no identity to follow. A config shape the engine does not yet ship is not
-buildable this milestone. Build the picker exactly as §2.2–§2.5 already specify: every swatch pick
-commits a literal hex.
-
-**1. Behavior.** A swatch picked from the active entity palette stores which hue it came from, not
-just its color. When the user later changes the entity palette, that knob re-resolves to the same
-hue in the new palette and its color changes with it. A color a user types, or picks by drag on
-the saturation square, stores a literal hex, and it never moves again.
-
-**2. Proposed config shape** — a recommendation to the engine package, not a settled fact. Keep
-each value a plain string, so `ThemeConfig` stays JSON round-trippable. A value is one of two
-things: a `#rrggbb` literal, or a palette reference — this spec proposes
-`` `palette:${PaletteColorName}` `` (`"palette:red"`). That reuses the existing
-`PaletteColorName` union. It does not need a new one:
+Shipped exactly as this spec's earlier draft proposed, unchanged:
 
 ```ts
 type PaletteRef = `palette:${PaletteColorName}`
 type SeedColor = Hex | PaletteRef
 ```
 
-**`NeutralSlotId` is deliberately not a member.** An earlier draft of this section included it,
-from when a brand or status color still had a neutral-ramp swatch to pick, too. Checked against
-the current spec rather than assumed: with that swatch group cut (§2.2), nothing in the picker can
-produce a `colors.*` value that needs to reference a neutral slot, and no other control writes to
-`colors.*` either. If a future round reopens the neutral ramp as a swatch source for these six
-knobs, add `NeutralSlotId` back then, not before.
+`ThemeConfig.colors.primary/accent/error/warning/success/info` are each a
+`SeedColor`. A color picked from an entity-palette swatch follows that
+preset when the preset changes. A typed or free-picked color stores a
+literal hex and never moves. `resolveConfig()`/`derive()` resolve a
+`PaletteRef` against the config's own `palette` field, fresh, on every call
+— `theme.config.colors.*` always echoes back whatever the caller passed in,
+reference or literal, never the resolved hex.
 
-`colors.primary`, `colors.accent`, `colors.error`, `colors.warning`, `colors.success` and
-`colors.info` change type from `Hex` to `SeedColor`. `resolveConfig()` and `derive()` resolve a
-reference against the config's own `palette` field before any ramp math runs.
+`NeutralSlotId` is not a member, for the reason this spec already gives in
+§2.2: the neutral ramp is not a swatch source in this popover, so nothing
+produces a `colors.*` value that needs to reference a neutral slot. A
+reference also can only ever name one of the 18 entity-palette colors, never
+one of the four generated ramps (primary, red, orange, green) — those four
+are generated *from* these same seed fields. A reference into one has no
+fixed point to resolve to before the ramp exists.
 
-**3. The constraint that stops a cycle.** A reference MUST point only at the entity palette. It
-MUST NOT point at a generated ramp: primary, red, orange or green. The engine generates those
-four ramps from these same seed knobs. A reference into one of them has no fixed point to resolve
-to. The engine cannot generate the ramp until it resolves the seed, and it cannot resolve the seed
-until it has the ramp. This is a hard rule, not a style preference.
+Build the popover exactly as §2.2–§2.4 already specify. An entity-palette
+swatch pick now writes a `PaletteRef`, not a literal hex.
 
-#### Change 2 — border color's Invisible step, and the shadow fix it needs
+#### Change 2 — border color's Invisible step
 
-Settled with the owner (§7, Border color redesign — a second round of feedback, separate from
-O-1 to O-8 but blocked by the same kind of engine change as O-3, hence the same section).
-§2.5 names the step **Invisible**: the border resolves to the card surface itself, so it
-disappears into the card. `borderColor` is `NeutralSlotId` today, and `"white"` — a legal
-`cardBackground` — is not a member of that union. So `borderColor` cannot express "match the card
-surface" under the current type. This needs a second change to `ThemeConfig`, in the same work
-package as Change 1.
+Shipped. `borderColor: NeutralSlotId | "match-card"`, and `--shadow-color`
+no longer shares a base with the border knob. Both match this spec's
+earlier proposal.
 
-**1. Proposed config shape.** Add one sentinel value to the union:
+**`"match-card"` resolves to the literal, already-computed
+`card-background-color` for the current mode** — never a ramp lookup, never
+`mirrorSlot()`. Confirmed against the shipped code: `derive.ts:550-554`
+reads `surface.card` directly when `config.borderColor === "match-card"`,
+and falls through to a plain neutral-ramp lookup otherwise.
 
-```ts
-type BorderColor = NeutralSlotId | "match-card"
-```
+**The worked example that proved a ramp mirror gives the wrong answer needs
+a new pair of numbers.** An earlier draft of this spec used `cardBackground:
+"neutral-90"` against `primaryBackground: "neutral-95"`, and the *old*
+`surfaces()` computed a dark card at `neutral-05` for that pair. The
+shipped `surfaces()` computes a different answer for the same pair —
+`neutral-10`, not `neutral-05` — so that example no longer demonstrates
+anything about the shipped code. The proof still holds. Only the numbers
+need to come from a config that does not depend on which version of
+`surfaces()` a reader has open. The **default config** makes the same case
+and does not rot the next time the math changes: the light card is
+`neutral-100`. `mirrorSlot(100)` is `neutral-00` — pure black, `#000000`.
+The real dark card `surfaces()` computes is `#202020` (`neutral-10`),
+because the dark card is a *joint* function of both surface knobs (below),
+not a mirror of the light card's own slot in isolation. I checked this
+against the shipped `derive.ts` directly. I traced `surfaces()` by hand for
+`derive({})`'s default config, and did not copy the numbers from any brief
+on trust.
 
-`"match-card"` names the resolution mechanism, not the visual effect — the UI label **"Invisible"**
-already carries the effect, so the code-level value stays literal about what it does. Alternatives
-considered and rejected: `"invisible"` (names an effect the value does not by itself produce — a
-`"match-card"` border is still a real, painted border, just one that composites away) and
-`"card"` alone (reads as a card *reference*, not a *match*). `"match-card"` states plainly that
-the value points at another field. It is not a color in its own right.
+**`--shadow-color` always derives from `neutral-05`**, independent of the
+border knob's value and of mode — only the alpha changes (`29` light, `7a`
+dark). `derive.ts:570`: `vars["shadow-color"] = withAlpha(neutral[5], dark ?
+"7a" : "29")`. Nowhere in that line does it read `config.borderColor`.
+`template.css:144`'s block NOTE, not line 148's per-line comment, which names
+`--divider-color` instead, is what the shipped engine follows — PR #18's body has
+the full resolution of that conflict inside the reference file.
 
-**2. Resolution — read this carefully, it is the part most likely to be built wrong.**
-`"match-card"` MUST resolve to the literal, already-computed `card-background-color` for the
-current mode, not to a ramp lookup and not through `mirrorSlot()`. Two facts force this:
+#### How `surfaces()` derives the dark pair
 
-- `"white"` has no `NeutralSlotId`, so there is no slot for `mirrorSlot()` to invert in the first
-  place.
-- Dark-mode card placement is not a mirror of the light slot. `surfaces()` (`derive.ts:163-192`)
-  computes it from an elevation-preserving formula (`darkCard = darkPage + elevation`) that keeps
-  the *gap* between card and page, not the card's own position. A concrete case proves the two
-  approaches diverge: `cardBackground: "neutral-90"`, `primaryBackground: "neutral-95"` (both
-  legal, neither the default) computes a dark card at `neutral-05` today. A naive `mirrorSlot`
-  read of the light choice, `mirrorSlot(90)`, gives `neutral-10` instead — a different hex. Built
-  the naive way, Invisible shows a faint but real line in dark mode, on this and other ordinary
-  configs, not only in the "white" edge case.
+Card, page and secondary backgrounds are derived together, not one at a
+time, and `"match-card"` reads directly out of the joint result
+(`derive.ts:198-230`). In this spec's own terms, not the engine's:
 
-The correct implementation reuses the per-mode `surface.card` value `derive()` already computes
-for `card-background-color`, the same value §2.5's mini-card reads to render the composite. It
-does not add a second, parallel way to compute a card color.
+1. **Find whichever of the card and the page is darker in light mode.**
+2. **Mirror that one's own ramp position** — the same `100 - slot` inversion
+   as everywhere else in dark mode — to place it in dark mode.
+3. **Place the other surface the same number of steps away from that
+   anchor, toward the lighter end.** The gap the user's two choices express
+   survives into dark mode. So does which surface sits on top. Equal
+   choices mirror to the same anchor, and the gap is zero.
 
-**3. Fact check — "Invisible needs no opacity change" (confirmed).** 12% of the card color,
-composited over the card background, equals the card background exactly — an algebraic identity
-(`α·C + (1−α)·C = C`) that holds regardless of `α`, so it needs no special-case in `withAlpha` or
-the `1f` constant `template.css:145` sets. I checked this against the engine directly, for all
-four `SurfaceChoice` values in both modes: `derive()`'s output, composited by hand, lands back on
-its own card hex every time, exactly.
+The darker surface is the anchor for a second reason: it is also the
+clamp-safe direction. The derived value only ever gains steps away from the
+ramp's dark floor, never past it. The lighter surface as the anchor can
+drive the other one off the bottom instead.
 
-**4. Fact check — "Invisible breaks the shadow" (confirmed, and already true today).** The coupling
-is not new. `derive.ts:444` computes one `lightBorderBase` from `config.borderColor`, and
-`derive.ts:453` hands that *same* base to `--shadow-color`: `withAlpha(lightBorderBase, dark ?
-"7a" : "29")`. I checked this live. `derive({ borderColor: "neutral-05" })` gives `shadow-color:
-#14141429`. `derive({ borderColor: "neutral-95" })` gives `#f3f3f329`. The shadow already moves
-with the border knob today, for any of the eleven slots, with no Invisible step involved. Once
-`borderColor` can resolve to the card surface, this coupling turns a merely pale shadow into an
-exactly-invisible one: card-surface-on-card-surface, alpha or no alpha. A borderless card with a
-shadow is the entire point of the Invisible step, so the shadow MUST survive it.
+**All the arithmetic runs in index space, not slot numbers.** The neutral
+ramp's 13 slots are unevenly spaced (`0, 5, 10, 20, … 90, 95, 100`). A
+subtraction of slot numbers lands on values with no slot at all, like
+`neutral-15`. `surfaces()` works on each slot's position in that 13-element
+array instead (`0` through `12`).
 
-**Requirement:** `--shadow-color` MUST always derive from `neutral-05`, independent of
-`borderColor`'s value, and independent of mode too — the same rule `derive.ts:449-452` already
-applies on the mode axis. Only the alpha changes (`29` light, `7a` dark). Concretely,
-`derive.ts:453` no longer takes its base from `lightBorderBase`. It takes a fixed `neutral[5]`
-instead. Divider, outline and outline-hover still take the border knob's own base exactly as they
-do today. Only the shadow line changes.
+**The clamp, and where it does not reach.** A position outside `0..12`
+clamps to the nearest end. It does not read past the array, and it does
+not throw. At that boundary, the derived surface is allowed to land on the same slot
+as its anchor — the two backgrounds collapse onto one color. That is not a
+new failure mode. It is the same thing that already happens on purpose when
+a user picks an equal slot for both choices, gap zero. **Today's four
+`SurfaceChoice` values never reach it** — checked across all sixteen
+ordered pairs, the widest gap any two of them express is 3 index-steps, and
+the derived surface never lands further than position 6 of the 0..12 range.
+The clamp exists for a future, wider `SurfaceChoice`, not for anything a
+user can pick today.
 
-**Where the NOTE sits, checked.** `template.css:144`'s comment — `Lines -> NOTE: Derive using
---ha-color-neutral-05 as base in place of "000000"` — sits directly above the whole Lines block,
-`template.css:145-148`: divider, outline, outline-hover and shadow together, not the divider line
-alone. That reading is right. One note for the engine package, not a change to the decision above:
-`template.css:148`'s own per-line comment on `--shadow-color` reads `DERIVED: --divider-color RGB
-+ "29" opacity` — which names the *border knob's* base, not a fixed `neutral-05`, and is what
-`derive.ts` currently implements. The block NOTE and the per-line comment point in different
-directions. The fix above resolves the conflict in favor of the block NOTE, per the owner's
-decision. Only one of the two comments stays true in the file after this change, and the engine
-package must know both exist before it picks which one to follow.
+`--secondary-background-color` keeps the rule this spec already documents —
+one step below the darker surface in light mode, two steps above the page
+in dark mode, never level with the card — unchanged in shape, only moved
+into the same index space as the rest of this section.
+
+#### The surface rename: `"white"` is `"neutral-100"`
+
+`SurfaceChoice` is now `"neutral-100" | "neutral-95" | "neutral-90" |
+"neutral-80"`. `"white"` is retired. `DEFAULT_CONFIG.cardBackground` is
+`"neutral-100"`, not `"white"` — same color, `#ffffff`, every preset, now
+named as a real ramp slot instead of a value tacked on one rung above it.
+Every place elsewhere in this spec that says "White" as a surface choice —
+the four-swatch background rows (§2.5, §3.2), the allowed-values table
+(§2.1) — means `"neutral-100"` and reads **Neutral 100** in the UI.
+
+The neutral ramp itself gained the two slots that make this possible:
+`NeutralRampSlot` is 13 shades, `00` through `100`, not the 11-shade
+`RampSlot` the generated primary/red/orange/green ramps share. Every neutral
+preset ships real, untinted reference data at both new ends —
+`.references/colors/black-white-ramps.html`'s `black` and `white` rows,
+`#000000` and `#ffffff` for all ten presets, tinted ones like Mauve too.
+`NeutralSlotId` grew the same two entries: `"neutral-00"` and
+`"neutral-100"` — **spelled with the leading zero**, the same pad
+`neutral-05`…`neutral-95` already use, not `"neutral-0"`.
+
+This is deliberately scoped to the neutral ramp alone. `RampSlot`,
+`Ramp` and `generateRamp()` — the primary/red/orange/green machinery — are
+untouched, because those four ramps have no reference data at slots `0`/`100`.
+A shared type widened to include them breaks every `Record<RampSlot,
+Hex>` reference ramp at typecheck time. The exported CSS surface does not
+grow either: `--ha-color-neutral-00` and `--ha-color-neutral-100` are not
+new theme variables — `template.css` never defined them, and the engine
+still only emits `05`…`95` for every ramp, neutral included. The two new
+slots feed `cardBackground`, `primaryBackground` and `borderColor` only.
+
+**The "Neutral ramp" preview section (§4.4) still shows eleven swatches,
+not thirteen.** That is a deliberate choice in the shipped engine, not a
+gap: `DerivedTheme.ramps.neutral` stays the 11-shade shape this always was,
+narrowed from the preset's full 13 shades specifically so swatch-row
+consumers don't have to special-case the two new ends. §4.4's "no black or
+white endpoints" line stays accurate as written. The **Compare all base
+tones** dialog (§3.3) is the one place this spec now shows all thirteen —
+see that section for why.
 
 ---
+
 
 ## 3. Knob sidebar IA
 
@@ -761,12 +784,14 @@ Group helper text: *"Every background, border and text color comes from this ram
 
 | Label | Config field | Control | Default |
 |---|---|---|---|
-| `Card background` | `cardBackground: SurfaceChoice` | 4-swatch row | `"white"` |
+| `Card background` | `cardBackground: SurfaceChoice` | 4-swatch row | `"neutral-100"` |
 | `Primary background` | `primaryBackground: SurfaceChoice` | 4-swatch row | `"neutral-95"` |
-| `Border color` | `borderColor: NeutralSlotId` | mini-card list, 5 named steps (§2.5) | **`"neutral-05"`** — the **Strong** step |
+| `Border color` | `borderColor: NeutralSlotId \| "match-card"` | mini-card list, 5 named steps (§2.5) | **`"neutral-05"`** — the **Strong** step |
 
-`SurfaceChoice` is exactly `"white" | "neutral-95" | "neutral-90" | "neutral-80"`. `NeutralSlotId`
-is `"neutral-05"` … `"neutral-95"` (11 values). Both come from `src/engine/types.ts` — the control
+`SurfaceChoice` is exactly `"neutral-100" | "neutral-95" | "neutral-90" | "neutral-80"`. `NeutralSlotId`
+is `"neutral-05"` … `"neutral-95"` (11 values), and the border knob's own field additionally
+accepts the `"match-card"` sentinel (§2.7). Both `SurfaceChoice` and `NeutralSlotId` come from
+`src/engine/types.ts` — the control
 options for Card background and Primary background are the union members, not a hand-written
 list. Border color's five named steps are a UI-only subset of the same union, plus one sentinel
 value — see §2.5 for the four slots and §2.7 for the sentinel.
@@ -848,6 +873,16 @@ reference-table view: rows are steps and columns are presets, exactly as in
 `.references/colors/*.html`. A click on a column header selects that preset and closes the dialog.
 This costs almost nothing (the data is already there) and serves the user who wants to read
 individual hexes rather than eyeball strips.
+
+**The Base tone dialog's table has thirteen rows, not eleven.** Read it from the raw preset
+(`getNeutralRamp(id).ramp`, the 13-shade `NeutralRamp`, §2.7), never from `theme.ramps.neutral`
+— that field is narrowed to eleven shades on purpose (§6.1, item 8) and does not carry the `00`
+and `100` rows this dialog needs. The extra rows sit exactly as `black-white-ramps.html` shows
+them, `neutral-00` above `neutral-05` and `neutral-100` below `neutral-95` — the same "exactly
+as in `.references/colors/*.html`" rule two paragraphs up applies here too. This is the one place
+in the whole spec that shows all thirteen shades. The sidebar strip and the §4.4 **Neutral ramp**
+preview section both stay at eleven, unchanged. The Entity colors dialog has no such row — it
+stays at eighteen columns, unaffected by any of this.
 
 *Alternative considered:* a `Select` whose items each contain a mini strip. Rejected — you can
 only see one at a time when it is closed, and closing the menu is exactly when you want to compare.
@@ -1069,7 +1104,7 @@ The rule: **warn, never block.** It is the user's theme.
 | Text on a brand/status color falls below 4.5:1 | Warning glyph on that chip in the preview (§4.3) **and** a warning row at the bottom of that knob's popover. Both name the problem in plain words: *"White text on this color is hard to read."* |
 | A brand color is so light or dark that its generated ramp clips at one end | No special UI. The engine clamps. The ramp preview renders the flattening honestly. |
 | Secondary text falls below 4.5:1 on the card background in either mode | One warning row under the **Base tone** group: *"Secondary text is low contrast in dark mode with this base tone."* |
-| Card background = Primary background (both White, or both Neutral 95) | Allowed. The Surfaces preview renders the two tiles as identical. That is the honest feedback. No warning. |
+| Card background = Primary background (both Neutral 100, or both Neutral 95) | Allowed. The Surfaces preview renders the two tiles as identical. That is the honest feedback. No warning. |
 | Invalid hex typed | §2.4 — field errors, value unchanged. |
 
 Warnings are `Alert variant="default"` with a `TriangleAlert` icon and muted styling — informational,
@@ -1082,12 +1117,10 @@ not destructive. Never a toast. Toasts are for things that already happened.
   *reference* to a ramp step, so they follow the new ramp automatically. It has no effect inside
   an open color popover — the popover no longer offers neutral-ramp swatches (§2.2), so nothing
   in it depends on the base tone.
-- **Brand and status colors, target behavior (§2.7, O-3, blocked on an engine change):** a color
-  picked from the entity palette follows that preset when it changes. A typed or dragged color
-  stores a literal hex and never moves. **What ships today:** every brand and status color still
-  stores a literal hex, because `ThemeConfig.colors.*` has not changed type yet. If you pick an
-  entity-palette color and the palette preset later changes, that color does **not** move, in M3
-  and M4, until the engine change in §2.7 lands.
+- **Brand and status colors (§2.7 Change 1, shipped in PR #18):** a color picked from the entity
+  palette follows that preset when it changes. A typed or dragged color stores a literal hex and
+  never moves. Build this now — a `PaletteRef` and a literal hex are both plain strings, and
+  `ThemeConfig.colors.*` already accepts either.
 - **Changing the extended palette** re-renders the palette swatch group in open popovers and the
   §4.5 section. It does not touch any other knob.
 - **Reset to defaults** opens an **`AlertDialog`**, not a `Dialog`. It is a destructive
@@ -1132,10 +1165,12 @@ not destructive. Never a toast. Toasts are for things that already happened.
    white. The preview panels must survive both. Panel separation must not depend on a theme
    variable alone. Give each panel a fallback outline in the *builder's* border color.
 8. The **Neutral ramp** section renders `theme.ramps.neutral` through `rampEntries()`, not the raw
-   preset. Today the two are identical for every base tone. The derived theme keeps the section
-   correct if that ever changes. The **Entity colors** section reads
-   the palette values out of `modeVars(theme, "light")` under the `{name}-color` keys, iterating
-   `PALETTE_COLOR_NAMES` for order.
+   preset (`getNeutralRamp(id).ramp`). The two are not the same shape any more: `theme.ramps.neutral`
+   is the 11-shade `Ramp` (`05`…`95`) `rampEntries()` expects, and the raw preset is the ramp's own
+   wider 13-shade `NeutralRamp` (`00`…`100`, §2.7). Read `theme.ramps.neutral` for this section. Do
+   not pass the raw preset to `rampEntries()` — it does not accept the wider shape. The **Entity
+   colors** section reads the palette values out of `modeVars(theme, "light")` under the
+   `{name}-color` keys, in `PALETTE_COLOR_NAMES` order.
 
 ### 6.2 For M4 — knob sidebar
 
@@ -1151,9 +1186,11 @@ not destructive. Never a toast. Toasts are for things that already happened.
 2. **Zero `<input type="color">`.** Grep for it before opening the PR.
 3. Three distinct color controls, not one: popover picker (×6), inline mini-card list for Border
    color (×1, five named steps — §2.5), inline 4-swatch row (×2). §2.1.
-4. The popover's swatch groups read from the *current* ramp and palette preset in the store — they
-   are derived state, not props frozen at mount. To check this, open a popover, change the base
-   tone in the sidebar behind it, and watching the strip change.
+4. The popover's entity-palette swatch group reads from the *current* palette preset in the
+   store — it is derived state, not a prop frozen at mount. The base tone has no swatch group in
+   the popover to read from (§2.2), so a base-tone change behind an open popover changes nothing
+   inside that popover. To check the palette group, open a popover, change the entity-palette preset in
+   the sidebar behind it, and check that the swatch group updates.
 5. Hex commits on Enter/blur, not per keystroke (§2.4).
 6. Each Border color mini-card renders a real `1px solid ${rampHex}1f` border over that half's
    own card background, not a precomputed blend — the browser composites it live (§2.5).
@@ -1166,18 +1203,20 @@ not destructive. Never a toast. Toasts are for things that already happened.
    square, to ~16ms or one `requestAnimationFrame`. Every other change is discrete.
 10. The Typography group loads with only Body visible. Headings, Longform and Code sit inside a
     `Collapsible`, closed at load, opened by a **More** trigger (§3.2, O-6).
-11. `ThemeConfig.colors.*` stays `Hex`. Do not build the "picked color follows its preset" behavior
-    from O-3 (§2.7, Change 1) — it needs an engine change this milestone does not ship. Build the
-    popover and the inline swatch groups exactly as §2.2–§2.5 specify: a swatch click writes a
-    literal hex, same as any custom pick.
+11. `ThemeConfig.colors.*` is `SeedColor` (§2.7, Change 1 — shipped in PR #18). Build the "picked
+    color follows its preset" behavior: an entity-palette swatch click writes a `PaletteRef`
+    (`"palette:red"`, not a resolved hex), and the engine re-resolves it against the current
+    palette on every `derive()` call. A typed or free-picked color still writes a literal hex and
+    never moves. The picker code does not need to know which case it is in — it commits whatever
+    string the swatch or the hex field produces, and `ThemeConfig` already accepts either.
 12. Recent colors persist to `localStorage` per §2.6. Read, prune and write on the same schedule
     that section specifies, and use the session-only behavior instead if `localStorage` throws.
-13. `borderColor` stays `NeutralSlotId`, with no `"match-card"` sentinel. Do not build the
-    **Invisible** step or the `--shadow-color` fix from §2.7, Change 2 — both need the same
-    unshipped engine change as item 11. Build Hairline through Strong (§2.5) against the four
-    existing `NeutralSlotId` values. Leave the fifth row out, or render it visibly disabled with a
-    tooltip that names the blocker, until the engine ships `"match-card"`. Say which you picked in
-    the PR.
+13. `borderColor` is `NeutralSlotId | "match-card"` (§2.7, Change 2 — shipped in PR #18). Build all
+    five named steps, Invisible included. Invisible writes the literal string `"match-card"` — the
+    picker never computes a card-matching hex itself, the engine does, from the already-current
+    `card-background-color`. `--shadow-color` no longer reads this knob at all, so the mini-card's
+    shadow (§2.5) needs no special case for Invisible either — the same fixed base and alpha apply
+    to every step.
 
 ### 6.3 shadcn components expected
 
@@ -1269,7 +1308,7 @@ the decision next to it. Later sections cite a decision as `(§7, O-n)`.
 |---|---|---|
 | **O-1** | Do the three constrained knobs (border, card background, primary background) use the same popover as the other six, for uniformity? Or inline swatch rows, as this spec says? | **Inline**, as this spec already writes it. No change. |
 | **O-2** | `template.css` labels the extended palette knob **"Home Assistant colors"**. Inside a Home Assistant theme builder that reads as "the colors", not as "the eighteen named entity colors". Keep the label verbatim, or change it to **"Entity colors"** or **"Named colors"**? | **Relabel the knob to "Entity colors."** Every place in this spec that named the knob or its preview section now reads "Entity colors" (§1.3, §2.3, §3.2, §3.3, §4.5). `template.css`'s own string stays as it is — only the UI label changed. |
-| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue, not the resolved hex. A later review comment cut the ramp as a swatch source for this popover entirely (§2.2), so only the palette half of this decision still applies. This needs a change to the frozen engine API, so it is **blocked** — §2.7 Change 1 has the full specification and the block. M3 and M4 build today's literal-hex behavior until a separate engine work package ships the change. |
+| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue, not the resolved hex. A later review comment cut the ramp as a swatch source for this popover entirely (§2.2), so only the palette half of this decision still applies. **Shipped in PR #18** — §2.7 Change 1 has the full specification. M3 and M4 build the real behavior. |
 | **O-4** | The always-visible "Generated values" YAML section is cut in favor of an export sheet. Keep the live YAML as a permanent panel? | **No**, and the "12 variables changed" counter this spec's earlier draft floated as a cheaper trust signal is also cut. A plain **Export theme** button, no counter (§1.4). |
 | **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Agreed? | **Yes.** No change (§1.3, §4.6). |
 | **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system, 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? | **Yes**, one grouped `Select`, each item in its own typeface, unchanged from this spec's earlier draft — **plus progressive disclosure.** At load, only **Body font family** shows. A **More** `Collapsible` reveals Headings, Longform and Code. Most users only care about the body font (§3.2). |
@@ -1299,22 +1338,20 @@ drives `--outline-hover-color` and `--shadow-color`, not only the divider line.
 |---|---|
 | Render the outcome | **Approved.** Each option is a mini-card — real card background, real border, real shadow — split diagonally, light half top-left, dark half bottom-right, both modes visible at once. §2.5 has the anatomy. |
 | Four named steps, not eleven slots | **Approved.** Hairline / Subtle / Medium / Strong, each darker than the card and darker than the step before it. UI-only — `borderColor` stays `NeutralSlotId`, no engine change. §2.5 has the slot picks and the rendered evidence behind them. |
-| A fifth step, Invisible | **Approved.** Resolves to the chosen card surface, so the border disappears into the card. Needs a new engine sentinel and a fix to `--shadow-color` so the shadow survives it — both **blocked**, specified at §2.7 (Change 2), folded into the same work package as O-3 (§2.7, Change 1). |
+| A fifth step, Invisible | **Approved.** Resolves to the chosen card surface, so the border disappears into the card. Needed a new engine sentinel and a fix to `--shadow-color` so the shadow survives it — both specified at §2.7 (Change 2), and both **shipped in PR #18**. |
 
-**One work package, three changes, all blocked on the same PM decision to unfreeze the engine
-API.** None of the three is buildable in M3 or M4:
+**One work package, three changes, all shipped in PR #18
+(`feat/engine-refs-and-surfaces`).** M3 and M4 build all three now:
 
-1. `ThemeConfig.colors.*`: `Hex` → `SeedColor` (O-3, ramp-relative brand and status colors — §2.7,
-   Change 1).
+1. `ThemeConfig.colors.*`: `Hex` → `SeedColor` (O-3, palette-relative brand and status colors —
+   §2.7, Change 1).
 2. `ThemeConfig["borderColor"]`: `NeutralSlotId` → `NeutralSlotId | "match-card"` (the Invisible
    border step — §2.7, Change 2).
-3. `derive.ts:453`: `--shadow-color` no longer shares its base with the border knob. It reads a
-   fixed `neutral-05` instead, so a borderless card can still cast a shadow (§2.7, Change 2). This
-   one is a plain correctness fix, not a type change, but it rides along because Change 2 is what
-   makes the existing bug show up in the most common case (Invisible against the default card).
+3. `--shadow-color` no longer shares its base with the border knob. It reads a fixed `neutral-05`
+   instead, so a borderless card can still cast a shadow (§2.7, Change 2).
 
-§6.2 items 11 and 13 tell M3/M4 what to build in the meantime: today's literal-hex colors, and a
-four-step Border color control with the fifth row left out or shown disabled.
+§6.2 items 11 and 13 tell M3/M4 to build the real behavior now, not the placeholder this section
+described in an earlier draft.
 
 ---
 
@@ -1360,6 +1397,39 @@ membership, and 6 brand defaults. Every cell matches.
 
 Unchanged and still believed right: the whole of §1 (layout), §2.1–2.2 (which knob gets which
 control, popover anatomy), §3.1 (five always-open groups), §4 (the content audit), and O-1…O-7.
+
+### 2026-08-14 — PR #18 lands: palette-relative colors and the surface rename
+
+`src/engine/` unfroze once (CLAUDE.md, PLAN §5), shipped both changes §2.7 used to propose, and
+merged nothing else. What that invalidated, and what changed:
+
+| Was | Now | Where |
+|---|---|---|
+| §2.7 titled "Blocked on an engine change," both changes marked unbuildable | **Shipped in PR #18.** M3 and M4 build the real behavior. | §2.7, §6.2 items 11 and 13 |
+| `ThemeConfig.colors.*: Hex` | `SeedColor = Hex \| PaletteRef` (§2.7 Change 1) | §2.7, §6.2 item 11 |
+| `ThemeConfig.borderColor: NeutralSlotId` | `NeutralSlotId \| "match-card"` (§2.7 Change 2) | §2.7, §6.2 item 13 |
+| `--shadow-color` shared a base with the border knob | Fixed `neutral-05`, independent of the border knob and of mode | §2.7 |
+| Worked example for Change 2 used `cardBackground: "neutral-90"` / `primaryBackground: "neutral-95"`, claimed a dark card at `neutral-05` | That pair now computes `neutral-10` under the shipped `surfaces()` — the old numbers no longer prove the point. Replaced with the default-config pair, verified by hand against `derive.ts`. | §2.7 |
+| `SurfaceChoice` included `"white"` | `"neutral-100"` — the neutral ramp gained real reference data at slots `00` and `100` | §2.7, §2.1, §2.5, §3.2, §5.3 |
+| `theme.ramps.neutral` and the raw preset assumed to be the same shape | The preset is now the wider 13-shade `NeutralRamp`. `theme.ramps.neutral` stays the 11-shade `Ramp`. `rampEntries()` only accepts the narrow one. | §6.1 item 8 |
+| §3.3's Compare-all dialog for Base tone showed 11 rows, same as the sidebar strip | Now shows all 13, the one place in this spec that does — the raw preset carries the data, the strip and §4.4 preview stay at 11 | §3.3 |
+
+The inlined preset data of the wireframe is re-diffed against the shipped engine, cell by cell.
+The diff now also covers the new `00`/`100` endpoints. Every cell matches — `#000000` and
+`#ffffff` for all ten presets, `.references/colors/black-white-ramps.html`'s own `black`/`white`
+rows. Two further inaccuracies turned up in the wireframe's own dark-mode approximation. Neither
+is a result of this engine change. A hand trace of `surfaces()` against the shipped code exposed
+both: `docs/wireframe/index.html`'s fixed dark-mode card/primary/secondary swatches, and its
+border-color dark-card stand-in, both used the wrong ramp index for the default config. Both now
+read `neutral-05` / `neutral-10` / `neutral-20`, the same values `surfaces()` itself computes for
+`cardBackground: "neutral-100"`, `primaryBackground: "neutral-95"`.
+
+§2.5's border-color slot table needed no change — the four named steps' own `mirrorSlot` and the
+default dark card (`#202020`) are unchanged in the shipped engine.
+
+Unchanged and still believed right: everything the 2026-08-11 entry above already covers, plus
+§2.5's four named border steps and their composited numbers, §3.3's overall dialog pattern, and
+§7.2's three approved decisions.
 
 ---
 

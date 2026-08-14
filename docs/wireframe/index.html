@@ -708,14 +708,17 @@ function saveRecent(list){
 const state = {
   ramp: 0, pal: 0,
   brand: Object.fromEntries(BRAND.map(b=>[b.id,b.hex])),
-  /* defaults mirror engine DEFAULT_CONFIG: cardBackground "white",
+  /* defaults mirror engine DEFAULT_CONFIG: cardBackground "neutral-100",
      primaryBackground "neutral-95", borderColor "neutral-05" = the "Strong" named step */
   cardBg: 3, primaryBg: 2,   /* index into BG4 */
   border: "strong",           /* named step id — see BORDER_STEPS, UX-SPEC §2.5 redesign */
   recent: loadRecent(),       /* [{hex, lastUsedAt}], newest first, persisted */
   openKnob: null
 };
-const BG4 = [["Neutral","80",8],["Neutral","90",9],["Neutral","95",10],["White","",-1]];
+/* "Neutral","100" resolves via the -1 sentinel below, not a RAMPS lookup — neutral-100 is
+   #ffffff in every preset (src/engine/presets/neutral-ramps.ts), so no ramp index is needed.
+   SurfaceChoice dropped the old "white" name for this same value — UX-SPEC §2.7. */
+const BG4 = [["Neutral","80",8],["Neutral","90",9],["Neutral","95",10],["Neutral","100",-1]];
 
 const $  = s => document.querySelector(s);
 const el = (t,c) => { const n=document.createElement(t); if(c) n.className=c; return n; };
@@ -726,11 +729,11 @@ const bgHex = i => BG4[i][2] < 0 ? "#ffffff" : ramp()[BG4[i][2]];
 /* ---------------- border color: named steps, mini-card render — UX-SPEC §2.5 redesign ---------------- */
 /* Slots picked by rendering all 11 at 1f alpha over every card choice, light + dark, on the
    HA ramp and a tinted ramp (Mauve), and reading the composited result — see UX-SPEC §2.5 for
-   the numbers. neutral-90 was rejected: it composites to an EXACT match with the default white
-   card in dark mode (an accidental full "match-card" collision, not the deliberate Invisible
-   step), so it cannot serve as a distinguishable named rung. */
+   the numbers. neutral-90 was rejected: it composites to an EXACT match with the default
+   neutral-100 card in dark mode (an accidental full "match-card" collision, not the deliberate
+   Invisible step), so it cannot serve as a distinguishable named rung. */
 const BORDER_STEPS = [
-  { id: "invisible", label: "Invisible", idx: null }, /* resolves to card bg — §2.7, engine-blocked */
+  { id: "invisible", label: "Invisible", idx: null }, /* resolves to card bg — §2.7, shipped in PR #18 */
   { id: "hairline",  label: "Hairline",  idx: 8 },     /* neutral-80 */
   { id: "subtle",    label: "Subtle",    idx: 6 },     /* neutral-60 */
   { id: "medium",    label: "Medium",    idx: 3 },     /* neutral-30 */
@@ -740,9 +743,11 @@ const BORDER_STEPS = [
    (05<->95, 10<->90, 20<->80, 30<->70, 40<->60, 50<->50), so 10-i mirrors correctly */
 const mirrorIdx = i => 10 - i;
 /* the dark-mode card approximation this wireframe already uses in surfaceTiles() — kept
-   consistent rather than porting the engine's real elevation-preserving algorithm, which the
-   spec documents in prose (§2.7) since it is not a "just mirror the light slot" calculation */
-const darkCardHex = () => ramp()[2];
+   consistent rather than porting the engine's real anchor-mirror-derive algorithm (surfaces(),
+   §2.7), which is not a "just mirror the light slot" calculation. neutral-10 (#202020) is
+   surfaces()'s own answer for the DEFAULT card/primary pair, traced by hand against the
+   shipped derive.ts — not the same fixed value for every pair a user could pick. */
+const darkCardHex = () => ramp()[1];
 function borderStepHex(step, dark){
   if (step.idx === null) return dark ? darkCardHex() : bgHex(state.cardBg); /* Invisible */
   return ramp()[dark ? mirrorIdx(step.idx) : step.idx];
@@ -878,10 +883,15 @@ function paintBorderList(){
 /* ---------------- preview ---------------- */
 function surfaceTiles(node, dark){
   const r = ramp();
+  /* dark values below are surfaces()'s own output for the DEFAULT config only —
+     cardBackground "neutral-100", primaryBackground "neutral-95" — traced by hand against
+     the shipped derive.ts (§2.7): darkPage=neutral-05, darkCard=neutral-10, darkSecondary=
+     neutral-20. This wireframe does not port the anchor-mirror-derive algorithm itself, so a
+     different Card/Primary pick still shows these same three fixed swatches. */
   const items = dark ? [
-    ["Primary background","--primary-background-color", r[1]],
-    ["Card background","--card-background-color", r[2]],
-    ["Secondary background","--secondary-background-color", r[0]],
+    ["Primary background","--primary-background-color", r[0]],
+    ["Card background","--card-background-color", r[1]],
+    ["Secondary background","--secondary-background-color", r[2]],
     ["Divider","--divider-color", null]
   ] : [
     ["Primary background","--primary-background-color", bgHex(state.primaryBg)],
@@ -1052,10 +1062,19 @@ document.addEventListener("keydown", e=>{
 });
 
 /* ---------------- compare dialog ---------------- */
+/* Base tone's compare-all table shows all 13 shades, endpoints included — the raw preset's own
+   shape (src/engine/presets/neutral-ramps.ts), not the 11-shade theme.ramps.neutral this
+   wireframe's sidebar strip and ramp preview use elsewhere. #000000/#ffffff are real reference
+   data, identical across all ten presets, UX-SPEC §2.7 and §3.3. This mapping is local to the
+   dialog and does not touch the RAMPS array any other view reads from. */
 function openCompare(kind){
   const isRamp = kind === "ramp";
-  const data   = isRamp ? RAMPS : PALETTES;
-  const rowLbl = isRamp ? RAMP_STEPS.map(s=>"neutral-"+s) : HUES;
+  const data   = isRamp
+    ? RAMPS.map(([n, cols]) => [n, ["#000000", ...cols, "#ffffff"]])
+    : PALETTES;
+  const rowLbl = isRamp
+    ? ["neutral-00", ...RAMP_STEPS.map(s=>"neutral-"+s), "neutral-100"]
+    : HUES;
   $("#cmpTitle").textContent = isRamp ? "Compare all base tones" : "Compare all palettes";
   const head = $("#cmpHead"); head.innerHTML = "<th style='width:96px'>"+(isRamp?"Step":"Color")+"</th>";
   data.forEach(([n],i)=>{
