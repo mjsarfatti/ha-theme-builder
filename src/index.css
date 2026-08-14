@@ -128,3 +128,14 @@
     @apply font-sans;
     }
 }
+
+/*
+ * react-colorful ships its own inline styles and exposes itself for
+ * overrides through this one class name (docs/UX-SPEC.md §2.4, §6.4). It is
+ * only ever mounted inside the color picker popover's `.ha-color-picker`
+ * wrapper, so this rule cannot reach anywhere else in the app.
+ */
+.ha-color-picker .react-colorful {
+  width: 100%;
+  height: 190px;
+}
