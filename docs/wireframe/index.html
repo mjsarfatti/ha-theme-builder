@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HA Theme Builder — M2 wireframe</title>
+<style>
+:root{
+  --paper:#f6f6f3;
+  --surface:#ffffff;
+  --ink:#15171b;
+  --ink-2:#5b6069;
+  --ink-3:#8f949d;
+  --line:#d6d7d2;
+  --line-2:#e6e7e3;
+  --box:#e9eae5;
+  --accent:#2f5fe0;
+  --accent-soft:#e6ecfc;
+  --note:#8a5a00;
+  --note-bg:#fdf3e0;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+/* Builder-chrome dark mode — UX-SPEC §1.1. Redefines ONLY the chrome tokens above. Nothing in
+   this block reaches .panel.lt / .panel.dk, the preview's own permanent light/dark panels —
+   those are styled with literal hex, never these variables, so this toggle cannot touch them. */
+html[data-chrome="dark"]{
+  --paper:#17181b;
+  --surface:#1f2024;
+  --ink:#eceef0;
+  --ink-2:#a6acb5;
+  --ink-3:#7d838c;
+  --line:#33353b;
+  --line-2:#292a30;
+  --box:#26282d;
+  --accent-soft:#1c2740;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.45;overflow:hidden;
+}
+button{font:inherit;color:inherit}
+
+/* ---------- wireframe chrome ---------- */
+.wf-banner{
+  background:var(--note-bg);border-bottom:1px solid #eddcbd;color:var(--note);
+  font-family:var(--mono);font-size:11px;padding:6px 16px;display:flex;gap:16px;
+  align-items:center;justify-content:space-between;flex:none;
+}
+.wf-banner b{font-weight:600}
+.tag{
+  display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;
+  color:var(--note);background:var(--note-bg);border:1px solid #eddcbd;
+  border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;
+}
+.box{
+  background:
+    repeating-linear-gradient(135deg,transparent,transparent 5px,rgba(0,0,0,.028) 5px,rgba(0,0,0,.028) 6px),
+    var(--box);
+  border:1px dashed #c3c5bd;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-3);text-align:center;padding:4px;
+}
+.box.dk{
+  background:
+    repeating-linear-gradient(135deg,transparent,transparent 5px,rgba(255,255,255,.05) 5px,rgba(255,255,255,.05) 6px),
+    #3a3d43;
+  border-color:#565a61;color:#9ba0a8;
+}
+
+/* ---------- app frame ---------- */
+.app{display:flex;flex-direction:column;height:100vh}
+.appbar{
+  flex:none;height:56px;border-bottom:1px solid var(--line);background:var(--surface);
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+}
+.brand{font-weight:600;letter-spacing:-.01em}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-3);letter-spacing:0}
+.spacer{flex:1}
+.btn{
+  border:1px solid var(--line);background:var(--surface);border-radius:6px;
+  padding:7px 12px;font-size:13px;cursor:pointer;
+}
+.btn:hover{background:#f1f1ee}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2650c4}
+.btn.link{border:none;background:none;color:var(--accent);padding:2px 0;font-size:12px;text-decoration:underline;cursor:pointer}
+.body{flex:1;display:flex;min-height:0}
+
+/* builder-chrome mode toggle (Auto/Light/Dark) — UX-SPEC §1.1 */
+.modetoggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.modetoggle button{
+  border:none;background:var(--surface);color:var(--ink-2);padding:6px 10px;font-size:12px;
+  cursor:pointer;border-right:1px solid var(--line);
+}
+.modetoggle button:last-child{border-right:none}
+.modetoggle button:hover{background:var(--box)}
+.modetoggle button[aria-checked="true"]{background:var(--accent);color:#fff}
+
+/* ---------- sidebar ---------- */
+.sidebar{
+  width:340px;flex:none;border-right:1px solid var(--line);background:var(--surface);
+  overflow-y:auto;padding-bottom:64px;
+}
+.group{border-bottom:1px solid var(--line-2)}
+.group-hd{
+  position:sticky;top:0;z-index:3;background:var(--surface);
+  border-bottom:1px solid var(--line-2);padding:10px 16px 8px;
+}
+.group-hd h3{
+  margin:0;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);
+}
+.group-hd p{margin:3px 0 0;font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.group-bd{padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.knob > label,.knob > .lbl{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
+.knob .help{font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.35}
+select{
+  width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface);
+  padding:7px 8px;font-size:13px;
+}
+
+/* color knob trigger row */
+.swatch-row{
+  width:100%;display:flex;align-items:center;gap:9px;border:1px solid var(--line);
+  border-radius:6px;background:var(--surface);padding:6px 9px;cursor:pointer;text-align:left;
+}
+.swatch-row:hover{border-color:#b9bab4}
+.swatch-row[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.sw{
+  width:26px;height:26px;border-radius:5px;flex:none;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.14);
+}
+.swatch-row .nm{flex:1;font-size:12.5px}
+.swatch-row .hx{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+
+/* preset list */
+.preset{display:flex;flex-direction:column;gap:2px}
+.preset-item{
+  display:block;width:100%;text-align:left;border:1px solid transparent;border-radius:6px;
+  background:none;padding:6px 7px;cursor:pointer;
+}
+.preset-item:hover{background:#f2f2ef}
+.preset-item[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.preset-item .pi-hd{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink-3);flex:none}
+.preset-item[aria-checked="true"] .dot{border-color:var(--accent);background:radial-gradient(var(--accent) 0 45%,transparent 46%)}
+
+/* border color: named steps + mini-card, outcome not ingredient — UX-SPEC §2.5 redesign */
+.border-row{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid transparent;
+  border-radius:6px;background:none;padding:5px 7px;cursor:pointer;
+}
+.border-row:hover{background:#f2f2ef}
+.border-row[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.border-row[aria-checked="true"] .dot{border-color:var(--accent);background:radial-gradient(var(--accent) 0 45%,transparent 46%)}
+.border-row .pi-nm{width:54px;flex:none;font-size:12px}
+.minicard{position:relative;width:152px;height:34px;flex:none}
+.mc-half{position:absolute;inset:0;border-radius:6px;box-sizing:border-box}
+.mc-half.mc-dk{clip-path:polygon(100% 0,100% 100%,0 100%)}
+.preset-item .pi-nm{font-size:12px}
+.pstrip{display:flex;height:16px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.11)}
+.pstrip span{flex:1}
+
+/* 4-option background picker */
+.bg4{display:flex;gap:6px}
+.bg4 button{
+  flex:1;border:1px solid var(--line);border-radius:6px;background:var(--surface);
+  padding:5px 3px 6px;cursor:pointer;font-size:10px;color:var(--ink-2);line-height:1.2;
+}
+.bg4 button[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.bg4 .chip{display:block;height:22px;border-radius:3px;margin-bottom:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+
+/* ---------- preview ---------- */
+/* no sticky column header — light/dark is self-evident from each panel's own background,
+   per the owner's review comment on UX-SPEC §1.2 */
+.preview{flex:1;min-width:0;overflow-y:auto;position:relative;background:var(--paper)}
+.pv-inner{padding:24px 24px 96px}
+.sec{padding:26px 0 4px}
+.sec-hd{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:14px}
+.sec-hd h2{margin:0;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+.sec-hd p{margin:0;flex:1;font-size:11.5px;color:var(--ink-3)}
+.badge{
+  font-family:var(--mono);font-size:9.5px;border:1px solid var(--line);border-radius:99px;
+  padding:1px 7px;color:var(--ink-2);background:var(--surface);white-space:nowrap;
+}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{border-radius:10px;padding:14px;min-height:60px}
+.panel.lt{background:#fafafa;border:1px solid #e3e3e3}
+.panel.dk{background:#1b1c1f;border:1px solid #2e3034}
+.full{border-radius:10px;padding:14px;background:var(--surface);border:1px solid var(--line-2)}
+
+/* preview content */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border-radius:7px;padding:9px}
+.tile .cap{font-size:11px;font-weight:500;margin-top:7px}
+.tile .hex{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:1px}
+.dk .tile .cap{color:#e8e9ea}
+.dk .tile .hex{color:#8b9098}
+.fill{height:44px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip-b{border-radius:7px;padding:9px 11px;font-size:12px;font-weight:500;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.chip-w{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:3px}
+.rampgrid{display:flex;gap:4px}
+.rampgrid .st{flex:1;text-align:center}
+.rampgrid .st .c{height:44px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.rampgrid .st .n{font-size:11px;font-weight:500;margin-top:4px}
+.rampgrid .st .h{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+.palgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.palgrid .p .c{height:34px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.palgrid .p .n{font-size:11px;margin-top:4px}
+.palgrid .p .h{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+
+/* ---------- popover ---------- */
+.pop{
+  position:fixed;z-index:60;width:300px;background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:12px;display:none;
+}
+.pop.open{display:block}
+.pop h4{margin:0 0 8px;font-size:12.5px;font-weight:600}
+.pop-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pop-hd .big{width:34px;height:34px;border-radius:6px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.pop-hd input{
+  flex:1;min-width:0;font-family:var(--mono);font-size:12px;border:1px solid var(--line);
+  border-radius:5px;padding:6px 8px;
+}
+.pop .grp{margin-bottom:12px}
+.pop .grp > .t{font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+.dots{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+.dots button{all:unset;aspect-ratio:1;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.dots button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dots.eight{grid-template-columns:repeat(8,1fr)}
+.pop .sep{height:1px;background:var(--line-2);margin:12px -12px}
+.sv{height:130px;border-radius:6px;margin-bottom:7px;position:relative;
+  background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),#009ac7}
+.sv .knobdot{position:absolute;left:62%;top:26%;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.hue{height:14px;border-radius:99px;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.warn{
+  margin-top:11px;border:1px solid #eddcbd;background:var(--note-bg);color:var(--note);
+  border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.35;display:none;
+}
+.warn.on{display:block}
+
+/* ---------- overlay / dialog / sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(20,22,26,.36);z-index:50;display:none}
+.scrim.open{display:block}
+.dialog{
+  position:fixed;z-index:70;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(1100px,94vw);max-height:86vh;overflow:auto;background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.3);
+  padding:20px;display:none;
+}
+.dialog.open{display:block}
+.dialog h3{margin:0 0 4px;font-size:15px}
+.dialog p.sub{margin:0 0 16px;font-size:12px;color:var(--ink-3)}
+table.cmp{border-collapse:collapse;width:100%;font-size:11px;table-layout:fixed}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line-2);padding:5px 7px;text-align:left}
+table.cmp th{
+  font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-2);cursor:pointer;
+  text-transform:none;letter-spacing:0;
+}
+table.cmp th:hover{color:var(--accent);text-decoration:underline}
+table.cmp td.pos{font-family:var(--mono);color:var(--ink-2)}
+table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.sheet{
+  position:fixed;z-index:70;top:0;right:0;bottom:0;width:min(560px,92vw);background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:-16px 0 50px rgba(0,0,0,.2);
+  padding:20px;display:none;overflow:auto;
+}
+.sheet.open{display:block}
+.sheet h3{margin:0 0 14px;font-size:15px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:14px 0 14px}
+.tabs button{border:none;background:none;padding:7px 12px;font-size:12.5px;cursor:pointer;color:var(--ink-2);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:500}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+.field label{font-size:12.5px;font-weight:500}
+.field input{border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:var(--mono);font-size:12.5px}
+.close-x{position:absolute;top:14px;right:16px;border:none;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-3)}
+
+@media (max-width:1279px){ .sidebar{width:300px} }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="wf-banner">
+    <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
+    <div>Try: the Auto/Light/Dark toggle · a color row · Base tone · Body font family · Compare all · Export theme</div>
+  </div>
+
+  <!-- ============ APP BAR ============ -->
+  <div class="appbar">
+    <div class="brand">HA Theme Builder<small>Turn the knobs on the left. Everything updates live, in light and dark at once.</small></div>
+    <div class="spacer"></div>
+    <!-- builder-chrome mode toggle — §1.1. Auto/Light/Dark for the SIDEBAR AND APP BAR ONLY.
+         The preview panels (.panel.lt / .panel.dk) never read this. They stay permanently light
+         and dark, side by side, per PLAN.md §3 decision 4 and CLAUDE.md. -->
+    <div class="modetoggle" id="modeToggle" role="radiogroup" aria-label="Builder color mode">
+      <button type="button" role="radio" aria-checked="true" data-mode="auto" title="Auto — follow the OS">Auto</button>
+      <button type="button" role="radio" aria-checked="false" data-mode="light" title="Light">Light</button>
+      <button type="button" role="radio" aria-checked="false" data-mode="dark" title="Dark">Dark</button>
+    </div>
+    <span class="tag">§1.1</span>
+    <button class="btn" disabled>Reset to defaults</button>
+    <button class="btn primary" id="btnExport">Export theme</button>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar">
+
+      <!-- 1 Typography -->
+      <section class="group">
+        <div class="group-hd">
+          <h3>1 · Typography <span class="tag">§3.2</span></h3>
+        </div>
+        <div class="group-bd">
+          <div class="knob">
+            <label for="f-body">Body font family</label>
+            <select id="f-body" class="fontsel"></select>
+            <div class="help">Most of the UI: labels, buttons, entity names, headings and long text. Code stays monospace.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 Brand & status -->
+      <section class="group">
+        <div class="group-hd">
+          <h3>2 · Brand &amp; status colors <span class="tag">§2.2</span></h3>
+          <p>Each of these seeds a full ramp. You pick one shade. The rest are generated.</p>
+        </div>
+        <div class="group-bd" id="brandKnobs"></div>
+      </section>
+
+      <!-- 3 Base tone -->
+      <section class="group">
+        <div class="group-hd">
+          <h3>3 · Base tone <span class="tag">§3.3</span></h3>
+          <p>Every background, border and text color comes from this ramp.</p>
+        </div>
+        <div class="group-bd">
+          <div class="preset" id="rampList" role="radiogroup" aria-label="Base tone"></div>
+          <button class="btn link" id="btnCmpRamps">Compare all base tones &rarr;</button>
+        </div>
+      </section>
+
+      <!-- 4 Surfaces -->
+      <section class="group">
+        <div class="group-hd">
+          <h3>4 · Surfaces <span class="tag">§2.5</span></h3>
+        </div>
+        <div class="group-bd">
+          <div class="knob">
+            <span class="lbl">Card background</span>
+            <div class="bg4" id="bgCard" role="radiogroup" aria-label="Card background"></div>
+          </div>
+          <div class="knob">
+            <span class="lbl">Primary background</span>
+            <div class="bg4" id="bgPrimary" role="radiogroup" aria-label="Primary background"></div>
+            <div class="help">Dark mode uses the matching dark shade automatically.</div>
+          </div>
+          <div class="knob">
+            <span class="lbl">Border color</span>
+            <div class="preset" id="borderList" role="radiogroup" aria-label="Border color"></div>
+            <div class="help">Each option is a small card: real background, real border, real
+              shadow. Light half top-left, dark half bottom-right. <span class="tag">§2.5 · redesigned</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 Entity colors -->
+      <section class="group">
+        <div class="group-hd">
+          <h3>5 · Entity colors <span class="tag">§3.3 · was &#34;Home Assistant colors&#34;, O-2</span></h3>
+          <p>These color entity icons and badges — a light is amber, a lock is red.</p>
+        </div>
+        <div class="group-bd">
+          <div class="preset" id="palList" role="radiogroup" aria-label="Entity colors"></div>
+          <button class="btn link" id="btnCmpPals">Compare all palettes &rarr;</button>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- ============ PREVIEW ============ -->
+    <main class="preview" id="preview">
+      <div class="pv-inner">
+
+        <!-- 1. Living room -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Living room</h2>
+            <p>Your dashboard, built only from the theme. <span class="tag">§4.6 · M5 · first, not last</span></p>
+          </div>
+          <div class="pair">
+            <div class="panel lt">
+              <div class="box" style="height:26px;margin-bottom:8px">room header — name · 22.8&deg; · 57%</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:56px 56px 56px;gap:8px">
+                <div class="box">Floor lamp<br>On &middot; 60%</div>
+                <div class="box" style="grid-row:1 / 3;grid-column:2">Spotlights<br>brightness slider</div>
+                <div class="box">Bar lamp &middot; Off</div>
+                <div class="box">Blinds &middot; Open</div>
+                <div class="box">Nest mini &middot; Idle</div>
+              </div>
+              <div class="box" style="height:96px;margin-top:10px">second card <span class="tag">new</span><br>entity icons in palette colors &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
+            </div>
+            <div class="panel dk">
+              <div class="box dk" style="height:26px;margin-bottom:8px">room header — name · 22.8&deg; · 57%</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:56px 56px 56px;gap:8px">
+                <div class="box dk">Floor lamp<br>On &middot; 60%</div>
+                <div class="box dk" style="grid-row:1 / 3;grid-column:2">Spotlights<br>brightness slider</div>
+                <div class="box dk">Bar lamp &middot; Off</div>
+                <div class="box dk">Blinds &middot; Open</div>
+                <div class="box dk">Nest mini &middot; Idle</div>
+              </div>
+              <div class="box dk" style="height:96px;margin-top:10px">second card<br>entity icons in palette colors &middot; primary/secondary buttons &middot; error/warning/success/info alerts</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Surfaces & dividers -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Surfaces &amp; dividers</h2>
+            <p>The backgrounds cards sit on, and the line between them. <span class="tag">§4.1</span></p>
+          </div>
+          <div class="pair">
+            <div class="panel lt"><div class="tiles" id="surfLight"></div></div>
+            <div class="panel dk"><div class="tiles" id="surfDark"></div></div>
+          </div>
+        </section>
+
+        <!-- 3. Text & type -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Text &amp; type</h2>
+            <p>Three text colors, one typeface at three sizes, plus fixed code. <span class="tag">§4.2 · type specimen</span></p>
+          </div>
+          <div class="pair">
+            <div class="panel lt">
+              <div style="font-size:19px;font-weight:500">The quick brown fox <span style="color:#6b6b6b">jumps over</span> <span style="color:#a5a5a5">the lazy dog</span></div>
+              <div class="chip-w">Primary #212121 &middot; Secondary #727272 &middot; Disabled #a5a5a5</div>
+              <div class="box" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading size, body face &middot; body sentence &middot; longform paragraph, body face &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span> (fixed monospace)</div>
+            </div>
+            <div class="panel dk">
+              <div style="font-size:19px;font-weight:500;color:#fff">The quick brown fox <span style="color:#c9c9c9">jumps over</span> <span style="color:#7c7c7c">the lazy dog</span></div>
+              <div class="chip-w" style="color:#8b9098">Primary #ffffff &middot; Secondary #cccccc &middot; Disabled #7c7c7c</div>
+              <div class="box dk" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading size, body face &middot; body sentence &middot; longform paragraph, body face &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span> (fixed monospace)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Brand & status -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Brand &amp; status</h2>
+            <p>Labels are rendered on the color, so you can see whether they are legible. <span class="tag">§4.3</span></p>
+          </div>
+          <div class="pair">
+            <div class="panel lt"><div class="chips" id="chipsLight"></div></div>
+            <div class="panel dk"><div class="chips" id="chipsDark"></div></div>
+          </div>
+        </section>
+
+        <!-- 5. Neutral ramp -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Neutral ramp</h2>
+            <p>The backbone. Every background, border and text color is a step on this ramp. <span class="tag">§4.4</span></p>
+            <span class="badge">Both modes</span>
+          </div>
+          <div class="full"><div class="rampgrid" id="rampPreview"></div></div>
+        </section>
+
+        <!-- 6. Entity colors -->
+        <section class="sec">
+          <div class="sec-hd">
+            <h2>Entity colors</h2>
+            <p>These color entity icons and badges — a light is amber, a lock is red. <span class="tag">§4.5 · 19 cards &rarr; 18 swatches</span></p>
+            <span class="badge">Both modes</span>
+          </div>
+          <div class="full"><div class="palgrid" id="palPreview"></div></div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ COLOUR POPOVER ============ -->
+<div class="pop" id="pop" role="dialog" aria-label="Choose a color">
+  <h4 id="popTitle">Primary color</h4>
+  <div class="pop-hd">
+    <span class="big" id="popBig"></span>
+    <input id="popHex" spellcheck="false" aria-label="Hex value">
+    <button class="btn link" id="popReset">Reset</button>
+  </div>
+
+  <!-- the neutral ramp is not a swatch source here — owner review comment, UX-SPEC §2.2 -->
+  <div class="grp">
+    <div class="t">From your entity colors <span class="tag" id="popPalName">Home Assistant</span></div>
+    <div class="dots" id="popPal" role="radiogroup" aria-label="Palette colors"></div>
+  </div>
+
+  <div class="grp" id="popRecentGrp" style="display:none">
+    <div class="t">Recent</div>
+    <div class="dots eight" id="popRecent" role="radiogroup" aria-label="Recently used"></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="grp" style="margin-bottom:0">
+    <div class="t">Pick a color</div>
+    <div class="sv" id="popSV"><span class="knobdot"></span></div>
+    <div class="hue"></div>
+  </div>
+
+  <div class="warn" id="popWarn">White text on this color is hard to read. <span style="opacity:.7">(2.1:1 — needs 4.5:1)</span></div>
+</div>
+
+<!-- ============ SCRIM + DIALOG + SHEET ============ -->
+<div class="scrim" id="scrim"></div>
+
+<div class="dialog" id="cmpDialog">
+  <button class="close-x" id="cmpClose" aria-label="Close">&times;</button>
+  <h3 id="cmpTitle">Compare all base tones</h3>
+  <p class="sub">Click a column heading to use that preset. <span class="tag">§3.3 escape hatch</span></p>
+  <table class="cmp"><thead><tr id="cmpHead"></tr></thead><tbody id="cmpBody"></tbody></table>
+</div>
+
+<div class="sheet" id="exportSheet" role="dialog" aria-label="Export theme">
+  <button class="close-x" id="expClose" aria-label="Close">&times;</button>
+  <h3>Export theme <span class="tag">§1.4</span></h3>
+  <div class="field">
+    <label for="themeName">Theme name</label>
+    <input id="themeName" value="My Theme" spellcheck="false">
+  </div>
+  <div class="tabs" id="expTabs">
+    <button aria-selected="true" data-tab="yaml">YAML</button>
+    <button aria-selected="false" data-tab="install">Install</button>
+  </div>
+  <div id="tab-yaml">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn">Copy</button>
+      <button class="btn">Download</button>
+    </div>
+    <div class="box" style="height:340px">generated YAML — engine toYaml()<br>My Theme: &rarr; modes: {light, dark}<br><span class="tag">downloads as my-theme.yaml — §1.4</span></div>
+  </div>
+  <div id="tab-install" style="display:none">
+    <div class="box" style="height:170px;margin-bottom:12px">1. Create a themes folder next to configuration.yaml, if you do not have one<br>2. Save the downloaded file into that folder<br>3. Under frontend: add themes: !include_dir_merge_named themes (once)<br>4. First time: restart. After that: the "Reload themes" action<br>5. Pick the theme on your profile page<span class="tag">§1.4 · checked against HA's own docs</span></div>
+    <div class="box" style="height:120px">FONT LOADING SNIPPET<br>at most one — shown only when Body is a non-system, non-Roboto font<br>extra_module_url: ...</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------- builder-chrome mode toggle: Auto/Light/Dark — UX-SPEC §1.1 -----------------
+   Chrome only: sidebar, app bar, dialogs. Never the preview — .panel.lt / .panel.dk are literal
+   hex and read no CSS variable this toggle touches. That split is the whole point (PLAN.md §3
+   decision 4, CLAUDE.md: preview stays permanently light+dark side by side, no mode toggle). */
+const CHROME_KEY = "ha-theme-builder:color-scheme";
+const prefersDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+function loadChromeMode(){
+  try{
+    const v = localStorage.getItem(CHROME_KEY);
+    return (v === "light" || v === "dark" || v === "auto") ? v : "auto";
+  } catch(e){ return "auto"; }
+}
+function saveChromeMode(mode){
+  try{ localStorage.setItem(CHROME_KEY, mode); } catch(e){ /* never throw */ }
+}
+function applyChromeMode(mode){
+  const resolved = mode === "auto" ? ((prefersDark && prefersDark.matches) ? "dark" : "light") : mode;
+  document.documentElement.setAttribute("data-chrome", resolved);
+  document.querySelectorAll("#modeToggle button").forEach(b=>{
+    b.setAttribute("aria-checked", String(b.dataset.mode === mode));
+  });
+}
+let chromeMode = loadChromeMode();
+document.querySelectorAll("#modeToggle button").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    chromeMode = b.dataset.mode;
+    saveChromeMode(chromeMode);
+    applyChromeMode(chromeMode);
+  });
+});
+if (prefersDark){
+  prefersDark.addEventListener("change", ()=>{
+    if (chromeMode === "auto") applyChromeMode("auto"); /* live-follow the OS while on Auto */
+  });
+}
+applyChromeMode(chromeMode);
+
+/* ---------------- data (real hexes from .references/colors) ---------------- */
+
+const RAMP_STEPS = ["05","10","20","30","40","50","60","70","80","90","95"];
+
+/* order + labels mirror src/engine/presets/neutral-ramps.ts (NEUTRAL_RAMPS) */
+const RAMPS = [
+  ["Home Assistant",   ["#141414","#202020","#363636","#4a4a4a","#5e5e5e","#7a7a7a","#989898","#b1b1b1","#cccccc","#e6e6e6","#f3f3f3"]],
+  ["Rounded Theme",    ["#121418","#1D2029","#313642","#454A57","#595E6B","#767A84","#9498A3","#ACB1BE","#C7CCD8","#E2E6EF","#F1F3F9"]],
+  ["Slate (Tailwind)", ["#0C1325","#152034","#29374C","#3B4B62","#4F5F77","#6B7B93","#8A9AAF","#A4B3C6","#C1CEDE","#E0E7F0","#EFF4F9"]],
+  ["Gray (Tailwind)",  ["#0D1421","#172030","#2C3747","#404B5B","#555F6F","#737A8A","#9199A5","#ABB2BD","#C7CDD5","#E4E6EB","#F2F3F6"]],
+  ["Zinc (Tailwind)",  ["#141416","#202023","#35353B","#494952","#5D5D67","#797983","#9797A0","#B0B0B8","#CBCBD2","#E6E6E8","#F3F3F4"]],
+  ["Stone (Tailwind)", ["#161412","#231F1D","#3A3532","#4E4944","#635D57","#7F7974","#9D9792","#B5B0AC","#D0CBC8","#E8E6E4","#F4F3F2"]],
+  ["Mauve (Tailwind)", ["#171218","#251D26","#3D323E","#524554","#665968","#827583","#9F94A0","#B7ADB8","#D1C9D1","#E8E5E8","#F4F3F4"]],
+  ["Olive (Tailwind)", ["#141410","#212119","#37372C","#4B4B3D","#5F5F4E","#7B7B6A","#99998A","#B2B2A4","#CDCDC2","#E7E7E0","#F3F3EF"]],
+  ["Mist (Tailwind)",  ["#111516","#1B2123","#2F383A","#414C4F","#536164","#6F7D80","#8E9B9E","#A9B3B6","#C6CED0","#E3E7E8","#F1F4F4"]],
+  ["Taupe (Tailwind)", ["#171312","#251F1C","#3D3431","#534744","#675B57","#837772","#A19591","#B9AFAB","#D2CAC8","#E9E5E4","#F5F2F2"]]
+];
+
+const HUES = ["red","pink","purple","deep-purple","indigo","blue","light-blue","cyan","teal",
+              "green","light-green","lime","yellow","amber","orange","deep-orange","brown","blue-grey"];
+
+/* rows in .references order: HA, TWv3, TWv4, Bulma, MaterialAccent, Ant, Chakra, Rounded */
+const PAL_ROWS = [
+  ["#f44336","#ef4444","#fb2c36","#f14668","#ff1744","#f5222d","#e53e3e","#ff918a"],
+  ["#e91e63","#ec4899","#f6339a","#dd3687","#f50057","#eb2f96","#d53f8c","#ff8299"],
+  ["#926bc7","#a855f7","#ad46ff","#b86bff","#e040fb","#722ed1","#805ad5","#efb1ff"],
+  ["#6e41ab","#8b5cf6","#8e51ff","#964be7","#6200ea","#581395","#6b30a6","#a57fe3"],
+  ["#3f51b5","#6366f1","#615fff","#485fc7","#304ffe","#2f54eb","#3444ab","#6a7eca"],
+  ["#2196f3","#3b82f6","#2b7fff","#3e8ed0","#448aff","#1677ff","#3182ce","#90bfff"],
+  ["#03a9f4","#0ea5e9","#00a6f4","#43a3de","#00b0ff","#3d9bff","#30a1df","#91d0fc"],
+  ["#00bcd4","#06b6d4","#00b8db","#49cee4","#00b8d4","#00c6e4","#00b5d8","#a6d2da"],
+  ["#009688","#14b8a6","#00bba7","#00d1b2","#00bfa5","#13c2c2","#319795","#80b9b0"],
+  ["#4caf50","#22c55e","#00c950","#48c78e","#00c853","#52c41a","#38a169","#cef595"],
+  ["#8bc34a","#84cc16","#7ccf00","#a1cd75","#64dd17","#a0d911","#6bbf5a","#f4ffc3"],
+  ["#cddc39","#c5d600","#c5d500","#d0dc7e","#aeea00","#cfdf00","#d1db43","#f4ff96"],
+  ["#ffeb3b","#f7de00","#f7de00","#ffe08a","#ffea00","#fadb14","#f4df57","#ffda78"],
+  ["#ffc107","#eab308","#f0b100","#f6cb55","#ffc400","#faad14","#d69e2e","#f2ca75"],
+  ["#ff9800","#f3920d","#f68f00","#f09010","#ff9100","#fa8c16","#ec9122","#ffb581"],
+  ["#ff6f22","#f97316","#ff6900","#ff470f","#ff6e40","#fa541c","#dd6b20","#ffab86"],
+  ["#795548","#78716c","#79716b","#694e44","#795548","#795346","#765448","#877169"],
+  ["#607d8b","#64748b","#62748e","#5d7682","#607d8b","#5d7682","#718096","#80919a"]
+];
+/* order + labels mirror src/engine/presets/palettes.ts (EXTENDED_PALETTES) */
+const PAL_NAMES  = ["Home Assistant","Tailwind v3","Tailwind v4","Material Accent","Ant Design","Chakra UI","Bulma","Rounded Theme"];
+const PAL_SRCIDX = [0,1,2,4,5,6,3,7];   /* PAL_ROWS column order is the reference table's */
+const PALETTES = PAL_NAMES.map((n,i)=>[n, PAL_ROWS.map(r=>r[PAL_SRCIDX[i]])]);
+
+/* groups + order mirror FONT_CATEGORY_LABELS key order — System is LAST */
+const FONTS = [
+  ["Sans-serif", ["Roboto","Inter","Figtree","DM Sans","Nunito Sans","Manrope","Outfit","Rubik"]],
+  ["Serif", ["Source Serif 4","Lora","Merriweather","Bitter"]],
+  ["Display serif", ["Fraunces","Playfair Display"]],
+  ["Monospace", ["JetBrains Mono","IBM Plex Mono"]],
+  ["System", ["System sans","System serif","System mono"]]
+];
+/* v1 ships one font knob, Body — it drives fonts.body, fonts.heading AND fonts.longform.
+   fonts.code stays fixed at its own default ("System mono" here, "monospace" in the engine)
+   — Heading/Longform/Code are no longer knobs, see UX-SPEC §3.2. */
+const FONT_DEFAULTS = {"f-body":"Roboto"};
+
+const BRAND = [
+  {id:"primary", label:"Primary color", hex:"#009ac7"},
+  {id:"accent",  label:"Accent color",  hex:"#ff9800"},
+  {id:"error",   label:"Error color",   hex:"#dc3146"},
+  {id:"warning", label:"Warning color", hex:"#ff9342"},
+  {id:"success", label:"Success color", hex:"#00ac49"},
+  {id:"info",    label:"Info color",    hex:"#039be5"}
+];
+
+/* ---------------- recent colors: localStorage, per-entry 7-day staleness — UX-SPEC §2.6, O-7 ---------------- */
+const RECENT_KEY = "ha-theme-builder:recent-colors";
+const RECENT_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+function loadRecent(){
+  try{
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const now = Date.now();
+    const fresh = JSON.parse(raw).filter(e => e && typeof e.hex === "string" && (now - e.lastUsedAt) < RECENT_STALE_MS);
+    saveRecent(fresh); /* a read prunes stale entries and writes the pruned list back */
+    return fresh;
+  } catch(e){
+    return []; /* localStorage unavailable — session-only for this load */
+  }
+}
+function saveRecent(list){
+  try{ localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0,8))); }
+  catch(e){ /* quota, private mode, disabled store — never throw */ }
+}
+
+/* ---------------- state ---------------- */
+const state = {
+  ramp: 0, pal: 0,
+  brand: Object.fromEntries(BRAND.map(b=>[b.id,b.hex])),
+  /* defaults mirror engine DEFAULT_CONFIG: cardBackground "neutral-100",
+     primaryBackground "neutral-95", borderColor "neutral-05" = the "Strong" named step */
+  cardBg: 3, primaryBg: 2,   /* index into BG4 */
+  border: "strong",           /* named step id — see BORDER_STEPS, UX-SPEC §2.5 redesign */
+  recent: loadRecent(),       /* [{hex, lastUsedAt}], newest first, persisted */
+  openKnob: null
+};
+/* "Neutral","100" resolves via the -1 sentinel below, not a RAMPS lookup — neutral-100 is
+   #ffffff in every preset (src/engine/presets/neutral-ramps.ts), so no ramp index is needed.
+   SurfaceChoice dropped the old "white" name for this same value — UX-SPEC §2.7. */
+const BG4 = [["Neutral","80",8],["Neutral","90",9],["Neutral","95",10],["Neutral","100",-1]];
+
+const $  = s => document.querySelector(s);
+const el = (t,c) => { const n=document.createElement(t); if(c) n.className=c; return n; };
+const ramp = () => RAMPS[state.ramp][1];
+const pal  = () => PALETTES[state.pal][1];
+const bgHex = i => BG4[i][2] < 0 ? "#ffffff" : ramp()[BG4[i][2]];
+
+/* ---------------- border color: named steps, mini-card render — UX-SPEC §2.5 redesign ---------------- */
+/* Slots picked by rendering all 11 at 1f alpha over every card choice, light + dark, on the
+   HA ramp and a tinted ramp (Mauve), and reading the composited result — see UX-SPEC §2.5 for
+   the numbers. neutral-90 was rejected: it composites to an EXACT match with the default
+   neutral-100 card in dark mode (an accidental full "match-card" collision, not the deliberate
+   Invisible step), so it cannot serve as a distinguishable named rung. */
+const BORDER_STEPS = [
+  { id: "invisible", label: "Invisible", idx: null }, /* resolves to card bg — §2.7, shipped in PR #18 */
+  { id: "hairline",  label: "Hairline",  idx: 8 },     /* neutral-80 */
+  { id: "subtle",    label: "Subtle",    idx: 6 },     /* neutral-60 */
+  { id: "medium",    label: "Medium",    idx: 3 },     /* neutral-30 */
+  { id: "strong",    label: "Strong",    idx: 0 },     /* neutral-05, default */
+];
+/* index-space mirror of derive.ts's mirrorSlot(s) = 100 - s: RAMP_STEPS is symmetric
+   (05<->95, 10<->90, 20<->80, 30<->70, 40<->60, 50<->50), so 10-i mirrors correctly */
+const mirrorIdx = i => 10 - i;
+/* the dark-mode card approximation this wireframe already uses in surfaceTiles() — kept
+   consistent rather than porting the engine's real anchor-mirror-derive algorithm (surfaces(),
+   §2.7), which is not a "just mirror the light slot" calculation. neutral-10 (#202020) is
+   surfaces()'s own answer for the DEFAULT card/primary pair, traced by hand against the
+   shipped derive.ts — not the same fixed value for every pair a user could pick. */
+const darkCardHex = () => ramp()[1];
+function borderStepHex(step, dark){
+  if (step.idx === null) return dark ? darkCardHex() : bgHex(state.cardBg); /* Invisible */
+  return ramp()[dark ? mirrorIdx(step.idx) : step.idx];
+}
+/* the shadow fix (§2.7): --shadow-color always reads neutral-05, never the border knob's own
+   slot and never mirrored per mode — only the alpha grows in dark. This is what keeps the
+   shadow alive when Border color = Invisible. */
+function shadowColorHex(dark){ return ramp()[0] + (dark ? "7a" : "29"); }
+
+function lum(hex){
+  const v = [1,3,5].map(i=>parseInt(hex.substr(i,2),16)/255)
+    .map(c=>c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4));
+  return .2126*v[0]+.7152*v[1]+.0722*v[2];
+}
+const contrastWhite = hex => (1.05)/(lum(hex)+.05);
+
+/* ---------------- sidebar: fonts ---------------- */
+document.querySelectorAll("select.fontsel").forEach(sel=>{
+  FONTS.forEach(([g,items])=>{
+    const og = el("optgroup"); og.label = g;
+    items.forEach(f=>{ const o = el("option"); o.value=f; o.textContent=f; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+  sel.value = FONT_DEFAULTS[sel.id];
+});
+
+/* ---------------- sidebar: brand knobs ---------------- */
+const brandKnobs = $("#brandKnobs");
+BRAND.forEach(b=>{
+  const w = el("div","knob");
+  const btn = el("button","swatch-row");
+  btn.type="button"; btn.setAttribute("aria-haspopup","dialog"); btn.setAttribute("aria-expanded","false");
+  btn.dataset.knob = b.id;
+  btn.innerHTML = '<span class="sw"></span><span class="nm"></span><span class="hx"></span>';
+  btn.addEventListener("click",e=>{ e.stopPropagation(); openPop(b.id, btn); });
+  w.appendChild(btn); brandKnobs.appendChild(w);
+});
+function paintBrandRows(){
+  brandKnobs.querySelectorAll(".swatch-row").forEach(btn=>{
+    const b = BRAND.find(x=>x.id===btn.dataset.knob);
+    const hex = state.brand[b.id];
+    btn.querySelector(".sw").style.background = hex;
+    btn.querySelector(".nm").textContent = b.label;
+    btn.querySelector(".hx").textContent = hex;
+    btn.setAttribute("aria-label", b.label + ", currently " + hex);
+  });
+}
+
+/* ---------------- sidebar: preset lists ---------------- */
+/* O-8: the sidebar list strips the " (Tailwind)" suffix from preset.label. The compare-all
+   dialog (openCompare) keeps the full label — see UX-SPEC §3.3, §7 O-8. */
+function buildPresetList(node, data, getSel, setSel, stripSuffix){
+  node.innerHTML = "";
+  data.forEach(([name,colors],i)=>{
+    const it = el("button","preset-item");
+    it.type="button"; it.setAttribute("role","radio");
+    it.setAttribute("aria-checked", String(i===getSel()));
+    const shown = stripSuffix ? name.replace(/ \(Tailwind\)$/, "") : name;
+    const hd = el("div","pi-hd");
+    hd.innerHTML = '<span class="dot"></span><span class="pi-nm">'+shown+'</span>';
+    const st = el("div","pstrip");
+    colors.forEach(c=>{ const s=el("span"); s.style.background=c; st.appendChild(s); });
+    it.appendChild(hd); it.appendChild(st);
+    /* stopPropagation so an open color popover survives a click on the sidebar behind it.
+       Matters most for the entity-palette list — its swatch group re-renders live inside the
+       popover (§2.3). The neutral ramp no longer has a swatch group in the popover to re-render,
+       but the guard is harmless for that list too, so one mechanism covers both. */
+    it.addEventListener("click",e=>{ e.stopPropagation(); setSel(i); });
+    node.appendChild(it);
+  });
+}
+function paintPresets(){
+  buildPresetList($("#rampList"), RAMPS, ()=>state.ramp, i=>{ state.ramp=i; renderAll(); }, true);
+  buildPresetList($("#palList"),  PALETTES, ()=>state.pal, i=>{ state.pal=i; renderAll(); });
+}
+
+/* ---------------- sidebar: surfaces ---------------- */
+function paintBg(nodeId, key){
+  const node = $("#"+nodeId); node.innerHTML="";
+  BG4.forEach((o,i)=>{
+    const b = el("button"); b.type="button"; b.setAttribute("role","radio");
+    b.setAttribute("aria-checked", String(state[key]===i));
+    const c = el("span","chip"); c.style.background = o[2]<0 ? "#ffffff" : ramp()[o[2]];
+    b.appendChild(c);
+    b.appendChild(document.createTextNode(o[0] + (o[1] ? " " + o[1] : "")));
+    b.addEventListener("click",()=>{ state[key]=i; renderAll(); });
+    node.appendChild(b);
+  });
+}
+function paintBorderList(){
+  const node = $("#borderList"); node.innerHTML="";
+  BORDER_STEPS.forEach(step=>{
+    const it = el("button","border-row");
+    it.type="button"; it.setAttribute("role","radio");
+    it.setAttribute("aria-checked", String(state.border===step.id));
+
+    const dot = el("span","dot");
+    const nm = el("span","pi-nm"); nm.textContent = step.label;
+    const mc = el("span","minicard");
+    let lightHex = "", darkHex = "";
+    [false,true].forEach(dark=>{
+      const half = el("span", "mc-half " + (dark ? "mc-dk" : "mc-lt"));
+      const cardHex = dark ? darkCardHex() : bgHex(state.cardBg);
+      const borderHex = borderStepHex(step, dark);
+      if (dark) darkHex = borderHex; else lightHex = borderHex;
+      half.style.background = cardHex;
+      /* a real 1px alpha border, composited live by the browser over this half's own
+         background — the same 1f alpha the engine ships, no precomputed blend needed */
+      half.style.border = "1px solid " + borderHex + "1f";
+      half.style.boxShadow = "0 2px 4px " + shadowColorHex(dark);
+      mc.appendChild(half);
+    });
+
+    it.appendChild(dot); it.appendChild(nm); it.appendChild(mc);
+    it.title = step.id === "invisible"
+      ? "Invisible — matches the card surface in both modes"
+      : "Light " + lightHex + " · Dark " + darkHex + " (rendered at 12% opacity)";
+    it.addEventListener("click", ()=>{ state.border = step.id; renderAll(); });
+    node.appendChild(it);
+  });
+}
+
+/* ---------------- preview ---------------- */
+function surfaceTiles(node, dark){
+  const r = ramp();
+  /* dark values below are surfaces()'s own output for the DEFAULT config only —
+     cardBackground "neutral-100", primaryBackground "neutral-95" — traced by hand against
+     the shipped derive.ts (§2.7): darkPage=neutral-05, darkCard=neutral-10, darkSecondary=
+     neutral-20. This wireframe does not port the anchor-mirror-derive algorithm itself, so a
+     different Card/Primary pick still shows these same three fixed swatches. */
+  const items = dark ? [
+    ["Primary background","--primary-background-color", r[0]],
+    ["Card background","--card-background-color", r[1]],
+    ["Secondary background","--secondary-background-color", r[2]],
+    ["Divider","--divider-color", null]
+  ] : [
+    ["Primary background","--primary-background-color", bgHex(state.primaryBg)],
+    ["Card background","--card-background-color", bgHex(state.cardBg)],
+    ["Secondary background","--secondary-background-color", r[9]],
+    ["Divider","--divider-color", null]
+  ];
+  const borderStep = BORDER_STEPS.find(s=>s.id===state.border);
+  node.innerHTML = "";
+  items.forEach(([cap,v,hex])=>{
+    const t = el("div","tile");
+    const f = el("div","fill");
+    if (hex) { f.style.background = hex; }
+    else {
+      /* the divider sits on the card, so the tile shows the real card background for this
+         mode — not a hardcoded stand-in — per the border redesign, §2.5 */
+      const cardHex = dark ? darkCardHex() : bgHex(state.cardBg);
+      const borderHex = borderStepHex(borderStep, dark);
+      f.style.background = cardHex;
+      f.style.position="relative";
+      const rule = el("div");
+      rule.style.cssText = "position:absolute;left:10px;right:10px;top:50%;height:1px;background:"+borderHex+"1f";
+      f.appendChild(rule);
+    }
+    t.appendChild(f);
+    /* the CSS variable name (v) is not rendered — the preview shows the result, not the
+       identifier, per UX-SPEC §4, owner flag response §7.1 */
+    const cp = el("div","cap"); cp.textContent = cap;
+    const hx = el("div","hex");
+    hx.textContent = hex || (borderStep.id === "invisible" ? "matches card" : borderStepHex(borderStep, dark)+"1f");
+    t.appendChild(cp); t.appendChild(hx);
+    node.appendChild(t);
+  });
+}
+function statusChips(node, dark){
+  node.innerHTML = "";
+  BRAND.forEach(b=>{
+    const hex = state.brand[b.id];
+    const w = el("div");
+    const c = el("div","chip-b");
+    c.style.background = hex;
+    const bad = contrastWhite(hex) < 4.5;
+    c.innerHTML = '<span>'+b.label.replace(" color","")+'</span>'+(bad?'<span title="Low contrast">&#9888;</span>':'');
+    const h = el("div","chip-w"); h.textContent = hex; if(dark) h.style.color="#8b9098";
+    w.appendChild(c); w.appendChild(h); node.appendChild(w);
+  });
+}
+function rampPreview(){
+  const node = $("#rampPreview"); node.innerHTML="";
+  ramp().forEach((hex,i)=>{
+    const s = el("div","st");
+    const c = el("div","c"); c.style.background = hex;
+    const n = el("div","n"); n.textContent = RAMP_STEPS[i];
+    const h = el("div","h"); h.textContent = hex;
+    s.appendChild(c); s.appendChild(n); s.appendChild(h); node.appendChild(s);
+  });
+}
+function palPreview(){
+  const node = $("#palPreview"); node.innerHTML="";
+  pal().forEach((hex,i)=>{
+    const p = el("div","p");
+    const c = el("div","c"); c.style.background = hex;
+    const n = el("div","n"); n.textContent = HUES[i];
+    const h = el("div","h"); h.textContent = hex;
+    p.appendChild(c); p.appendChild(n); p.appendChild(h); node.appendChild(p);
+  });
+}
+
+/* ---------------- popover ---------------- */
+const pop = $("#pop");
+function openPop(knobId, trigger){
+  state.openKnob = knobId;
+  document.querySelectorAll(".swatch-row").forEach(b=>b.setAttribute("aria-expanded", String(b===trigger)));
+  const r = trigger.getBoundingClientRect();
+  let top = r.top;
+  const H = 470;
+  if (top + H > window.innerHeight - 12) top = Math.max(12, window.innerHeight - H - 12);
+  pop.style.top  = top + "px";
+  pop.style.left = Math.min(r.right + 10, window.innerWidth - 312) + "px";
+  pop.classList.add("open");
+  paintPop();
+  $("#popHex").focus();
+  $("#popHex").select();
+}
+function closePop(){
+  pop.classList.remove("open");
+  state.openKnob = null;
+  document.querySelectorAll(".swatch-row").forEach(b=>b.setAttribute("aria-expanded","false"));
+}
+function setKnob(hex, remember){
+  if (!state.openKnob) return;
+  state.brand[state.openKnob] = hex;
+  if (remember){
+    /* only a free-picker or hex-field commit writes a Recent entry — a ramp/palette/Recent
+       swatch pick does not (UX-SPEC §2.3, §2.6) */
+    const entry = { hex, lastUsedAt: Date.now() };
+    state.recent = [entry].concat(state.recent.filter(e=>e.hex.toLowerCase()!==hex.toLowerCase())).slice(0,8);
+    saveRecent(state.recent);
+  }
+  renderAll();
+}
+function paintPop(){
+  if (!state.openKnob) return;
+  const b = BRAND.find(x=>x.id===state.openKnob);
+  const hex = state.brand[b.id];
+  $("#popTitle").textContent = b.label;
+  $("#popBig").style.background = hex;
+  $("#popHex").value = hex;
+  $("#popPalName").textContent  = PALETTES[state.pal][0];
+  $("#popSV").style.backgroundColor = hex;
+  $("#popReset").style.display = (hex.toLowerCase()===b.hex.toLowerCase()) ? "none" : "";
+  $("#popWarn").classList.toggle("on", contrastWhite(hex) < 4.5);
+
+  /* no neutral-ramp swatch group here — cut per owner review, UX-SPEC §2.2/§2.3.
+     Border color, Card background and Primary background still read the ramp (§2.5),
+     unaffected by this cut. */
+  const ps = $("#popPal"); ps.innerHTML="";
+  pal().forEach((c,i)=>{
+    const s = el("button"); s.type="button"; s.setAttribute("role","radio");
+    s.setAttribute("aria-checked", String(c.toLowerCase()===hex.toLowerCase()));
+    s.setAttribute("aria-label", HUES[i]+", "+c);
+    s.title = HUES[i]+" · "+c;
+    s.style.background = c;
+    if (c.toLowerCase()===hex.toLowerCase()) s.style.boxShadow="inset 0 0 0 2px #2f5fe0, inset 0 0 0 3px #fff";
+    s.addEventListener("click",()=>setKnob(c,false));
+    ps.appendChild(s);
+  });
+
+  $("#popRecentGrp").style.display = state.recent.length ? "" : "none";
+  const rc = $("#popRecent"); rc.innerHTML="";
+  state.recent.forEach(entry=>{
+    const c = entry.hex;
+    const s = el("button"); s.type="button"; s.setAttribute("role","radio");
+    s.setAttribute("aria-checked", String(c.toLowerCase()===hex.toLowerCase()));
+    s.setAttribute("aria-label","Recent "+c); s.title = c;
+    s.style.background = c;
+    s.addEventListener("click",()=>setKnob(c,false));
+    rc.appendChild(s);
+  });
+}
+$("#popHex").addEventListener("keydown", e=>{
+  if (e.key === "Enter"){ commitHex(); }
+  if (e.key === "Escape"){ e.stopPropagation(); paintPop(); }
+});
+$("#popHex").addEventListener("blur", commitHex);
+function commitHex(){
+  let v = $("#popHex").value.trim().replace(/^#/,"");
+  if (/^[0-9a-fA-F]{3}$/.test(v)) v = v.split("").map(c=>c+c).join("");
+  if (/^[0-9a-fA-F]{6}$/.test(v)) setKnob("#"+v.toLowerCase(), true);
+  else paintPop();
+}
+$("#popReset").addEventListener("click",()=>{
+  const b = BRAND.find(x=>x.id===state.openKnob);
+  setKnob(b.hex,false);
+});
+$("#popSV").addEventListener("click", e=>{
+  /* wireframe stand-in for the react-colorful saturation/value area */
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.querySelector(".knobdot").style.left = ((e.clientX-r.left)/r.width*100)+"%";
+  e.currentTarget.querySelector(".knobdot").style.top  = ((e.clientY-r.top)/r.height*100)+"%";
+});
+pop.addEventListener("click", e=>e.stopPropagation());
+document.addEventListener("click", ()=>{ if (pop.classList.contains("open")) closePop(); });
+document.addEventListener("keydown", e=>{
+  if (e.key !== "Escape") return;
+  if (pop.classList.contains("open")) return closePop();
+  closeOverlays();
+});
+
+/* ---------------- compare dialog ---------------- */
+/* Base tone's compare-all table shows all 13 shades, endpoints included — the raw preset's own
+   shape (src/engine/presets/neutral-ramps.ts), not the 11-shade theme.ramps.neutral this
+   wireframe's sidebar strip and ramp preview use elsewhere. #000000/#ffffff are real reference
+   data, identical across all ten presets, UX-SPEC §2.7 and §3.3. This mapping is local to the
+   dialog and does not touch the RAMPS array any other view reads from. */
+function openCompare(kind){
+  const isRamp = kind === "ramp";
+  const data   = isRamp
+    ? RAMPS.map(([n, cols]) => [n, ["#000000", ...cols, "#ffffff"]])
+    : PALETTES;
+  const rowLbl = isRamp
+    ? ["neutral-00", ...RAMP_STEPS.map(s=>"neutral-"+s), "neutral-100"]
+    : HUES;
+  $("#cmpTitle").textContent = isRamp ? "Compare all base tones" : "Compare all palettes";
+  const head = $("#cmpHead"); head.innerHTML = "<th style='width:96px'>"+(isRamp?"Step":"Color")+"</th>";
+  data.forEach(([n],i)=>{
+    const th = el("th"); th.textContent = n;
+    th.addEventListener("click",()=>{ if(isRamp) state.ramp=i; else state.pal=i; closeOverlays(); renderAll(); });
+    head.appendChild(th);
+  });
+  const body = $("#cmpBody"); body.innerHTML="";
+  rowLbl.forEach((lbl,ri)=>{
+    const tr = el("tr");
+    const td0 = el("td","pos"); td0.textContent = lbl; tr.appendChild(td0);
+    data.forEach(([,cols])=>{
+      const td = el("td");
+      const s = el("span","cs"); s.style.background = cols[ri]; s.title = cols[ri];
+      td.appendChild(s); tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  $("#scrim").classList.add("open");
+  $("#cmpDialog").classList.add("open");
+}
+function closeOverlays(){
+  $("#scrim").classList.remove("open");
+  $("#cmpDialog").classList.remove("open");
+  $("#exportSheet").classList.remove("open");
+}
+$("#btnCmpRamps").addEventListener("click",()=>openCompare("ramp"));
+$("#btnCmpPals").addEventListener("click",()=>openCompare("pal"));
+$("#cmpClose").addEventListener("click",closeOverlays);
+$("#expClose").addEventListener("click",closeOverlays);
+$("#scrim").addEventListener("click",closeOverlays);
+$("#btnExport").addEventListener("click",e=>{
+  e.stopPropagation();
+  $("#scrim").classList.add("open");
+  $("#exportSheet").classList.add("open");
+});
+$("#expTabs").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  $("#expTabs").querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected", String(x===b)));
+  $("#tab-yaml").style.display    = b.dataset.tab==="yaml" ? "" : "none";
+  $("#tab-install").style.display = b.dataset.tab==="install" ? "" : "none";
+});
+
+/* ---------------- render ---------------- */
+function renderAll(){
+  paintBrandRows();
+  paintPresets();
+  paintBg("bgCard","cardBg");
+  paintBg("bgPrimary","primaryBg");
+  paintBorderList();
+  surfaceTiles($("#surfLight"), false);
+  surfaceTiles($("#surfDark"),  true);
+  statusChips($("#chipsLight"), false);
+  statusChips($("#chipsDark"),  true);
+  rampPreview();
+  palPreview();
+  if (pop.classList.contains("open")) paintPop();
+}
+renderAll();
+</script>
+</body>
+</html>
