@@ -21,6 +21,20 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
+/* Builder-chrome dark mode — UX-SPEC §1.1. Redefines ONLY the chrome tokens above. Nothing in
+   this block reaches .panel.lt / .panel.dk, the preview's own permanent light/dark panels —
+   those are styled with literal hex, never these variables, so this toggle cannot touch them. */
+html[data-chrome="dark"]{
+  --paper:#17181b;
+  --surface:#1f2024;
+  --ink:#eceef0;
+  --ink-2:#a6acb5;
+  --ink-3:#7d838c;
+  --line:#33353b;
+  --line-2:#292a30;
+  --box:#26282d;
+  --accent-soft:#1c2740;
+}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%}
 body{
@@ -76,6 +90,16 @@ button{font:inherit;color:inherit}
 .btn.link{border:none;background:none;color:var(--accent);padding:2px 0;font-size:12px;text-decoration:underline;cursor:pointer}
 .body{flex:1;display:flex;min-height:0}
 
+/* builder-chrome mode toggle (Auto/Light/Dark) — UX-SPEC §1.1 */
+.modetoggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.modetoggle button{
+  border:none;background:var(--surface);color:var(--ink-2);padding:6px 10px;font-size:12px;
+  cursor:pointer;border-right:1px solid var(--line);
+}
+.modetoggle button:last-child{border-right:none}
+.modetoggle button:hover{background:var(--box)}
+.modetoggle button[aria-checked="true"]{background:var(--accent);color:#fff}
+
 /* ---------- sidebar ---------- */
 .sidebar{
   width:340px;flex:none;border-right:1px solid var(--line);background:var(--surface);
@@ -115,11 +139,6 @@ select{
 .swatch-row .nm{flex:1;font-size:12.5px}
 .swatch-row .hx{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
 
-/* ramp strip (11 segments) */
-.strip{display:flex;height:22px;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.13)}
-.strip button{all:unset;flex:1;cursor:pointer;height:100%}
-.strip button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;z-index:1;position:relative}
-
 /* preset list */
 .preset{display:flex;flex-direction:column;gap:2px}
 .preset-item{
@@ -158,18 +177,10 @@ select{
 .bg4 .chip{display:block;height:22px;border-radius:3px;margin-bottom:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
 
 /* ---------- preview ---------- */
+/* no sticky column header — light/dark is self-evident from each panel's own background,
+   per the owner's review comment on UX-SPEC §1.2 */
 .preview{flex:1;min-width:0;overflow-y:auto;position:relative;background:var(--paper)}
-.colhead{
-  position:sticky;top:0;z-index:4;background:rgba(246,246,243,.94);backdrop-filter:blur(4px);
-  border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:20px;
-  padding:9px 24px;
-}
-.colhead div{
-  font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);
-  display:flex;align-items:center;gap:7px;
-}
-.colhead .bul{width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
-.pv-inner{padding:0 24px 96px}
+.pv-inner{padding:24px 24px 96px}
 .sec{padding:26px 0 4px}
 .sec-hd{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:14px}
 .sec-hd h2{margin:0;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
@@ -280,13 +291,21 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
   <div class="wf-banner">
     <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
-    <div>Try: a color row · Base tone · More fonts · Compare all · Export theme</div>
+    <div>Try: the Auto/Light/Dark toggle · a color row · Base tone · More fonts · Compare all · Export theme</div>
   </div>
 
   <!-- ============ APP BAR ============ -->
   <div class="appbar">
     <div class="brand">HA Theme Builder<small>Turn the knobs on the left. Everything updates live, in light and dark at once.</small></div>
     <div class="spacer"></div>
+    <!-- builder-chrome mode toggle — §1.1. Auto/Light/Dark for the SIDEBAR AND APP BAR ONLY.
+         The preview panels (.panel.lt / .panel.dk) never read this. They stay permanently light
+         and dark, side by side, per PLAN.md §3 decision 4 and CLAUDE.md. -->
+    <div class="modetoggle" id="modeToggle" role="radiogroup" aria-label="Builder color mode">
+      <button type="button" role="radio" aria-checked="true" data-mode="auto" title="Auto — follow the OS">Auto</button>
+      <button type="button" role="radio" aria-checked="false" data-mode="light" title="Light">Light</button>
+      <button type="button" role="radio" aria-checked="false" data-mode="dark" title="Dark">Dark</button>
+    </div>
     <span class="tag">§1.1</span>
     <button class="btn" disabled>Reset to defaults</button>
     <button class="btn primary" id="btnExport">Export theme</button>
@@ -390,11 +409,6 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
     <!-- ============ PREVIEW ============ -->
     <main class="preview" id="preview">
-      <div class="colhead">
-        <div><span class="bul" style="background:#fafafa"></span>Light <span class="tag">§1.2</span></div>
-        <div><span class="bul" style="background:#1b1c1f"></span>Dark</div>
-      </div>
-
       <div class="pv-inner">
 
         <!-- 1. Living room -->
@@ -507,11 +521,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
     <button class="btn link" id="popReset">Reset</button>
   </div>
 
-  <div class="grp">
-    <div class="t">From your base tone <span class="tag" id="popRampName">Home Assistant</span></div>
-    <div class="strip" id="popRamp" role="radiogroup" aria-label="Base tone shades"></div>
-  </div>
-
+  <!-- the neutral ramp is not a swatch source here — owner review comment, UX-SPEC §2.2 -->
   <div class="grp">
     <div class="t">From your entity colors <span class="tag" id="popPalName">Home Assistant</span></div>
     <div class="dots" id="popPal" role="radiogroup" aria-label="Palette colors"></div>
@@ -557,18 +567,56 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
   <div id="tab-yaml">
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn">Copy</button>
-      <button class="btn">Download themes.yaml</button>
+      <button class="btn">Download</button>
     </div>
-    <div class="box" style="height:340px">generated YAML — engine toYaml()<br>My Theme: &rarr; modes: {light, dark}</div>
+    <div class="box" style="height:340px">generated YAML — engine toYaml()<br>My Theme: &rarr; modes: {light, dark}<br><span class="tag">downloads as my-theme.yaml — §1.4</span></div>
   </div>
   <div id="tab-install" style="display:none">
-    <div class="box" style="height:150px;margin-bottom:12px">1. Save as themes.yaml next to configuration.yaml<br>2. Add frontend: themes: !include themes.yaml<br>3. Restart, then pick the theme in your profile</div>
+    <div class="box" style="height:170px;margin-bottom:12px">1. Create a themes folder next to configuration.yaml, if you do not have one<br>2. Save the downloaded file into that folder<br>3. Under frontend: add themes: !include_dir_merge_named themes (once)<br>4. First time: restart. After that: the "Reload themes" action<br>5. Pick the theme on your profile page<span class="tag">§1.4 · checked against HA's own docs</span></div>
     <div class="box" style="height:120px">FONT LOADING SNIPPET<br>shown only when a non-system, non-Roboto font is selected<br>extra_module_url: ...</div>
   </div>
 </div>
 
 <script>
 "use strict";
+
+/* ---------------- builder-chrome mode toggle: Auto/Light/Dark — UX-SPEC §1.1 -----------------
+   Chrome only: sidebar, app bar, dialogs. Never the preview — .panel.lt / .panel.dk are literal
+   hex and read no CSS variable this toggle touches. That split is the whole point (PLAN.md §3
+   decision 4, CLAUDE.md: preview stays permanently light+dark side by side, no mode toggle). */
+const CHROME_KEY = "ha-theme-builder:color-scheme";
+const prefersDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+function loadChromeMode(){
+  try{
+    const v = localStorage.getItem(CHROME_KEY);
+    return (v === "light" || v === "dark" || v === "auto") ? v : "auto";
+  } catch(e){ return "auto"; }
+}
+function saveChromeMode(mode){
+  try{ localStorage.setItem(CHROME_KEY, mode); } catch(e){ /* never throw */ }
+}
+function applyChromeMode(mode){
+  const resolved = mode === "auto" ? ((prefersDark && prefersDark.matches) ? "dark" : "light") : mode;
+  document.documentElement.setAttribute("data-chrome", resolved);
+  document.querySelectorAll("#modeToggle button").forEach(b=>{
+    b.setAttribute("aria-checked", String(b.dataset.mode === mode));
+  });
+}
+let chromeMode = loadChromeMode();
+document.querySelectorAll("#modeToggle button").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    chromeMode = b.dataset.mode;
+    saveChromeMode(chromeMode);
+    applyChromeMode(chromeMode);
+  });
+});
+if (prefersDark){
+  prefersDark.addEventListener("change", ()=>{
+    if (chromeMode === "auto") applyChromeMode("auto"); /* live-follow the OS while on Auto */
+  });
+}
+applyChromeMode(chromeMode);
 
 /* ---------------- data (real hexes from .references/colors) ---------------- */
 
@@ -768,8 +816,10 @@ function buildPresetList(node, data, getSel, setSel, stripSuffix){
     const st = el("div","pstrip");
     colors.forEach(c=>{ const s=el("span"); s.style.background=c; st.appendChild(s); });
     it.appendChild(hd); it.appendChild(st);
-    /* stopPropagation so an open color popover survives a preset change and you can
-       watch its swatch rows re-render — see UX-SPEC §2.3 */
+    /* stopPropagation so an open color popover survives a click on the sidebar behind it.
+       Matters most for the entity-palette list — its swatch group re-renders live inside the
+       popover (§2.3). The neutral ramp no longer has a swatch group in the popover to re-render,
+       but the guard is harmless for that list too, so one mechanism covers both. */
     it.addEventListener("click",e=>{ e.stopPropagation(); setSel(i); });
     node.appendChild(it);
   });
@@ -940,24 +990,14 @@ function paintPop(){
   $("#popTitle").textContent = b.label;
   $("#popBig").style.background = hex;
   $("#popHex").value = hex;
-  $("#popRampName").textContent = RAMPS[state.ramp][0];
   $("#popPalName").textContent  = PALETTES[state.pal][0];
   $("#popSV").style.backgroundColor = hex;
   $("#popReset").style.display = (hex.toLowerCase()===b.hex.toLowerCase()) ? "none" : "";
   $("#popWarn").classList.toggle("on", contrastWhite(hex) < 4.5);
 
-  const rs = $("#popRamp"); rs.innerHTML="";
-  ramp().forEach((c,i)=>{
-    const s = el("button"); s.type="button"; s.setAttribute("role","radio");
-    s.setAttribute("aria-checked", String(c.toLowerCase()===hex.toLowerCase()));
-    s.setAttribute("aria-label","Neutral "+RAMP_STEPS[i]+", "+c);
-    s.title = "Neutral "+RAMP_STEPS[i]+" · "+c;
-    s.style.background = c;
-    if (c.toLowerCase()===hex.toLowerCase()) s.style.boxShadow="inset 0 0 0 2px #2f5fe0";
-    s.addEventListener("click",()=>setKnob(c,false));
-    rs.appendChild(s);
-  });
-
+  /* no neutral-ramp swatch group here — cut per owner review, UX-SPEC §2.2/§2.3.
+     Border color, Card background and Primary background still read the ramp (§2.5),
+     unaffected by this cut. */
   const ps = $("#popPal"); ps.innerHTML="";
   pal().forEach((c,i)=>{
     const s = el("button"); s.type="button"; s.setAttribute("role","radio");

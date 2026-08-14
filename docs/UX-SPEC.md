@@ -24,8 +24,8 @@ Check it again before you build.
 
 **Where this spec and `src/engine/` disagree, the engine wins.** Its API is frozen (CLAUDE.md).
 This document was first drafted before the engine existed. Every default, id, label and ordering
-below now comes from the source. If you find another gap, correct the spec. Do not work around
-the engine.
+below now comes from the source. If you find another gap, stop and ask the owner to clarify. Do
+not resolve it yourself, and do not work around the engine.
 
 ---
 
@@ -52,26 +52,24 @@ Everything below serves that sentence. The three biggest decisions all fall out 
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ APP BAR   HA Theme Builder                  [Reset to defaults] [Export] │  56px, fixed
+│ APP BAR  HA Theme Builder    [Auto|Light|Dark]  [Reset to defaults] [Export]│  56px, fixed
 ├───────────────┬──────────────────────────────────────────────────────────┤
 │ SIDEBAR       │ PREVIEW                                                  │
-│ 340px fixed   │ ┌─ sticky column header ───────────────────────────────┐ │
-│ own scroll    │ │  ● Light                    │  ● Dark                │ │
-│               │ └──────────────────────────────────────────────────────┘ │
-│ Typography    │  Living room  ─────────────────────────────────────────  │
-│ Brand &status │  ┌──────────────────┐  │  ┌──────────────────┐           │
-│ Base tone     │  │  light panel     │  │  │  dark panel      │           │
-│ Surfaces      │  └──────────────────┘  │  └──────────────────┘           │
-│ HA colors     │  Surfaces & dividers ────────────────────────────────── │
-│               │  ...                                                     │
-│               │  Neutral ramp ──────────────── [ Both modes ] ─────────  │
-│               │  ┌───────────── full-width panel ────────────────────┐   │
+│ 340px fixed   │  Living room  ─────────────────────────────────────────  │
+│ own scroll    │  ┌──────────────────┐  │  ┌──────────────────┐           │
+│               │  │  light panel     │  │  │  dark panel      │           │
+│ Typography    │  └──────────────────┘  │  └──────────────────┘           │
+│ Brand &status │  Surfaces & dividers ────────────────────────────────── │
+│ Base tone     │  ...                                                     │
+│ Surfaces      │  Neutral ramp ──────────────── [ Both modes ] ─────────  │
+│ HA colors     │  ┌───────────── full-width panel ────────────────────┐   │
 │               │  └───────────────────────────────────────────────────┘   │
 └───────────────┴──────────────────────────────────────────────────────────┘
 ```
 
-- The **app bar** is fixed. It holds the product name, a **Reset to defaults**
-  button (disabled until something changes), and the primary **Export theme** button.
+- The **app bar** is fixed. It holds the product name, the **mode toggle** below, a
+  **Reset to defaults** button (disabled until something changes), and the primary **Export
+  theme** button.
 - The **sidebar** is a fixed-width `<aside>` with its own scroll container. It never collapses
   on desktop and it is never behind an accordion (see §3.1).
 - The **preview pane** is the only long scroll. It fills the remaining width.
@@ -80,11 +78,31 @@ Everything below serves that sentence. The three biggest decisions all fall out 
 collapsible state we do not need. Use a plain `<aside class="w-[340px] shrink-0 border-r">`
 wrapping a `ScrollArea`. The Sheet-based mobile fallback (§1.5) is the only collapsing behavior.
 
+**The app bar carries a light/dark/auto mode toggle, for the builder's own chrome only** (owner
+decision, 2026-08-14). Three states, one `ToggleGroup` (`ToggleGroupItem` ×3), `SunIcon` /
+`MonitorIcon` / `MoonIcon`, single-select, between the product name and **Reset to defaults**.
+
+- **Auto** is the default. It follows the OS through `prefers-color-scheme`, and it updates live
+  if the OS setting changes while the app stays open.
+- **Light** and **Dark** pin the builder's own chrome to that mode, no matter what the OS says.
+- The choice persists to `localStorage`, key `"ha-theme-builder:color-scheme"`, value `"auto" |
+  "light" | "dark"`. A read on load restores it. A missing or unreadable key also means `"auto"`.
+
+**This toggle MUST NOT touch the preview.** It changes the sidebar, the app bar and every
+control's own light or dark rendering — shadcn's own theme, not `--ha-*` variables. The two
+preview columns stay permanently light and dark, side by side, exactly as PLAN.md §3 decision 4
+and CLAUDE.md already require: *"Light and dark previews show side by side, always. No mode
+toggle."* **A separate control, a separate rule, a separate set of variables.** Do not read this
+toggle's state anywhere inside a preview panel. The preview carries no mode state of its own, and
+this section does not add one. §4.8 restates this distinction where the artifact's own toggle —
+a different control, for the preview — is cut.
+
 ### 1.2 The light/dark rule
 
-**Column 1 is always light. Column 2 is always dark.** One sticky header at the top of the
-preview scroll region labels the two columns. Every section aligns to the same grid, so the
-labels are stated once, not per section.
+**Column 1 is always light. Column 2 is always dark.** No column label anywhere, sticky or not —
+each panel's own background already states its mode: the light panel is visibly light, the dark
+panel is visibly dark, side by side. Every section aligns to the same grid, so a reader learns
+the rule once, from the first section, and it holds for the whole scroll.
 
 The rule has exactly one exception, and it is a principled one:
 
@@ -131,11 +149,33 @@ It contains:
   key verbatim. `toYaml` does not slugify and HA accepts spaces, so the only rule is **not empty**.
   Do not add a slug regex — an earlier draft of this spec invented one the engine does not want.
 - **`Tabs`** with two tabs (`TabsTrigger`s inside a `TabsList` — never directly in `Tabs`):
-  - **YAML** — the generated theme in a `ScrollArea`'d `<pre>`, with **Copy** and
-    **Download themes.yaml** buttons pinned above it.
-  - **Install** — numbered steps for pasting into `configuration.yaml`, plus the
-    `extra_module_url` font-loading snippet **shown only when a non-system, non-Roboto font is
-    selected** (PLAN §3). When all fonts are system or Roboto, that block is absent, not empty.
+  - **YAML** — the generated theme in a `ScrollArea`'d `<pre>`, with **Copy** and **Download**
+    buttons pinned above it. The downloaded file's name is the theme name, slugified, with a
+    `.yaml` extension — `my-theme.yaml` for the default `My Theme`. That is a filesystem detail
+    only, and it does not touch the YAML key inside the file, which stays exactly as typed, per
+    the no-slug rule above. A user with several exported themes then gets several distinct
+    filenames, not one `themes.yaml` that each export overwrites.
+  - **Install** — numbered steps for a dedicated `themes` folder, not a paste into
+    `configuration.yaml` (owner decision, 2026-08-14). Checked against Home Assistant's own
+    documented convention: `home-assistant/home-assistant.io`'s `frontend` integration page
+    (`source/_integrations/frontend.markdown`, "Theme configuration splitting" section) documents
+    three ways to load a theme — inline in `configuration.yaml`, a single included file, or a
+    folder of files merged with `!include_dir_merge_named`. This spec picks the folder. It is
+    what the export step already produces, one file per theme, and a later export needs no
+    second edit to `configuration.yaml`.
+
+    1. Create a `themes` folder next to `configuration.yaml`, if one does not exist yet.
+    2. Save the downloaded file into that folder. Its name does not need to match the theme name
+       inside it.
+    3. Under `frontend:` in `configuration.yaml`, add `themes: !include_dir_merge_named themes`
+       — once, the first time only.
+    4. The first time, restart Home Assistant. After that, a new file in the folder needs only
+       the `frontend.reload_themes` action, not a restart.
+    5. Open your profile page and pick the theme from the list.
+
+    Plus the `extra_module_url` font-loading snippet **shown only when a non-system, non-Roboto
+    font is selected** (PLAN §3). When all fonts are system or Roboto, that block is absent, not
+    empty.
 
 The sheet is ~560px wide, dismissible with Esc and the backdrop, and MUST carry a `SheetTitle`
 (shadcn requires one for accessibility, and `sr-only` hides it visually). Copy fires a
@@ -159,7 +199,7 @@ Desktop-first. Breakpoints are on **available preview width**, not viewport, whe
 | **1280–1439px** | Sidebar 320px. Preview two columns. Unchanged otherwise. |
 | **1024–1279px** | Sidebar 300px. Preview two columns. **Compact swatch mode**: per-step hex labels in the ramp and palette sections are hidden and moved to a `Tooltip` on hover/focus. |
 | **768–1023px** | Sidebar undocks: app bar gains a **Design** button opening the sidebar in a left `Sheet`. Preview full width, still two columns. |
-| **< 768px** | As above, plus preview columns **stack** — light panel above dark panel, each full width. The sticky column header is replaced by a `Badge` reading `Light` / `Dark` in each panel's top-left. Both modes stay visible at the same time. You scroll between them. |
+| **< 768px** | As above, plus preview columns **stack** — light panel above dark panel, each full width. No label here either, per §1.2 — the stacked panels stay just as self-evident as the side-by-side ones. Both modes stay visible at the same time. You scroll between them. |
 
 The two-column preview MUST NOT produce a horizontal scrollbar at any width. Wide content
 (the ramp strip, the palette grid) shrinks its swatches. Below ~28px per swatch it removes labels
@@ -220,25 +260,28 @@ the sidebar's other knobs), 300px wide. Content, top to bottom:
 │ Primary color                              │  1. header
 │ ██████  [ #009ac7          ]      [Reset]  │  2. big swatch + hex Input + reset
 ├────────────────────────────────────────────┤
-│ FROM YOUR BASE TONE                        │  3. neutral ramp, 11 steps
-│ ▐▐▐▐▐▐▐▐▐▐▐  (one continuous strip)        │
-│                                            │
-│ FROM YOUR HOME ASSISTANT COLORS            │  4. extended palette, 18 hues
+│ FROM YOUR HOME ASSISTANT COLORS            │  3. extended palette, 18 hues
 │ ● ● ● ● ● ● ● ● ●                          │     2 rows of 9
 │ ● ● ● ● ● ● ● ● ●                          │
 │                                            │
-│ RECENT                                     │  5. last 8 committed custom colours
+│ RECENT                                     │  4. last 8 committed custom colours
 │ ● ● ● ● ● ● ● ●                            │
 ├────────────────────────────────────────────┤
-│ PICK A COLOR                               │  6. free picker
+│ PICK A COLOR                               │  5. free picker
 │ ┌────────────────────────────────────────┐ │     saturation/value square, 160px tall
 │ │                                        │ │
 │ └────────────────────────────────────────┘ │
 │ ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬  │     hue slider
 ├────────────────────────────────────────────┤
-│ ⚠ White text on this color fails contrast  │  7. conditional warning (§5.3)
+│ ⚠ White text on this color fails contrast  │  6. conditional warning (§5.3)
 └────────────────────────────────────────────┘
 ```
+
+**The neutral ramp is not a swatch source here** (owner decision, 2026-08-14). An earlier draft
+of this spec offered "From your base tone" as a second anchored group, alongside the entity
+palette. Cut. The popover offers only the entity palette and Recent. Border color, Card
+background and Primary background still pick from the neutral ramp directly (§2.5) — that part
+is unchanged. This cut is about the six-knob popover only.
 
 **Palette swatches come before the free picker, always.** That ordering is the whole point of
 "palette-aware": the anchored choice is the default path, free picking is the escape hatch. A
@@ -250,21 +293,19 @@ escape hatch behind a click, and saves 200px of popover height we can afford.
 
 ### 2.3 The swatch groups
 
-**From your base tone** — the eleven steps (05…95) of the *currently selected* neutral ramp.
-Render them as one continuous strip with no gaps, dark to light, left to right. Each segment is a
-button. Hover or focus opens a `Tooltip`: `Neutral 40 · #5e5e5e`.
-
 **From your entity colors** — the eighteen hues of the *currently selected* extended
 palette. Render them as 24px circles, in two rows of nine. The order is the canonical one (red,
 pink, purple, deep-purple, indigo, blue, light-blue, cyan, teal, green, light-green, lime, yellow,
 amber, orange, deep-orange, brown, blue-grey). Tooltip: `Amber · #ffc107`.
 
-**Both groups MUST re-render when the ramp or palette preset changes**, including while a
-popover is open. This is the mechanism that makes the picker palette-aware. It is not decorative.
+**This group MUST re-render when the entity-palette preset changes**, including while a popover
+is open. This is the mechanism that makes the picker palette-aware. It is not decorative. The
+base tone (neutral ramp) is no longer a swatch source in this popover (see §2.2), so changing it
+has no effect on anything inside an open popover — only the entity-palette group re-renders.
 
-*Recommended refinement:* keep the popover open when the user changes a preset in the sidebar
-behind it. That is the one moment where the user wants to watch the swatches change.
-Base UI closes on outside press by default. Cancel that one case:
+*Recommended refinement:* keep the popover open when the user changes the entity-palette preset
+in the sidebar behind it. That is the one moment where the user wants to watch the swatches
+change. Base UI closes on outside press by default. Cancel that one case:
 
 ```tsx
 <Popover
@@ -331,10 +372,10 @@ rules below are what they lose. Raise it rather than silently changing the behav
 | Trigger | `<button>`, `aria-haspopup="dialog"`, `aria-expanded`, accessible name `"Primary color, currently #009ac7"` |
 | Open | `Enter` / `Space`. Base UI moves focus into the popover. Focus lands on the hex `Input`. |
 | Close | `Escape` closes and returns focus to the trigger. Click-outside closes and commits. |
-| Between groups | `Tab` moves group to group: hex → ramp strip → palette grid → recent → saturation → hue. |
+| Between groups | `Tab` moves group to group: hex → palette grid → recent → saturation → hue. |
 | Within a group | **Roving tabindex.** One swatch per group is in the tab order. `←`/`→` (and `↑`/`↓` in the palette grid) move the roving focus and, per WAI-ARIA radiogroup semantics, select as they move. `Home`/`End` jump to first/last. |
 | Group semantics | `role="radiogroup"` with `aria-label` on each group. Swatches are `role="radio"`. |
-| Swatch names | `aria-label="Neutral 40, #5e5e5e"` — never color alone. |
+| Swatch names | `aria-label="Amber, #ffc107"` — never color alone. |
 | Live region | The header hex value is in an `aria-live="polite"` region so screen readers hear changes made by dragging. Debounce announcements to 300ms. |
 | Focus ring | Visible on every swatch, at 2px, offset outward, in the *builder's* focus color. Never a theme color, because the user can set a theme color to something invisible. |
 | Contrast | Every swatch carries a 1px inset ring at 12% ink so white/near-white swatches remain visible on a white popover. |
@@ -472,49 +513,56 @@ Two separate decisions this round both need a change to `src/engine/`, and that 
 the API once, for both, rather than twice. This section specifies both precisely enough for that
 package to build. **Neither is buildable in M3 or M4.** The build notes in §6.2 restate this.
 
-#### Change 1 — ramp-relative colors (O-3)
+#### Change 1 — palette-relative colors (O-3)
 
 Settled with the owner (§7, O-3), reversed from this spec's earlier recommendation. **A color
-picked from a ramp or palette swatch follows that preset when the preset changes.** A color typed
+picked from an entity-palette swatch follows that preset when the preset changes.** A color typed
 or picked as a free custom value does not follow anything — it stores a literal hex, same as
 today.
+
+**Narrower than the round this was first specified in.** O-3 originally covered a color picked
+from *either* the neutral ramp or the entity palette. A later review comment cut the neutral ramp
+as a swatch source from the six-knob popover entirely (§2.2). A brand or status color can now
+reach the picker only through the entity palette, the free picker, or the hex field, so the
+"follows a preset" behavior below has only one preset left to follow.
 
 M3 and M4 MUST NOT build "follows a preset" now. `ThemeConfig.colors.*` is `Hex` today, and a
 literal hex has no identity to follow. A config shape the engine does not yet ship is not
 buildable this milestone. Build the picker exactly as §2.2–§2.5 already specify: every swatch pick
 commits a literal hex.
 
-**1. Behavior.** A swatch picked from the active neutral ramp, or from the active entity palette,
-stores which slot it came from, not just its color. When the user later changes the base tone or
-the entity palette, that knob re-resolves to the same slot in the new preset and its color changes
-with it. A color a user types, or picks by drag on the saturation square, stores a literal hex,
-and it never moves again.
+**1. Behavior.** A swatch picked from the active entity palette stores which hue it came from, not
+just its color. When the user later changes the entity palette, that knob re-resolves to the same
+hue in the new palette and its color changes with it. A color a user types, or picks by drag on
+the saturation square, stores a literal hex, and it never moves again.
 
 **2. Proposed config shape** — a recommendation to the engine package, not a settled fact. Keep
-each value a plain string, so `ThemeConfig` stays JSON round-trippable. A value is one of three
-things: a `#rrggbb` literal, a `NeutralSlotId` (`"neutral-40"`), or a palette reference — this spec
-proposes `` `palette:${PaletteColorName}` `` (`"palette:red"`). That reuses the existing
+each value a plain string, so `ThemeConfig` stays JSON round-trippable. A value is one of two
+things: a `#rrggbb` literal, or a palette reference — this spec proposes
+`` `palette:${PaletteColorName}` `` (`"palette:red"`). That reuses the existing
 `PaletteColorName` union. It does not need a new one:
 
 ```ts
 type PaletteRef = `palette:${PaletteColorName}`
-type SeedColor = Hex | NeutralSlotId | PaletteRef
+type SeedColor = Hex | PaletteRef
 ```
+
+**`NeutralSlotId` is deliberately not a member.** An earlier draft of this section included it,
+from when a brand or status color still had a neutral-ramp swatch to pick, too. Checked against
+the current spec rather than assumed: with that swatch group cut (§2.2), nothing in the picker can
+produce a `colors.*` value that needs to reference a neutral slot, and no other control writes to
+`colors.*` either. If a future round reopens the neutral ramp as a swatch source for these six
+knobs, add `NeutralSlotId` back then, not before.
 
 `colors.primary`, `colors.accent`, `colors.error`, `colors.warning`, `colors.success` and
 `colors.info` change type from `Hex` to `SeedColor`. `resolveConfig()` and `derive()` resolve a
-reference against the config's own `neutralRamp` and `palette` fields before any ramp math runs.
+reference against the config's own `palette` field before any ramp math runs.
 
-**3. The constraint that stops a cycle.** A reference MUST point only at a preset source — the
-neutral ramp or the entity palette. It MUST NOT point at a generated ramp: primary, red, orange or
-green. The engine generates those four ramps from these same seed knobs. A reference into one of
-them has no fixed point to resolve to. The engine cannot generate the ramp until it resolves the
-seed, and it cannot resolve the seed until it has the ramp. This is a hard rule, not a style
-preference.
-
-**4. A legal, if unusual, result.** `colors.primary`, `colors.error`, `colors.warning` and
-`colors.success` each seed a ramp. A user can point one of them at a neutral-ramp slot. The result
-is legal — a low-chroma seed produces a low-chroma generated ramp. This is expected, not a bug.
+**3. The constraint that stops a cycle.** A reference MUST point only at the entity palette. It
+MUST NOT point at a generated ramp: primary, red, orange or green. The engine generates those
+four ramps from these same seed knobs. A reference into one of them has no fixed point to resolve
+to. The engine cannot generate the ramp until it resolves the seed, and it cannot resolve the seed
+until it has the ramp. This is a hard rule, not a style preference.
 
 #### Change 2 — border color's Invisible step, and the shadow fix it needs
 
@@ -973,8 +1021,11 @@ Moved to the export `Sheet` (§1.4). Settled — no live YAML panel, no counter 
 
 ### 4.8 Also cut
 
-- The artifact's **light/dark toggle button** in the header — decided against (PLAN §3.4). There is
-  no mode state in this app at all.
+- The artifact's **light/dark toggle button** in the header, the one that switched the *preview*'s
+  own mode — still decided against (PLAN §3 decision 4). The preview carries no mode state of its
+  own. Light and dark render side by side, always. The app bar's own light/dark/auto toggle
+  (§1.1) is a different control, for the builder's own chrome only, and does not reverse this —
+  see §1.1 for the full distinction.
 - The **"Tweaks" panel** concept (warmth/tint/L/C sliders) — presets only in v1 (PLAN §3.6).
 - The artifact's **footer paragraph** about methodology.
 
@@ -1026,16 +1077,17 @@ not destructive. Never a toast. Toasts are for things that already happened.
 
 ### 5.4 Cross-knob interactions
 
-- **Changing the base tone** re-renders every swatch strip in every open popover, the three
-  Surfaces controls, the ramp preview section, and every preview panel. Constrained knobs
-  (border, card background, primary background) store a *reference* to a ramp step, so they
-  follow the new ramp automatically.
+- **Changing the base tone** re-renders the three Surfaces controls, the ramp preview section, and
+  every preview panel. Constrained knobs (border, card background, primary background) store a
+  *reference* to a ramp step, so they follow the new ramp automatically. It has no effect inside
+  an open color popover — the popover no longer offers neutral-ramp swatches (§2.2), so nothing
+  in it depends on the base tone.
 - **Brand and status colors, target behavior (§2.7, O-3, blocked on an engine change):** a color
-  picked from the base tone or the entity palette follows that preset when it changes. A typed or
-  dragged color stores a literal hex and never moves. **What ships today:** every brand and status
-  color still stores a literal hex, because `ThemeConfig.colors.*` has not changed type yet. If you
-  pick "neutral 40" from a popover strip and then change the base tone, that color does **not**
-  move, in M3 and M4, until the engine change in §2.7 lands.
+  picked from the entity palette follows that preset when it changes. A typed or dragged color
+  stores a literal hex and never moves. **What ships today:** every brand and status color still
+  stores a literal hex, because `ThemeConfig.colors.*` has not changed type yet. If you pick an
+  entity-palette color and the palette preset later changes, that color does **not** move, in M3
+  and M4, until the engine change in §2.7 lands.
 - **Changing the extended palette** re-renders the palette swatch group in open popovers and the
   §4.5 section. It does not touch any other knob.
 - **Reset to defaults** opens an **`AlertDialog`**, not a `Dialog`. It is a destructive
@@ -1048,8 +1100,9 @@ not destructive. Never a toast. Toasts are for things that already happened.
 
 ### 6.1 For M3 — preview pane
 
-1. Build the two-column grid and the sticky column header first. Every section then fits into it.
-   Sections that render once span both columns (`col-span-2`) and carry a `Both modes` `Badge`.
+1. Build the two-column grid first. No column header, sticky or not (§1.2) — every section fits
+   straight into the grid. Sections that render once span both columns (`col-span-2`) and carry a
+   `Both modes` `Badge`.
 2. **Scoped variables only.** Set the generated CSS custom properties with
    **`toCssProperties(theme, mode)`** on the light panel container and the dark panel container.
    It already returns `--`-prefixed keys and already merges `common` with that mode's overrides,
@@ -1147,6 +1200,7 @@ To add. Every one of them returned 200 from
 |---|---|
 | `popover` | Color picker (§2.2) |
 | `collapsible` | Typography group's **More** disclosure (§3.2, O-6) |
+| `toggle-group` | The app bar's Auto/Light/Dark mode toggle, single-select, three items (§1.1) |
 | `input` | Hex field, theme name |
 | `label` | Every knob |
 | `field` | *Recommended* wrapper for a knob row — `FieldLabel` / `FieldDescription` (the helper text) / `FieldError`. Saves hand-rolling the label + help + error stack fifteen times. Pulls in `label` and `separator`. |
@@ -1167,7 +1221,8 @@ Third-party to add: **`react-colorful`** (PLAN §3.7), not currently a dependenc
 `pnpm add react-colorful`. No other UI dependency.
 
 Icons: `lucide-react`, already installed. Checked export names in the installed version —
-`CheckIcon`, `TriangleAlertIcon`, `CopyIcon`, `DownloadIcon`, `RotateCcwIcon`, `ChevronDownIcon`.
+`CheckIcon`, `TriangleAlertIcon`, `CopyIcon`, `DownloadIcon`, `RotateCcwIcon`, `ChevronDownIcon`,
+and, checked **2026-08-14** for the mode toggle (§1.1), `SunIcon`, `MonitorIcon`, `MoonIcon`.
 (`AlertTriangle` is the old name and still resolves, but prefer `TriangleAlertIcon`.) Icons inside
 a `Button` take `data-icon="inline-start"` / `"inline-end"` and **no sizing classes** — the
 component sizes them.
@@ -1193,6 +1248,7 @@ again. Do not trust this document alone for them.
 | `@base-ui/react` | **1.7.0**, installed. `radix-ui` is no longer a dependency, so every Radix reference in the first draft of this spec was wrong. `PopoverRootChangeEventDetails` carries `reason` (one value is `"outsidePress"`), `event` and `cancel()`. The refinement in §2.3 uses those three. |
 | shadcn style | `components.json` → `"style": "base-nova"`. All 17 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
 | `collapsible` | Checked **2026-08-14**, for O-6. Returns 200 from `.../base-nova/collapsible.json`. Exports `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@base-ui/react/collapsible`, against the same `@base-ui/react` 1.7.0 already installed. No new dependency. |
+| `toggle-group` | Checked **2026-08-14**, for the app bar mode toggle (§1.1). Returns 200 from `.../base-nova/toggle-group.json`, with a `toggle` registry dependency the CLI installs alongside it. Exports `ToggleGroup`, `ToggleGroupItem` from `@base-ui/react/toggle-group` and `@base-ui/react/toggle`. No new npm dependency, same `@base-ui/react` 1.7.0. |
 | `react-colorful` | **5.8.0**, published 2026-07-13, **not yet a dependency**. Peer deps `react >=16.8.0` — React 19 is fine. Exports whole pickers only (`HexColorPicker`, `HexColorInput`, …). **no** saturation/hue sub-exports. Arrow keys move in 5% steps. Interactive areas are `tabIndex=0` `role="slider"` with `aria-valuetext`. `aria-label` is hardcoded `"Color"`. `validHex` accepts 3- and 6-digit. |
 | `lucide-react` | **1.31.0**, installed. Both `TriangleAlert` and `TriangleAlertIcon` are exported. Same dual naming for the rest. |
 | `culori` | **4.0.2**, installed — the engine's only dependency. The UI has no reason to import it directly. The color helpers it needs (`contrastRatio`, `normalizeHex`, `isHex`, `withAlpha`, …) are re-exported from `@/engine`. |
@@ -1213,7 +1269,7 @@ the decision next to it. Later sections cite a decision as `(§7, O-n)`.
 |---|---|---|
 | **O-1** | Do the three constrained knobs (border, card background, primary background) use the same popover as the other six, for uniformity? Or inline swatch rows, as this spec says? | **Inline**, as this spec already writes it. No change. |
 | **O-2** | `template.css` labels the extended palette knob **"Home Assistant colors"**. Inside a Home Assistant theme builder that reads as "the colors", not as "the eighteen named entity colors". Keep the label verbatim, or change it to **"Entity colors"** or **"Named colors"**? | **Relabel the knob to "Entity colors."** Every place in this spec that named the knob or its preview section now reads "Entity colors" (§1.3, §2.3, §3.2, §3.3, §4.5). `template.css`'s own string stays as it is — only the UI label changed. |
-| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a ramp or palette swatch follows that preset when the preset changes. The config stores the picked slot, not the resolved hex. This needs a change to the frozen engine API, so it is **blocked** — §2.7 has the full specification and the block. M3 and M4 build today's literal-hex behavior until a separate engine work package ships the change. |
+| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue, not the resolved hex. A later review comment cut the ramp as a swatch source for this popover entirely (§2.2), so only the palette half of this decision still applies. This needs a change to the frozen engine API, so it is **blocked** — §2.7 Change 1 has the full specification and the block. M3 and M4 build today's literal-hex behavior until a separate engine work package ships the change. |
 | **O-4** | The always-visible "Generated values" YAML section is cut in favor of an export sheet. Keep the live YAML as a permanent panel? | **No**, and the "12 variables changed" counter this spec's earlier draft floated as a cheaper trust signal is also cut. A plain **Export theme** button, no counter (§1.4). |
 | **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Agreed? | **Yes.** No change (§1.3, §4.6). |
 | **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system, 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? | **Yes**, one grouped `Select`, each item in its own typeface, unchanged from this spec's earlier draft — **plus progressive disclosure.** At load, only **Body font family** shows. A **More** `Collapsible` reveals Headings, Longform and Code. Most users only care about the body font (§3.2). |
