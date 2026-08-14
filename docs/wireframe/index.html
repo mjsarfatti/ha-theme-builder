@@ -119,7 +119,6 @@ select{
 .strip{display:flex;height:22px;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.13)}
 .strip button{all:unset;flex:1;cursor:pointer;height:100%}
 .strip button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;z-index:1;position:relative}
-.strip.tall{height:30px}
 
 /* preset list */
 .preset{display:flex;flex-direction:column;gap:2px}
@@ -132,6 +131,19 @@ select{
 .preset-item .pi-hd{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink-3);flex:none}
 .preset-item[aria-checked="true"] .dot{border-color:var(--accent);background:radial-gradient(var(--accent) 0 45%,transparent 46%)}
+
+/* border color: named steps + mini-card, outcome not ingredient — UX-SPEC §2.5 redesign */
+.border-row{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid transparent;
+  border-radius:6px;background:none;padding:5px 7px;cursor:pointer;
+}
+.border-row:hover{background:#f2f2ef}
+.border-row[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.border-row[aria-checked="true"] .dot{border-color:var(--accent);background:radial-gradient(var(--accent) 0 45%,transparent 46%)}
+.border-row .pi-nm{width:54px;flex:none;font-size:12px}
+.minicard{position:relative;width:152px;height:34px;flex:none}
+.mc-half{position:absolute;inset:0;border-radius:6px;box-sizing:border-box}
+.mc-half.mc-dk{clip-path:polygon(100% 0,100% 100%,0 100%)}
 .preset-item .pi-nm{font-size:12px}
 .pstrip{display:flex;height:16px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.11)}
 .pstrip span{flex:1}
@@ -355,8 +367,9 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
           </div>
           <div class="knob">
             <span class="lbl">Border color</span>
-            <div class="strip tall" id="borderStrip" role="radiogroup" aria-label="Border color"></div>
-            <div class="help">Rendered at the 12% opacity that the divider uses.</div>
+            <div class="preset" id="borderList" role="radiogroup" aria-label="Border color"></div>
+            <div class="help">Each option is a small card: real background, real border, real
+              shadow. Light half top-left, dark half bottom-right. <span class="tag">§2.5 · redesigned</span></div>
           </div>
         </div>
       </section>
@@ -648,9 +661,9 @@ const state = {
   ramp: 0, pal: 0,
   brand: Object.fromEntries(BRAND.map(b=>[b.id,b.hex])),
   /* defaults mirror engine DEFAULT_CONFIG: cardBackground "white",
-     primaryBackground "neutral-95", borderColor "neutral-05" */
+     primaryBackground "neutral-95", borderColor "neutral-05" = the "Strong" named step */
   cardBg: 3, primaryBg: 2,   /* index into BG4 */
-  border: 0,                  /* ramp step index -> neutral-05 */
+  border: "strong",           /* named step id — see BORDER_STEPS, UX-SPEC §2.5 redesign */
   recent: loadRecent(),       /* [{hex, lastUsedAt}], newest first, persisted */
   openKnob: null
 };
@@ -661,6 +674,35 @@ const el = (t,c) => { const n=document.createElement(t); if(c) n.className=c; re
 const ramp = () => RAMPS[state.ramp][1];
 const pal  = () => PALETTES[state.pal][1];
 const bgHex = i => BG4[i][2] < 0 ? "#ffffff" : ramp()[BG4[i][2]];
+
+/* ---------------- border color: named steps, mini-card render — UX-SPEC §2.5 redesign ---------------- */
+/* Slots picked by rendering all 11 at 1f alpha over every card choice, light + dark, on the
+   HA ramp and a tinted ramp (Mauve), and reading the composited result — see UX-SPEC §2.5 for
+   the numbers. neutral-90 was rejected: it composites to an EXACT match with the default white
+   card in dark mode (an accidental full "match-card" collision, not the deliberate Invisible
+   step), so it cannot serve as a distinguishable named rung. */
+const BORDER_STEPS = [
+  { id: "invisible", label: "Invisible", idx: null }, /* resolves to card bg — §2.7, engine-blocked */
+  { id: "hairline",  label: "Hairline",  idx: 8 },     /* neutral-80 */
+  { id: "subtle",    label: "Subtle",    idx: 6 },     /* neutral-60 */
+  { id: "medium",    label: "Medium",    idx: 3 },     /* neutral-30 */
+  { id: "strong",    label: "Strong",    idx: 0 },     /* neutral-05, default */
+];
+/* index-space mirror of derive.ts's mirrorSlot(s) = 100 - s: RAMP_STEPS is symmetric
+   (05<->95, 10<->90, 20<->80, 30<->70, 40<->60, 50<->50), so 10-i mirrors correctly */
+const mirrorIdx = i => 10 - i;
+/* the dark-mode card approximation this wireframe already uses in surfaceTiles() — kept
+   consistent rather than porting the engine's real elevation-preserving algorithm, which the
+   spec documents in prose (§2.7) since it is not a "just mirror the light slot" calculation */
+const darkCardHex = () => ramp()[2];
+function borderStepHex(step, dark){
+  if (step.idx === null) return dark ? darkCardHex() : bgHex(state.cardBg); /* Invisible */
+  return ramp()[dark ? mirrorIdx(step.idx) : step.idx];
+}
+/* the shadow fix (§2.7): --shadow-color always reads neutral-05, never the border knob's own
+   slot and never mirrored per mode — only the alpha grows in dark. This is what keeps the
+   shadow alive when Border color = Invisible. */
+function shadowColorHex(dark){ return ramp()[0] + (dark ? "7a" : "29"); }
 
 function lum(hex){
   const v = [1,3,5].map(i=>parseInt(hex.substr(i,2),16)/255)
@@ -750,18 +792,36 @@ function paintBg(nodeId, key){
     node.appendChild(b);
   });
 }
-function paintBorder(){
-  const node = $("#borderStrip"); node.innerHTML="";
-  ramp().forEach((hex,i)=>{
-    const b = el("button"); b.type="button"; b.setAttribute("role","radio");
-    b.setAttribute("aria-checked", String(state.border===i));
-    b.setAttribute("aria-label","Neutral "+RAMP_STEPS[i]+", "+hex+" at 12% opacity");
-    b.title = "Neutral "+RAMP_STEPS[i]+" · "+hex+"1f";
-    /* rendered at the 1f alpha it is actually used at, over white */
-    b.style.background = hex + "1f";
-    if (state.border===i) b.style.boxShadow = "inset 0 0 0 2px #2f5fe0";
-    b.addEventListener("click",()=>{ state.border=i; renderAll(); });
-    node.appendChild(b);
+function paintBorderList(){
+  const node = $("#borderList"); node.innerHTML="";
+  BORDER_STEPS.forEach(step=>{
+    const it = el("button","border-row");
+    it.type="button"; it.setAttribute("role","radio");
+    it.setAttribute("aria-checked", String(state.border===step.id));
+
+    const dot = el("span","dot");
+    const nm = el("span","pi-nm"); nm.textContent = step.label;
+    const mc = el("span","minicard");
+    let lightHex = "", darkHex = "";
+    [false,true].forEach(dark=>{
+      const half = el("span", "mc-half " + (dark ? "mc-dk" : "mc-lt"));
+      const cardHex = dark ? darkCardHex() : bgHex(state.cardBg);
+      const borderHex = borderStepHex(step, dark);
+      if (dark) darkHex = borderHex; else lightHex = borderHex;
+      half.style.background = cardHex;
+      /* a real 1px alpha border, composited live by the browser over this half's own
+         background — the same 1f alpha the engine ships, no precomputed blend needed */
+      half.style.border = "1px solid " + borderHex + "1f";
+      half.style.boxShadow = "0 2px 4px " + shadowColorHex(dark);
+      mc.appendChild(half);
+    });
+
+    it.appendChild(dot); it.appendChild(nm); it.appendChild(mc);
+    it.title = step.id === "invisible"
+      ? "Invisible — matches the card surface in both modes"
+      : "Light " + lightHex + " · Dark " + darkHex + " (rendered at 12% opacity)";
+    it.addEventListener("click", ()=>{ state.border = step.id; renderAll(); });
+    node.appendChild(it);
   });
 }
 
@@ -779,24 +839,29 @@ function surfaceTiles(node, dark){
     ["Secondary background","--secondary-background-color", r[9]],
     ["Divider","--divider-color", null]
   ];
+  const borderStep = BORDER_STEPS.find(s=>s.id===state.border);
   node.innerHTML = "";
   items.forEach(([cap,v,hex])=>{
     const t = el("div","tile");
     const f = el("div","fill");
     if (hex) { f.style.background = hex; }
     else {
-      f.style.background = dark ? "#26282c" : "#ffffff";
+      /* the divider sits on the card, so the tile shows the real card background for this
+         mode — not a hardcoded stand-in — per the border redesign, §2.5 */
+      const cardHex = dark ? darkCardHex() : bgHex(state.cardBg);
+      const borderHex = borderStepHex(borderStep, dark);
+      f.style.background = cardHex;
       f.style.position="relative";
       const rule = el("div");
-      rule.style.cssText = "position:absolute;left:10px;right:10px;top:50%;height:1px;background:"+ramp()[state.border]+"1f";
-      if(dark) rule.style.background = "#ffffff2b";
+      rule.style.cssText = "position:absolute;left:10px;right:10px;top:50%;height:1px;background:"+borderHex+"1f";
       f.appendChild(rule);
     }
     t.appendChild(f);
     /* the CSS variable name (v) is not rendered — the preview shows the result, not the
        identifier, per UX-SPEC §4, owner flag response §7.1 */
     const cp = el("div","cap"); cp.textContent = cap;
-    const hx = el("div","hex"); hx.textContent = hex || (dark ? "#ffffff2b" : ramp()[state.border]+"1f");
+    const hx = el("div","hex");
+    hx.textContent = hex || (borderStep.id === "invisible" ? "matches card" : borderStepHex(borderStep, dark)+"1f");
     t.appendChild(cp); t.appendChild(hx);
     node.appendChild(t);
   });
@@ -1000,7 +1065,7 @@ function renderAll(){
   paintPresets();
   paintBg("bgCard","cardBg");
   paintBg("bgPrimary","primaryBg");
-  paintBorder();
+  paintBorderList();
   surfaceTiles($("#surfLight"), false);
   surfaceTiles($("#surfDark"),  true);
   statusChips($("#chipsLight"), false);

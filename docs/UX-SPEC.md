@@ -184,7 +184,7 @@ all nine is uniform and wrong.
 | Warning color | any | **Popover picker** |
 | Success color | any | **Popover picker** |
 | Info color | any | **Popover picker** |
-| Border color | a neutral ramp step, at `1f` alpha | **Inline ramp strip** (§2.5) |
+| Border color | one of five named steps | **Inline mini-card list** (§2.5) |
 | Card background | neutral 80 / 90 / 95 / white | **Inline 4-swatch row** (§2.5) |
 | Primary background | neutral 80 / 90 / 95 / white | **Inline 4-swatch row** |
 
@@ -343,12 +343,95 @@ Reduced motion: the popover's open animation respects `prefers-reduced-motion` (
 
 ### 2.5 The inline pickers
 
-**Border color** — an 11-segment strip, identical in geometry to the popover's ramp strip, sitting
-directly in the sidebar under its label. Semantics: `role="radiogroup"`, arrow-key navigation, one
-tab stop. **The stored value is the ramp hex with `1f` alpha appended**, per `template.css`.
-The strip segments MUST therefore be rendered *at that alpha over the card background*, not at
-full opacity. What you see in the strip is then what the divider receives. That makes the strip look like
-a very faint gradient. That is correct and it is what the knob does.
+**Border color, redesigned (owner decision, 2026-08-14).** The 11-segment strip this spec first
+proposed rendered a color chip at 12% alpha for every slot. Against a light card, eleven near-black
+colors at 12% alpha all read as near-identical light greys — the strip does not let a user tell the
+steps apart. It also hides that the pick drives two other variables, not only the divider line:
+`--outline-hover-color` at `3d` alpha and `--shadow-color` at `29` light / `7a` dark
+(`derive.ts:444-453`). A color chip cannot show either of those. **The control now renders the
+outcome, not the ingredient.**
+
+**Five named steps, not eleven raw slots:**
+
+| Step | Config value | What it resolves to |
+|---|---|---|
+| Invisible | `"match-card"` *(new — §2.7, engine-blocked)* | The card surface itself. The border disappears into the card. |
+| Hairline | `"neutral-80"` | The faintest step a user can still see. |
+| Subtle | `"neutral-60"` | |
+| Medium | `"neutral-30"` | |
+| Strong | `"neutral-05"` — the default, unchanged from this spec's earlier draft | The darkest of the four. |
+
+Hairline through Strong run progressively **darker** than the card surface, in that order. This
+part needs no engine change. `borderColor` stays a plain `NeutralSlotId` for these four values —
+it is a UI restriction on top of the existing eleven-value union, the same kind of restriction the
+font dropdown already applies to `FONTS`. It does not touch the engine's own list.
+
+**Why these four slots, and not four others.** I did not pick these from memory. I rendered all
+eleven slots — the KNOB's own light-mode semantics, with the engine's real `mirrorSlot` applied
+for the dark-mode render — at `1f` alpha over every `SurfaceChoice`, in both modes, on the default
+`ha` ramp and on a tinted ramp (`mauve`, to check a tint does not break the ladder). The numbers
+below are the composited result against the default card (`white`), on the `ha` ramp:
+
+| Slot | Light, composited over `#ffffff` | Dark, composited over `#202020` |
+|---|---|---|
+| neutral-05 (**Strong**) | `#e2e2e2` | `#3a3a3a` |
+| neutral-10 | `#e4e4e4` | `#383838` |
+| neutral-20 | `#e7e7e7` | `#353535` |
+| neutral-30 (**Medium**) | `#e9e9e9` | `#323232` |
+| neutral-40 | `#ebebeb` | `#2f2f2f` |
+| neutral-50 | `#efefef` | `#2b2b2b` |
+| neutral-60 (**Subtle**) | `#f2f2f2` | `#282828` |
+| neutral-70 | `#f6f6f6` | `#252525` |
+| neutral-80 (**Hairline**) | `#f9f9f9` | `#232323` |
+| neutral-90 | `#fcfcfc` | `#202020` |
+| neutral-95 | `#fefefe` | `#1f1f1f` |
+
+Two things follow from this table. First, the eleven raw slots really do bunch up towards the light
+end — `neutral-80` through `neutral-95` composite within two or three points of each other and of
+the card. This confirms the flag. Four slots spread across the full range, rather than four
+adjacent ones, keep each step visually distinct. Second, **`neutral-90` is disqualified, not just
+skipped.** At the default card (`white`) in dark mode, `neutral-90`'s mirrored render slot is
+`neutral-10`, which composites to `#202020` — the *exact* hex of the dark card background. That
+is an accidental full match, not the deliberate Invisible step, and it happens on the single most
+common configuration a user sees (`DEFAULT_CONFIG.cardBackground` is `"white"`). No other slot in
+the four I picked produces an exact collision on any of the four `SurfaceChoice` values, in either
+mode, on either ramp I checked.
+
+The ladder holds as a ladder under both checks the owner asked for: it stays monotonic in dark
+mode, where the render slot mirrors (`neutral-05` always renders as the *lightest* dark-mode
+slot and still reads as the strongest step, because a light border on a dark card and a dark
+border on a light card carry the same *strength*), and it stays monotonic on a tinted ramp
+(`mauve`'s four picks composite to `#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#3e373f /
+#372f38 / #2d242e / #282029` in dark — same spread, same order, tinted instead of grey).
+
+**The mini-card.** Each of the five options renders as a small card, not a color chip: that
+option's real card background, a real `1px` border at the step's alpha, and a real shadow under
+it. This is possible without any precomputed blend — a CSS border with an alpha color, painted
+over a background of the actual card color, is composited by the browser itself, so what renders
+already **is** the on-card result. The sidebar is mode-agnostic everywhere else, but this knob
+reads in opposite directions per mode (`derive.ts:445` mirrors the slot in dark), so each mini-card
+splits diagonally: the light render on the upper-left triangle, the dark render on the lower-right,
+both visible at once. Implementation: two full-size cards stacked, the lower one a plain
+rectangle for the light half, the upper one identical but clipped to a lower-right triangle
+(`clip-path: polygon(100% 0, 100% 100%, 0 100%)`) for the dark half — each with its own
+background, border and shadow, so the shadow clips at the same diagonal as the card it belongs
+to. That is not a defect. It reinforces which half a reader looks at.
+
+*Alternative considered:* a single swatch per step, split diagonally with no border or shadow
+drawn (the original proposal, a color chip cut in half). Rejected in favor of the mini-card
+because a flat diagonal swatch repeats the exact problem this redesign exists to fix — a color
+sample, not the outcome.
+
+**Layout:** a vertical list, one row per step, in the same geometry the ramp and palette preset
+lists already use (§3.3) — a radio dot, the step's label at a fixed width, then the mini-card at
+around 150×34px. `role="radiogroup"`, one tab stop, roving tabindex, arrow keys move and select,
+exactly like every other swatch group (§2.4's keyboard table applies here too). Selected state
+gets the same ring-plus-fill the preset lists use. Each row's accessible name states both
+composited hexes so the choice is not conveyed by color alone: `"Strong: light #141414, dark
+#f3f3f3, rendered at 12% opacity"`, or `"Invisible: matches the card surface in both modes"` for
+that one step. A helper line under the group states the split once, since it is a new pattern:
+*"Each option is a small card: real background, real border, real shadow. Light half top-left,
+dark half bottom-right."*
 
 **Card background / Primary background** — a four-button row: `Neutral 80`, `Neutral 90`,
 `Neutral 95`, `White`. Each button is a swatch above a two-line label. Selected state gets a ring
@@ -382,19 +465,24 @@ not clear the whole list at once.
   already describes. Recent still works for the rest of the session. It does not survive the next
   reload.
 
-### 2.7 Ramp-relative colors — blocked on an engine change
+### 2.7 Blocked on an engine change
+
+Two separate decisions this round both need a change to `src/engine/`, and that API is frozen
+(CLAUDE.md, PLAN §5). Both ride the same future engine work package — one PM decision unfreezes
+the API once, for both, rather than twice. This section specifies both precisely enough for that
+package to build. **Neither is buildable in M3 or M4.** The build notes in §6.2 restate this.
+
+#### Change 1 — ramp-relative colors (O-3)
 
 Settled with the owner (§7, O-3), reversed from this spec's earlier recommendation. **A color
 picked from a ramp or palette swatch follows that preset when the preset changes.** A color typed
 or picked as a free custom value does not follow anything — it stores a literal hex, same as
 today.
 
-**This behavior needs a change to `src/engine/`, and that API is frozen (CLAUDE.md, PLAN §5).**
-This section specifies the target behavior so a separate engine work package can build it. M3 and
-M4 MUST NOT build "follows a preset" now. `ThemeConfig.colors.*` is `Hex` today, and a literal hex
-has no identity to follow. A config shape the engine does not yet ship is not buildable this
-milestone. Build the picker exactly as §2.2–§2.5 already specify: every swatch pick commits a
-literal hex.
+M3 and M4 MUST NOT build "follows a preset" now. `ThemeConfig.colors.*` is `Hex` today, and a
+literal hex has no identity to follow. A config shape the engine does not yet ship is not
+buildable this milestone. Build the picker exactly as §2.2–§2.5 already specify: every swatch pick
+commits a literal hex.
 
 **1. Behavior.** A swatch picked from the active neutral ramp, or from the active entity palette,
 stores which slot it came from, not just its color. When the user later changes the base tone or
@@ -427,6 +515,83 @@ preference.
 **4. A legal, if unusual, result.** `colors.primary`, `colors.error`, `colors.warning` and
 `colors.success` each seed a ramp. A user can point one of them at a neutral-ramp slot. The result
 is legal — a low-chroma seed produces a low-chroma generated ramp. This is expected, not a bug.
+
+#### Change 2 — border color's Invisible step, and the shadow fix it needs
+
+Settled with the owner (§7, Border color redesign — a second round of feedback, separate from
+O-1 to O-8 but blocked by the same kind of engine change as O-3, hence the same section).
+§2.5 names the step **Invisible**: the border resolves to the card surface itself, so it
+disappears into the card. `borderColor` is `NeutralSlotId` today, and `"white"` — a legal
+`cardBackground` — is not a member of that union. So `borderColor` cannot express "match the card
+surface" under the current type. This needs a second change to `ThemeConfig`, in the same work
+package as Change 1.
+
+**1. Proposed config shape.** Add one sentinel value to the union:
+
+```ts
+type BorderColor = NeutralSlotId | "match-card"
+```
+
+`"match-card"` names the resolution mechanism, not the visual effect — the UI label **"Invisible"**
+already carries the effect, so the code-level value stays literal about what it does. Alternatives
+considered and rejected: `"invisible"` (names an effect the value does not by itself produce — a
+`"match-card"` border is still a real, painted border, just one that composites away) and
+`"card"` alone (reads as a card *reference*, not a *match*). `"match-card"` states plainly that
+the value points at another field. It is not a color in its own right.
+
+**2. Resolution — read this carefully, it is the part most likely to be built wrong.**
+`"match-card"` MUST resolve to the literal, already-computed `card-background-color` for the
+current mode, not to a ramp lookup and not through `mirrorSlot()`. Two facts force this:
+
+- `"white"` has no `NeutralSlotId`, so there is no slot for `mirrorSlot()` to invert in the first
+  place.
+- Dark-mode card placement is not a mirror of the light slot. `surfaces()` (`derive.ts:163-192`)
+  computes it from an elevation-preserving formula (`darkCard = darkPage + elevation`) that keeps
+  the *gap* between card and page, not the card's own position. A concrete case proves the two
+  approaches diverge: `cardBackground: "neutral-90"`, `primaryBackground: "neutral-95"` (both
+  legal, neither the default) computes a dark card at `neutral-05` today. A naive `mirrorSlot`
+  read of the light choice, `mirrorSlot(90)`, gives `neutral-10` instead — a different hex. Built
+  the naive way, Invisible shows a faint but real line in dark mode, on this and other ordinary
+  configs, not only in the "white" edge case.
+
+The correct implementation reuses the per-mode `surface.card` value `derive()` already computes
+for `card-background-color`, the same value §2.5's mini-card reads to render the composite. It
+does not add a second, parallel way to compute a card color.
+
+**3. Fact check — "Invisible needs no opacity change" (confirmed).** 12% of the card color,
+composited over the card background, equals the card background exactly — an algebraic identity
+(`α·C + (1−α)·C = C`) that holds regardless of `α`, so it needs no special-case in `withAlpha` or
+the `1f` constant `template.css:145` sets. I checked this against the engine directly, for all
+four `SurfaceChoice` values in both modes: `derive()`'s output, composited by hand, lands back on
+its own card hex every time, exactly.
+
+**4. Fact check — "Invisible breaks the shadow" (confirmed, and already true today).** The coupling
+is not new. `derive.ts:444` computes one `lightBorderBase` from `config.borderColor`, and
+`derive.ts:453` hands that *same* base to `--shadow-color`: `withAlpha(lightBorderBase, dark ?
+"7a" : "29")`. I checked this live. `derive({ borderColor: "neutral-05" })` gives `shadow-color:
+#14141429`. `derive({ borderColor: "neutral-95" })` gives `#f3f3f329`. The shadow already moves
+with the border knob today, for any of the eleven slots, with no Invisible step involved. Once
+`borderColor` can resolve to the card surface, this coupling turns a merely pale shadow into an
+exactly-invisible one: card-surface-on-card-surface, alpha or no alpha. A borderless card with a
+shadow is the entire point of the Invisible step, so the shadow MUST survive it.
+
+**Requirement:** `--shadow-color` MUST always derive from `neutral-05`, independent of
+`borderColor`'s value, and independent of mode too — the same rule `derive.ts:449-452` already
+applies on the mode axis. Only the alpha changes (`29` light, `7a` dark). Concretely,
+`derive.ts:453` no longer takes its base from `lightBorderBase`. It takes a fixed `neutral[5]`
+instead. Divider, outline and outline-hover still take the border knob's own base exactly as they
+do today. Only the shadow line changes.
+
+**Where the NOTE sits, checked.** `template.css:144`'s comment — `Lines -> NOTE: Derive using
+--ha-color-neutral-05 as base in place of "000000"` — sits directly above the whole Lines block,
+`template.css:145-148`: divider, outline, outline-hover and shadow together, not the divider line
+alone. That reading is right. One note for the engine package, not a change to the decision above:
+`template.css:148`'s own per-line comment on `--shadow-color` reads `DERIVED: --divider-color RGB
++ "29" opacity` — which names the *border knob's* base, not a fixed `neutral-05`, and is what
+`derive.ts` currently implements. The block NOTE and the per-line comment point in different
+directions. The fix above resolves the conflict in favor of the block NOTE, per the owner's
+decision. Only one of the two comments stays true in the file after this change, and the engine
+package must know both exist before it picks which one to follow.
 
 ---
 
@@ -550,15 +715,18 @@ Group helper text: *"Every background, border and text color comes from this ram
 |---|---|---|---|
 | `Card background` | `cardBackground: SurfaceChoice` | 4-swatch row | `"white"` |
 | `Primary background` | `primaryBackground: SurfaceChoice` | 4-swatch row | `"neutral-95"` |
-| `Border color` | `borderColor: NeutralSlotId` | 11-segment ramp strip | **`"neutral-05"`** |
+| `Border color` | `borderColor: NeutralSlotId` | mini-card list, 5 named steps (§2.5) | **`"neutral-05"`** — the **Strong** step |
 
 `SurfaceChoice` is exactly `"white" | "neutral-95" | "neutral-90" | "neutral-80"`. `NeutralSlotId`
 is `"neutral-05"` … `"neutral-95"` (11 values). Both come from `src/engine/types.ts` — the control
-options are the union members, not a hand-written list.
+options for Card background and Primary background are the union members, not a hand-written
+list. Border color's five named steps are a UI-only subset of the same union, plus one sentinel
+value — see §2.5 for the four slots and §2.7 for the sentinel.
 
-The border default is the **darkest** slot, not a light one. `--divider-color` is `neutral-05` at
-`1f` alpha. That is how `template.css` gives its `#0000001f` a tint from the ramp. An earlier draft
-of this spec and the wireframe both had it defaulting to `neutral-80`. Wrong.
+The border default is the **darkest** of the four named slots, not a light one. `--divider-color`
+is `neutral-05` at `1f` alpha. That is how `template.css` gives its `#0000001f` a tint from the
+ramp. An earlier draft of this spec and the wireframe both had it defaulting to `neutral-80`.
+Wrong. Under the redesign this is the **Strong** step, still the default, still the same slot.
 
 ---
 
@@ -928,13 +1096,14 @@ not destructive. Never a toast. Toasts are for things that already happened.
    literal.
 1. Fifteen knobs, five groups, §3.2. Labels verbatim from `template.css`.
 2. **Zero `<input type="color">`.** Grep for it before opening the PR.
-3. Three distinct color controls, not one: popover picker (×6), inline ramp strip (×1),
-   inline 4-swatch row (×2). §2.1.
+3. Three distinct color controls, not one: popover picker (×6), inline mini-card list for Border
+   color (×1, five named steps — §2.5), inline 4-swatch row (×2). §2.1.
 4. The popover's swatch groups read from the *current* ramp and palette preset in the store — they
    are derived state, not props frozen at mount. To check this, open a popover, change the base
    tone in the sidebar behind it, and watching the strip change.
 5. Hex commits on Enter/blur, not per keystroke (§2.4).
-6. The border color value is `${rampHex}1f` — and its strip renders at that alpha (§2.5).
+6. Each Border color mini-card renders a real `1px solid ${rampHex}1f` border over that half's
+   own card background, not a precomputed blend — the browser composites it live (§2.5).
 7. Font `SelectItem`s render in their own typeface. The list, its grouping and its order all come
    from `FONTS` + `FONT_CATEGORY_LABELS`, never a hardcoded array (§3.2). Load
    `FONTS.filter(f => f.needsWebfont)` in the builder's `index.html`.
@@ -945,11 +1114,17 @@ not destructive. Never a toast. Toasts are for things that already happened.
 10. The Typography group loads with only Body visible. Headings, Longform and Code sit inside a
     `Collapsible`, closed at load, opened by a **More** trigger (§3.2, O-6).
 11. `ThemeConfig.colors.*` stays `Hex`. Do not build the "picked color follows its preset" behavior
-    from O-3 (§2.6) — it needs an engine change this milestone does not ship. Build the popover and
-    the inline swatch groups exactly as §2.2–§2.5 specify: a swatch click writes a literal hex, same
-    as any custom pick.
-12. Recent colors persist to `localStorage` per §2.7. Read, prune and write on the same schedule
+    from O-3 (§2.7, Change 1) — it needs an engine change this milestone does not ship. Build the
+    popover and the inline swatch groups exactly as §2.2–§2.5 specify: a swatch click writes a
+    literal hex, same as any custom pick.
+12. Recent colors persist to `localStorage` per §2.6. Read, prune and write on the same schedule
     that section specifies, and use the session-only behavior instead if `localStorage` throws.
+13. `borderColor` stays `NeutralSlotId`, with no `"match-card"` sentinel. Do not build the
+    **Invisible** step or the `--shadow-color` fix from §2.7, Change 2 — both need the same
+    unshipped engine change as item 11. Build Hairline through Strong (§2.5) against the four
+    existing `NeutralSlotId` values. Leave the fifth row out, or render it visibly disabled with a
+    tooltip that names the blocker, until the engine ships `"match-card"`. Say which you picked in
+    the PR.
 
 ### 6.3 shadcn components expected
 
@@ -1057,6 +1232,33 @@ attention, not open questions. The owner responded to each.
 | The numeric contrast readout stays gone, replaced by the on-color chip (§4.3). | The chip stays, and the CSS variable name under every preview swatch is now also cut — Surfaces and Text included, not only the sections that already cut it (§4). |
 | The sidebar is a ~1300px scroll with all five groups open. | Approved. No change (§3.1). |
 | `--ha-font-size-scale` sits in `template.css` with no `KNOB` annotation, flagged in case that was an upstream oversight. | Confirmed out of v1 (PLAN §3, decision 8). Dropped. |
+
+### 7.2 Border color — a second round, 2026-08-14
+
+A separate topic from O-1 to O-8, raised after that round closed. The owner's objection: the
+12%-alpha ramp strip reads as a row of near-identical light greys, and it hides that the pick also
+drives `--outline-hover-color` and `--shadow-color`, not only the divider line.
+
+| Part | Decision |
+|---|---|
+| Render the outcome | **Approved.** Each option is a mini-card — real card background, real border, real shadow — split diagonally, light half top-left, dark half bottom-right, both modes visible at once. §2.5 has the anatomy. |
+| Four named steps, not eleven slots | **Approved.** Hairline / Subtle / Medium / Strong, each darker than the card and darker than the step before it. UI-only — `borderColor` stays `NeutralSlotId`, no engine change. §2.5 has the slot picks and the rendered evidence behind them. |
+| A fifth step, Invisible | **Approved.** Resolves to the chosen card surface, so the border disappears into the card. Needs a new engine sentinel and a fix to `--shadow-color` so the shadow survives it — both **blocked**, specified at §2.7 (Change 2), folded into the same work package as O-3 (§2.7, Change 1). |
+
+**One work package, three changes, all blocked on the same PM decision to unfreeze the engine
+API.** None of the three is buildable in M3 or M4:
+
+1. `ThemeConfig.colors.*`: `Hex` → `SeedColor` (O-3, ramp-relative brand and status colors — §2.7,
+   Change 1).
+2. `ThemeConfig["borderColor"]`: `NeutralSlotId` → `NeutralSlotId | "match-card"` (the Invisible
+   border step — §2.7, Change 2).
+3. `derive.ts:453`: `--shadow-color` no longer shares its base with the border knob. It reads a
+   fixed `neutral-05` instead, so a borderless card can still cast a shadow (§2.7, Change 2). This
+   one is a plain correctness fix, not a type change, but it rides along because Change 2 is what
+   makes the existing bug show up in the most common case (Invisible against the default card).
+
+§6.2 items 11 and 13 tell M3/M4 what to build in the meantime: today's literal-hex colors, and a
+four-step Border color control with the fifth row left out or shown disabled.
 
 ---
 
