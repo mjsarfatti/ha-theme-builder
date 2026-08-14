@@ -117,7 +117,7 @@ unreadable, and impossible for the applied demo.
 3. **Text & type**
 4. **Brand & status**
 5. **Neutral ramp** *(full width, both modes)*
-6. **Home Assistant colors** — the extended palette *(full width, both modes)*
+6. **Entity colors** — the extended palette *(full width, both modes)*
 
 A section header is a small uppercase label, a hairline rule across the full preview width, and a
 one-line description of what the section controls. No section is collapsible.
@@ -146,8 +146,8 @@ toast — this is a **Base UI** project, so use shadcn's `toast` component
 no scrolling to the bottom of a 4000px page to find it.
 
 *Alternative considered:* keep a collapsed YAML block as the final preview section *and* the
-sheet. Rejected — two controls doing one job. **Open question O-4** if the owner wants the
-always-visible YAML back as a trust signal.
+sheet, or add a "12 variables changed" counter to the **Export theme** button as a trust signal.
+The owner rejected both (§7, O-4). One home for export, and a plain button with no counter.
 
 ### 1.5 Responsive
 
@@ -196,7 +196,8 @@ here") visible instead of discoverable.
 **No `<input type="color">` anywhere in the app.** Not as a fallback, not behind an opacity-0
 overlay (which is what the artifact does). This is an acceptance criterion for M4.
 
-*Alternative considered:* one uniform popover for all nine. See **Open question O-1**.
+*Alternative considered:* one uniform popover for all nine. Rejected. The owner settled on the
+inline form (§7, O-1).
 
 ### 2.2 Popover anatomy
 
@@ -253,7 +254,7 @@ escape hatch behind a click, and saves 200px of popover height we can afford.
 Render them as one continuous strip with no gaps, dark to light, left to right. Each segment is a
 button. Hover or focus opens a `Tooltip`: `Neutral 40 · #5e5e5e`.
 
-**From your Home Assistant colors** — the eighteen hues of the *currently selected* extended
+**From your entity colors** — the eighteen hues of the *currently selected* extended
 palette. Render them as 24px circles, in two rows of nine. The order is the canonical one (red,
 pink, purple, deep-purple, indigo, blue, light-blue, cyan, teal, green, light-green, lime, yellow,
 amber, orange, deep-orange, brown, blue-grey). Tooltip: `Amber · #ffc107`.
@@ -288,7 +289,7 @@ If this proves fiddly, an acceptable fallback is to let the popover close. The u
 and sees the new swatches. Do not spend a day on it.
 
 **Recent** — up to eight most-recently-committed values from the free picker or hex field,
-newest first, deduplicated, shared across all six popovers, session-only (no persistence in v1).
+newest first, deduplicated, shared across all six popovers, and persisted across a reload (§2.6).
 Hidden entirely when empty — no empty-state row.
 
 **Selected state**: if the current value equals a swatch exactly (case-insensitive hex compare),
@@ -353,6 +354,80 @@ a very faint gradient. That is correct and it is what the knob does.
 `Neutral 95`, `White`. Each button is a swatch above a two-line label. Selected state gets a ring
 and a check. Helper text under both: *"Dark mode uses the matching dark shade automatically."*
 
+### 2.6 Recent colors persist across a reload
+
+Settled with the owner (§7, O-7). This reverses this spec's earlier recommendation. Recent colors
+survive a reload. Each entry carries its own age. The picker drops a stale entry on read. It does
+not clear the whole list at once.
+
+- **Storage:** `window.localStorage`, key `"ha-theme-builder:recent-colors"`.
+- **Entry shape:** `{ hex: Hex; lastUsedAt: number }`. `lastUsedAt` is `Date.now()` at the moment
+  of the commit, in epoch milliseconds.
+- **Value:** a JSON array of entries, newest first, capped at 8 — the same cap §2.3 already sets
+  for the popover's Recent row.
+- **Staleness is per entry, not per list.** The staleness period is 7 days
+  (`7 * 24 * 60 * 60 * 1000` milliseconds). A read drops every entry whose `lastUsedAt` is older
+  than 7 days from the current time, then writes the filtered list back to `localStorage`. A read
+  happens at app load and at every popover open, so a stale entry never survives past the next
+  time a user looks at the list.
+- **What writes an entry.** Only a hex committed from the free picker or the hex field writes or
+  refreshes an entry — the same rule §2.3 already sets for what counts as "recent". A pick from
+  the ramp strip, the palette grid or the Recent row itself does not write an entry, because that
+  value already has a home in a group the user can already see.
+- **On write:** compare the new hex against existing entries, case-insensitive. A match moves to
+  the front and gets a fresh `lastUsedAt`. No match prepends a new entry. Either way, trim the
+  list to 8 after the write.
+- **`localStorage` can fail** — private mode, a full quota, a disabled store. A failed read or
+  write MUST NOT throw. The picker then uses the session-only behavior this spec's earlier draft
+  already describes. Recent still works for the rest of the session. It does not survive the next
+  reload.
+
+### 2.7 Ramp-relative colors — blocked on an engine change
+
+Settled with the owner (§7, O-3), reversed from this spec's earlier recommendation. **A color
+picked from a ramp or palette swatch follows that preset when the preset changes.** A color typed
+or picked as a free custom value does not follow anything — it stores a literal hex, same as
+today.
+
+**This behavior needs a change to `src/engine/`, and that API is frozen (CLAUDE.md, PLAN §5).**
+This section specifies the target behavior so a separate engine work package can build it. M3 and
+M4 MUST NOT build "follows a preset" now. `ThemeConfig.colors.*` is `Hex` today, and a literal hex
+has no identity to follow. A config shape the engine does not yet ship is not buildable this
+milestone. Build the picker exactly as §2.2–§2.5 already specify: every swatch pick commits a
+literal hex.
+
+**1. Behavior.** A swatch picked from the active neutral ramp, or from the active entity palette,
+stores which slot it came from, not just its color. When the user later changes the base tone or
+the entity palette, that knob re-resolves to the same slot in the new preset and its color changes
+with it. A color a user types, or picks by drag on the saturation square, stores a literal hex,
+and it never moves again.
+
+**2. Proposed config shape** — a recommendation to the engine package, not a settled fact. Keep
+each value a plain string, so `ThemeConfig` stays JSON round-trippable. A value is one of three
+things: a `#rrggbb` literal, a `NeutralSlotId` (`"neutral-40"`), or a palette reference — this spec
+proposes `` `palette:${PaletteColorName}` `` (`"palette:red"`). That reuses the existing
+`PaletteColorName` union. It does not need a new one:
+
+```ts
+type PaletteRef = `palette:${PaletteColorName}`
+type SeedColor = Hex | NeutralSlotId | PaletteRef
+```
+
+`colors.primary`, `colors.accent`, `colors.error`, `colors.warning`, `colors.success` and
+`colors.info` change type from `Hex` to `SeedColor`. `resolveConfig()` and `derive()` resolve a
+reference against the config's own `neutralRamp` and `palette` fields before any ramp math runs.
+
+**3. The constraint that stops a cycle.** A reference MUST point only at a preset source — the
+neutral ramp or the entity palette. It MUST NOT point at a generated ramp: primary, red, orange or
+green. The engine generates those four ramps from these same seed knobs. A reference into one of
+them has no fixed point to resolve to. The engine cannot generate the ramp until it resolves the
+seed, and it cannot resolve the seed until it has the ramp. This is a hard rule, not a style
+preference.
+
+**4. A legal, if unusual, result.** `colors.primary`, `colors.error`, `colors.warning` and
+`colors.success` each seed a ramp. A user can point one of them at a neutral-ramp slot. The result
+is legal — a low-chroma seed produces a low-chroma generated ramp. This is expected, not a bug.
+
 ---
 
 ## 3. Knob sidebar IA
@@ -374,15 +449,44 @@ Labels in `code` are verbatim from `template.css` and MUST be used as-is.
 
 **1 · Typography**
 
-| Label | Control | Writes | Default (`DEFAULT_CONFIG.fonts`) |
-|---|---|---|---|
-| `Body font family` | Grouped `Select` | `fonts.body` | `"roboto"` |
-| `Headings font family` | Grouped `Select` | `fonts.heading` | `"roboto"` |
-| `Longform font family` | Grouped `Select` | `fonts.longform` | `"system-sans"` |
-| `Code font family` | Grouped `Select` | `fonts.code` | `"system-mono"` |
+| Label | Control | Writes | Default (`DEFAULT_CONFIG.fonts`) | At load |
+|---|---|---|---|---|
+| `Body font family` | Grouped `Select` | `fonts.body` | `"roboto"` | Visible |
+| `Headings font family` | Grouped `Select` | `fonts.heading` | `"roboto"` | Under **More** |
+| `Longform font family` | Grouped `Select` | `fonts.longform` | `"system-sans"` | Under **More** |
+| `Code font family` | Grouped `Select` | `fonts.code` | `"system-mono"` | Under **More** |
 
 Order within the group is **Body, Headings, Longform, Code** — most-used first — which differs
 from `template.css`'s declaration order. Labels are unchanged.
+
+**Progressive disclosure (owner decision, §7, O-6).** At load, only **Body font family** shows.
+The other three sit behind a **More** control. Most users only care about the body font — the
+other three are a small group's concern, and the owner made this call directly rather than as a
+recommendation.
+
+Use the shadcn `collapsible` component: `Collapsible` / `CollapsibleTrigger` / `CollapsibleContent`,
+from `@base-ui/react/collapsible`, present in the `base-nova` registry and checked 2026-08-14
+(§6.4). This is not the `Accordion` §3.1 rejects for the whole sidebar. §3.1 rejects an accordion
+because it hides 12 of 15 knobs and hides a cross-knob relationship the user needs to see. This is
+one knob group's own extra rows, closed by default, with no relationship to the rest of the
+sidebar. One `Collapsible`, one trigger, and no other section to open or close in step with it.
+
+Anatomy:
+
+- `CollapsibleTrigger` sits directly under the Body font row, styled as a small text `Button`,
+  `variant="ghost"`. Label reads **"More"** when closed and **"Less"** when open. A
+  `ChevronDownIcon` at `data-icon="inline-end"` turns 180 degrees on open, driven by the
+  component's own `data-state` attribute — no extra state to track by hand.
+- `CollapsibleContent` holds Headings, Longform and Code, each with its own row, label and help
+  text, unchanged from the table above.
+- The group loads **closed**. The app always starts at `DEFAULT_CONFIG` (§5.1), so there is no
+  saved open state to restore in v1.
+- `Tab` reaches the trigger in row order. `Enter` and `Space` toggle it, per Base UI's default
+  `Collapsible` keyboard behavior. A closed group takes Headings, Longform and Code out of the tab
+  order for free. Base UI hides a closed panel's content from the accessibility tree by default.
+  This needs no extra `tabIndex` work.
+- The open and close motion respects `prefers-reduced-motion`, the same rule as the popover
+  (§2.2).
 
 All four dropdowns share **one identical list**, built from the engine's `FONTS` array grouped by
 `FontOption.category`, with `FONT_CATEGORY_LABELS` supplying the group headings. **Do not hardcode
@@ -458,8 +562,10 @@ of this spec and the wireframe both had it defaulting to `neutral-80`. Wrong.
 
 ---
 
-**5 · Home Assistant colors** — the extended palette preset picker.
-`Label: "Home Assistant colors"`, verbatim from `template.css`. See **Open question O-2**.
+**5 · Entity colors** — the extended palette preset picker.
+`Label: "Entity colors"`. `template.css` writes `"Home Assistant colors"` — the owner relabeled
+the knob for clarity (§7, O-2). `EXTENDED_PALETTES` and the CSS variables the knob feeds keep
+their existing names. Only the sidebar label changed.
 Config field `palette: ExtendedPaletteId`, default `"ha"`. Options are `EXTENDED_PALETTES` (§3.3).
 
 Group helper text: *"These color entity icons and badges — a light is amber, a lock is red."*
@@ -503,12 +609,18 @@ hardcode names or reorder for aesthetics:
 | Picker | Source | Order (ids) |
 |---|---|---|
 | Base tone | `NEUTRAL_RAMPS` → `.ramp`, 11 slots via `rampEntries` | `ha`, `rounded`, `slate`, `gray`, `zinc`, `stone`, `mauve`, `olive`, `mist`, `taupe` |
-| Home Assistant colors | `EXTENDED_PALETTES` → `.colors`, keyed by `PALETTE_COLOR_NAMES` | `ha`, `tailwind-v3`, `tailwind-v4`, `material-accent`, `ant-design`, `chakra-ui`, `bulma`, `rounded` |
+| Entity colors | `EXTENDED_PALETTES` → `.colors`, keyed by `PALETTE_COLOR_NAMES` | `ha`, `tailwind-v3`, `tailwind-v4`, `material-accent`, `ant-design`, `chakra-ui`, `bulma`, `rounded` |
 
-Row labels are `preset.label` verbatim — which for the eight Tailwind-derived ramps includes the
-suffix, for example **"Stone (Tailwind)"**, not "Stone". Ramp swatch order is `rampEntries()`: slots
-5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, dark to light. There are no black or white endpoints.
-Palette swatch order is `PALETTE_COLOR_NAMES`.
+`preset.label` for the eight Tailwind-derived ramps carries a suffix, for example
+**"Stone (Tailwind)"**. **The sidebar list strips the suffix** — it renders "Stone", not
+"Stone (Tailwind)" — because a 300px row does not need the provenance eight times over. **The
+compare-all dialog keeps the full `preset.label`**, suffix included, since that view is the
+place for it. Strip only the pattern `" (Tailwind)"` at the end of the label. Do not touch
+`preset.label` itself, the ids, or the sort order — this is a display transform in the UI layer
+only, decided at the owner's call (§7, O-8). The engine's label stays as it is. Ramp swatch order
+is `rampEntries()`: slots 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, dark to light. There are no
+black or white endpoints. Palette swatch order is `PALETTE_COLOR_NAMES`. Palette labels carry no
+such suffix and stay untouched.
 
 Implementation: `RadioGroup` / `RadioGroupItem` with the visual indicator suppressed and the strip
 rendered as the `Label` content. Selected row: 2px ring in the builder's accent + a filled radio
@@ -540,16 +652,17 @@ is of three kinds, and all three go:
 - **RGB tuples under every swatch.** **Cut everywhere.** The engine omits `rgb-*` companions from
   the YAML where HA auto-derives them from hex (PLAN M1). A number that nobody copies and that
   nothing exports is noise.
-- **CSS variable names under every swatch.** **Kept where the variable is the point**
-  (surfaces, text), **cut where the label already is the name** (`--neutral-40` under a swatch
-  labeled "40". `--red-color` under a swatch labeled "red").
+- **CSS variable names under every swatch.** **Cut everywhere.** Surfaces and Text lose them too —
+  an earlier draft of this spec kept them there. The owner's call (§7.1): the preview shows the
+  rendered result, not the identifier. §4.1 and §4.2 name the variable each tile stands for once,
+  in prose. Neither section restates it on every tile.
 
 ### 4.1 Surfaces & dividers — **keep, trimmed**
 
 | Artifact | Verdict |
 |---|---|
 | 4 tiles, 200px, each with its surface color | **Keep** — tiles at 180px, 2×2 within each panel |
-| Label + `--var-name` | **Keep** both. This is the section where the variable name is the payload. |
+| Label + `--var-name` | **Keep the label. Cut the variable name.** |
 | `hex · rgb` | **Trim** to hex only |
 | Ramp-link `<select>` | **Cut** |
 | `reset` link | **Cut** |
@@ -565,12 +678,31 @@ reader about what the knob does.
 | Artifact | Verdict |
 |---|---|
 | 3 × "The quick brown fox" in primary / secondary / disabled | **Keep** |
-| `--var-name` | **Keep** |
+| `--var-name` | **Cut** |
 | `hex · rgb` | **Trim** to hex |
 | Ramp-link `<select>`, `reset` | **Cut** |
 
-**Addition — the four fonts have no preview anywhere in the artifact.** That is four of fifteen
-knobs with no feedback. Extend this section with a short type specimen inside the same card:
+**Font preview, corrected.** An earlier draft of this spec said the four font knobs have no
+preview anywhere. The owner's read is right: that overstates it (§7.1). The **Body**
+font already renders in the "Living room" applied demo (§4.6) — entity names, labels and buttons
+in a Home Assistant dashboard all take `--ha-font-family-body`. Body has two preview surfaces, not
+zero.
+
+**Heading, Longform and Code have no preview surface outside a dedicated specimen.** A check of
+every preview section, the "Living room" demo and its M5 second card included, found no text that
+takes `--ha-font-family-longform` or `--ha-font-family-code`. Neither section holds a long text
+block or a code string. Heading looked like a candidate — the "Living room" room header reads like
+a card title — but it is not one. Home Assistant's own `ha-card` sets `.card-header` to
+`font-family: var(--ha-card-header-font-family, inherit)` (`ha-card.ts:43`). Neither `template.css`
+nor the engine sets `--ha-card-header-font-family`. The header's font-family then resolves to
+`inherit` — the ambient body font, not the heading knob. HA's own rule that binds an `<h1>` to
+`--ha-font-family-heading` (`resources/styles.ts:52`) sits in a stylesheet outside `ha-card`'s
+shadow root, so it never reaches the header either. A mock card header in this app can render in
+the heading font. Nothing in §4.6 does so today.
+
+So the type specimen below is not an extra next to knobs the demo already covers. **It is the
+only preview surface for Headings, Longform and Code.** Extend this section with a short type
+specimen inside the same card:
 
 - a heading line in `--ha-font-family-heading`
 - a sentence in `--ha-font-family-body`
@@ -578,7 +710,7 @@ knobs with no feedback. Extend this section with a short type specimen inside th
 - a single code line in `--ha-font-family-code` (for example, `sensor.living_room_temperature`)
 
 Each labeled with its role in small muted text. This is the only place the spec *adds* to the
-artifact, and it closes a real gap.
+artifact, and it closes the real gap — three knobs, not four.
 
 ### 4.3 Brand & status — **keep, restructured**
 
@@ -621,7 +753,7 @@ information, and the user reads it instantly.
 
 Renders **once, full width, tagged `Both modes`** (§1.2).
 
-### 4.5 Extended palette → **"Home Assistant colors". The heaviest cut**
+### 4.5 Extended palette → **"Entity colors". The heaviest cut**
 
 The artifact renders nineteen cards. Each card holds a tint tile with a color dot, a label, a var
 name, a contrast row, a hex, and sometimes a ramp-link select. That is six pieces of chrome per
@@ -652,6 +784,10 @@ the label of a dashboard, not the label of a design exhibit.
 
 It exercises: card background, primary background, divider, both text colors, primary, and the
 border radius. It does **not** exercise error / warning / success / info, or the extended palette.
+It does not exercise Headings, Longform or Code either — the room header MUST render in
+`--ha-font-family-body`, not `--ha-font-family-heading`, because it copies Home Assistant's own
+`ha-card` header rule (§4.2 has the citation). Do not special-case the header to the heading
+knob. That renders a font combination the real exported theme never produces.
 So M5 adds **one second card** below it, in the same two-panel grid:
 
 - a row of four entity icons in extended-palette colors (amber light, red lock, blue climate,
@@ -665,7 +801,7 @@ variables — zero hardcoded colors (M5 acceptance criterion).
 
 ### 4.7 Generated values — **cut as a section**
 
-Moved to the export `Sheet` (§1.4). See **Open question O-4**.
+Moved to the export `Sheet` (§1.4). Settled — no live YAML panel, no counter (§7, O-4).
 
 ### 4.8 Also cut
 
@@ -726,13 +862,17 @@ not destructive. Never a toast. Toasts are for things that already happened.
   Surfaces controls, the ramp preview section, and every preview panel. Constrained knobs
   (border, card background, primary background) store a *reference* to a ramp step, so they
   follow the new ramp automatically.
-- **Free colors store a literal hex.** If you pick "neutral 40" from a popover strip and then
-  change the base tone, that color does **not** move. It is now an independent value. This is
-  predictable but arguably surprising — **Open question O-3**.
+- **Brand and status colors, target behavior (§2.7, O-3, blocked on an engine change):** a color
+  picked from the base tone or the entity palette follows that preset when it changes. A typed or
+  dragged color stores a literal hex and never moves. **What ships today:** every brand and status
+  color still stores a literal hex, because `ThemeConfig.colors.*` has not changed type yet. If you
+  pick "neutral 40" from a popover strip and then change the base tone, that color does **not**
+  move, in M3 and M4, until the engine change in §2.7 lands.
 - **Changing the extended palette** re-renders the palette swatch group in open popovers and the
   §4.5 section. It does not touch any other knob.
-- **Reset to defaults** opens an **`AlertDialog`**, not a `Dialog`. It is a
-  destructive confirmation — and clears the Recent list.
+- **Reset to defaults** opens an **`AlertDialog`**, not a `Dialog`. It is a destructive
+  confirmation, and it clears the Recent list from `localStorage` too (§2.6), not only from
+  memory.
 
 ---
 
@@ -772,7 +912,7 @@ not destructive. Never a toast. Toasts are for things that already happened.
    variable alone. Give each panel a fallback outline in the *builder's* border color.
 8. The **Neutral ramp** section renders `theme.ramps.neutral` through `rampEntries()`, not the raw
    preset. Today the two are identical for every base tone. The derived theme keeps the section
-   correct if that ever changes. The **Home Assistant colors** section reads
+   correct if that ever changes. The **Entity colors** section reads
    the palette values out of `modeVars(theme, "light")` under the `{name}-color` keys, iterating
    `PALETTE_COLOR_NAMES` for order.
 
@@ -802,6 +942,14 @@ not destructive. Never a toast. Toasts are for things that already happened.
    an acceptance criterion. Base UI's `RadioGroup` gives it for free — prefer it over hand-rolling.
 9. A knob change updates the preview immediately. Debounce only the drag on the saturation
    square, to ~16ms or one `requestAnimationFrame`. Every other change is discrete.
+10. The Typography group loads with only Body visible. Headings, Longform and Code sit inside a
+    `Collapsible`, closed at load, opened by a **More** trigger (§3.2, O-6).
+11. `ThemeConfig.colors.*` stays `Hex`. Do not build the "picked color follows its preset" behavior
+    from O-3 (§2.6) — it needs an engine change this milestone does not ship. Build the popover and
+    the inline swatch groups exactly as §2.2–§2.5 specify: a swatch click writes a literal hex, same
+    as any custom pick.
+12. Recent colors persist to `localStorage` per §2.7. Read, prune and write on the same schedule
+    that section specifies, and use the session-only behavior instead if `localStorage` throws.
 
 ### 6.3 shadcn components expected
 
@@ -817,11 +965,13 @@ component (CLAUDE.md). Editing `src/components/ui/` afterwards is fine, but say 
 Already in the repo: `button`, `card`.
 
 To add. Every one of them returned 200 from
-`https://ui.shadcn.com/r/styles/base-nova/<name>.json` on 2026-08-11 — §6.4):
+`https://ui.shadcn.com/r/styles/base-nova/<name>.json` on 2026-08-11, `collapsible` re-checked
+2026-08-14 — §6.4):
 
 | Component | Used for |
 |---|---|
 | `popover` | Color picker (§2.2) |
+| `collapsible` | Typography group's **More** disclosure (§3.2, O-6) |
 | `input` | Hex field, theme name |
 | `label` | Every knob |
 | `field` | *Recommended* wrapper for a knob row — `FieldLabel` / `FieldDescription` (the helper text) / `FieldError`. Saves hand-rolling the label + help + error stack fifteen times. Pulls in `label` and `separator`. |
@@ -866,7 +1016,8 @@ again. Do not trust this document alone for them.
 | Thing | Checked |
 |---|---|
 | `@base-ui/react` | **1.7.0**, installed. `radix-ui` is no longer a dependency, so every Radix reference in the first draft of this spec was wrong. `PopoverRootChangeEventDetails` carries `reason` (one value is `"outsidePress"`), `event` and `cancel()`. The refinement in §2.3 uses those three. |
-| shadcn style | `components.json` → `"style": "base-nova"`. All 16 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
+| shadcn style | `components.json` → `"style": "base-nova"`. All 17 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
+| `collapsible` | Checked **2026-08-14**, for O-6. Returns 200 from `.../base-nova/collapsible.json`. Exports `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@base-ui/react/collapsible`, against the same `@base-ui/react` 1.7.0 already installed. No new dependency. |
 | `react-colorful` | **5.8.0**, published 2026-07-13, **not yet a dependency**. Peer deps `react >=16.8.0` — React 19 is fine. Exports whole pickers only (`HexColorPicker`, `HexColorInput`, …). **no** saturation/hue sub-exports. Arrow keys move in 5% steps. Interactive areas are `tabIndex=0` `role="slider"` with `aria-valuetext`. `aria-label` is hardcoded `"Color"`. `validHex` accepts 3- and 6-digit. |
 | `lucide-react` | **1.31.0**, installed. Both `TriangleAlert` and `TriangleAlertIcon` are exported. Same dual naming for the rest. |
 | `culori` | **4.0.2**, installed — the engine's only dependency. The UI has no reason to import it directly. The color helpers it needs (`contrastRatio`, `normalizeHex`, `isHex`, `withAlpha`, …) are re-exported from `@/engine`. |
@@ -878,18 +1029,34 @@ rules, including the differences between Base UI and Radix.
 
 ---
 
-## 7. Open questions for the owner
+## 7. Decisions from the owner — 2026-08-14
 
-| # | Question | My recommendation |
+O-1 to O-8 are now settled. This table keeps each original question for the record and states
+the decision next to it. Later sections cite a decision as `(§7, O-n)`.
+
+| # | Question | Decision |
 |---|---|---|
-| **O-1** | Do the three constrained knobs (border, card background, primary background) use the same popover as the other six, for uniformity? Or inline swatch rows, as this spec says? | **Inline.** Four options do not need a popover, and the inline form makes the constraint visible. |
-| **O-2** | `template.css` labels the extended palette knob **"Home Assistant colors"**. Inside a Home Assistant theme builder that reads as "the colors", not as "the eighteen named entity colors". Keep the label verbatim, or change it to **"Entity colors"** or **"Named colors"**? | I kept it verbatim, as instructed. I expect it to confuse people. **"Entity colors"** is my suggestion. |
-| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec says it stays, and stores a literal hex. | **It stays.** That is predictable. "My primary went green because I changed the base tone" is worse than "my primary did not move". A reasonable person can want the opposite. |
-| **O-4** | I cut the always-visible "Generated values" YAML section in favor of an export sheet. Do you want the live YAML back as a permanent panel? | **No** — one home for export. For the trust signal, a small "12 variables changed" counter on the Export button is cheaper. |
-| **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Do you agree? | **Yes** — it is the answer to the question the user actually has. |
-| **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system = 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? It is ~500px tall and it scrolls. | **Yes**, with each item in its own typeface. If it reads as too long, remove the display serifs first. |
-| **O-7** | Recent colors are session-only, and a reload loses them. Do you want them in `localStorage`? | **No** in v1. PLAN §3 decision 10 puts shareable and persisted config in the M7 backlog. One `localStorage` key here invites the rest. |
-| **O-8** *(new)* | The ramp picker rows take their labels from `preset.label`, so eight of the ten read **"Stone (Tailwind)"**, "Zinc (Tailwind)" and so on. In a sidebar 300px wide, that suffix uses a third of the row and repeats eight times. The user does not need the provenance here. Remove the suffix in the UI, or change the engine labels? | **Remove it in the UI** — render "Stone", and keep the provenance in the compare-all dialog. The engine owns the label and its API is frozen, so this is your decision, not mine. No change is also acceptable. |
+| **O-1** | Do the three constrained knobs (border, card background, primary background) use the same popover as the other six, for uniformity? Or inline swatch rows, as this spec says? | **Inline**, as this spec already writes it. No change. |
+| **O-2** | `template.css` labels the extended palette knob **"Home Assistant colors"**. Inside a Home Assistant theme builder that reads as "the colors", not as "the eighteen named entity colors". Keep the label verbatim, or change it to **"Entity colors"** or **"Named colors"**? | **Relabel the knob to "Entity colors."** Every place in this spec that named the knob or its preview section now reads "Entity colors" (§1.3, §2.3, §3.2, §3.3, §4.5). `template.css`'s own string stays as it is — only the UI label changed. |
+| **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a ramp or palette swatch follows that preset when the preset changes. The config stores the picked slot, not the resolved hex. This needs a change to the frozen engine API, so it is **blocked** — §2.7 has the full specification and the block. M3 and M4 build today's literal-hex behavior until a separate engine work package ships the change. |
+| **O-4** | The always-visible "Generated values" YAML section is cut in favor of an export sheet. Keep the live YAML as a permanent panel? | **No**, and the "12 variables changed" counter this spec's earlier draft floated as a cheaper trust signal is also cut. A plain **Export theme** button, no counter (§1.4). |
+| **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Agreed? | **Yes.** No change (§1.3, §4.6). |
+| **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system, 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? | **Yes**, one grouped `Select`, each item in its own typeface, unchanged from this spec's earlier draft — **plus progressive disclosure.** At load, only **Body font family** shows. A **More** `Collapsible` reveals Headings, Longform and Code. Most users only care about the body font (§3.2). |
+| **O-7** | Recent colors are session-only, and a reload loses them. Move them to `localStorage`? | **REVERSED.** Recent colors persist to `localStorage`, with a 7-day staleness period **per entry** — each entry carries its own last-used time, and a read drops any entry past 7 days. Storage key, entry shape and the cleanup point are at §2.6. |
+| **O-8** | The ramp picker rows take their labels from `preset.label`, so eight of the ten read **"Stone (Tailwind)"**, "Zinc (Tailwind)" and so on. In a sidebar 300px wide, that suffix takes a third of the row, eight times over. Remove the suffix in the UI, or change the engine labels? | **Remove it in the UI.** The sidebar list renders "Stone". The compare-all dialog keeps the full `preset.label`, suffix included (§3.3). The engine's own label is untouched — its API stays frozen. |
+
+### 7.1 Flag responses — 2026-08-14
+
+The same PR round also carried five items under "Still flagging" — judgment calls for the owner's
+attention, not open questions. The owner responded to each.
+
+| Flag | Response |
+|---|---|
+| The four font knobs have no preview anywhere. | Overstated. The Body font already renders in the applied demo. Corrected at §4.2 — only Heading, Longform and Code lack an organic preview surface, and the type specimen is their one preview. |
+| The extended palette cut is the heaviest in the audit, 19 cards down to 18 flat swatches. | Approved. No change (§4.5). |
+| The numeric contrast readout stays gone, replaced by the on-color chip (§4.3). | The chip stays, and the CSS variable name under every preview swatch is now also cut — Surfaces and Text included, not only the sections that already cut it (§4). |
+| The sidebar is a ~1300px scroll with all five groups open. | Approved. No change (§3.1). |
+| `--ha-font-size-scale` sits in `template.css` with no `KNOB` annotation, flagged in case that was an upstream oversight. | Confirmed out of v1 (PLAN §3, decision 8). Dropped. |
 
 ---
 
@@ -942,7 +1109,10 @@ control, popover anatomy), §3.1 (five always-open groups), §4 (the content aud
 
 This document follows **ASD-STE100 Simplified Technical English**, pragmatic mode, like
 `CLAUDE.md`, `docs/PLAN.md` and `src/engine/README.md`. The pass changed the wording only. No
-decision, recommendation or acceptance criterion changed, and O-1 to O-8 keep their meaning.
+decision, recommendation or acceptance criterion changed, and O-1 to O-8 kept their meaning at the
+time of that pass. A later round with the owner (§7, 2026-08-14) settled O-1 to O-8 and reversed
+two of them — that is a content change, not a language edit, and every later edit in this document
+still follows the conventions below.
 
 Conventions, so that later edits stay consistent:
 

@@ -93,6 +93,9 @@ button{font:inherit;color:inherit}
 .group-bd{padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px}
 .knob > label,.knob > .lbl{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
 .knob .help{font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.35}
+/* O-6: Typography's progressive disclosure — closed at load, "More" reveals Headings/Longform/Code */
+.collapsible{display:flex;flex-direction:column;gap:14px;padding-top:2px}
+.collapsible[hidden]{display:none}
 select{
   width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface);
   padding:7px 8px;font-size:13px;
@@ -173,10 +176,9 @@ select{
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{border-radius:7px;padding:9px}
 .tile .cap{font-size:11px;font-weight:500;margin-top:7px}
-.tile .var{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:1px}
-.tile .hex{font-family:var(--mono);font-size:9.5px;color:var(--ink-3)}
+.tile .hex{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:1px}
 .dk .tile .cap{color:#e8e9ea}
-.dk .tile .var,.dk .tile .hex{color:#8b9098}
+.dk .tile .hex{color:#8b9098}
 .fill{height:44px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .chip-b{border-radius:7px;padding:9px 11px;font-size:12px;font-weight:500;color:#fff;display:flex;justify-content:space-between;align-items:center}
@@ -266,7 +268,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
   <div class="wf-banner">
     <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
-    <div>Try: a color row · Base tone · Compare all · Export theme</div>
+    <div>Try: a color row · Base tone · More fonts · Compare all · Export theme</div>
   </div>
 
   <!-- ============ APP BAR ============ -->
@@ -294,20 +296,23 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
             <select id="f-body" class="fontsel"></select>
             <div class="help">Most of the UI: labels, buttons, entity names.</div>
           </div>
-          <div class="knob">
-            <label for="f-head">Headings font family</label>
-            <select id="f-head" class="fontsel"></select>
-            <div class="help">Card and section titles.</div>
-          </div>
-          <div class="knob">
-            <label for="f-long">Longform font family</label>
-            <select id="f-long" class="fontsel"></select>
-            <div class="help">Long blocks of text, like a markdown card.</div>
-          </div>
-          <div class="knob">
-            <label for="f-code">Code font family</label>
-            <select id="f-code" class="fontsel"></select>
-            <div class="help">Code and YAML, like the template editor.</div>
+          <button type="button" class="btn link" id="fontMoreBtn" aria-expanded="false" aria-controls="fontMore">More</button>
+          <div id="fontMore" class="collapsible" hidden>
+            <div class="knob">
+              <label for="f-head">Headings font family</label>
+              <select id="f-head" class="fontsel"></select>
+              <div class="help">Card and section titles.</div>
+            </div>
+            <div class="knob">
+              <label for="f-long">Longform font family</label>
+              <select id="f-long" class="fontsel"></select>
+              <div class="help">Long blocks of text, like a markdown card.</div>
+            </div>
+            <div class="knob">
+              <label for="f-code">Code font family</label>
+              <select id="f-code" class="fontsel"></select>
+              <div class="help">Code and YAML, like the template editor.</div>
+            </div>
           </div>
         </div>
       </section>
@@ -356,14 +361,14 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         </div>
       </section>
 
-      <!-- 5 HA colors -->
+      <!-- 5 Entity colors -->
       <section class="group">
         <div class="group-hd">
-          <h3>5 · Home Assistant colors <span class="tag">§3.3</span></h3>
+          <h3>5 · Entity colors <span class="tag">§3.3 · was &#34;Home Assistant colors&#34;, O-2</span></h3>
           <p>These color entity icons and badges — a light is amber, a lock is red.</p>
         </div>
         <div class="group-bd">
-          <div class="preset" id="palList" role="radiogroup" aria-label="Home Assistant colors"></div>
+          <div class="preset" id="palList" role="radiogroup" aria-label="Entity colors"></div>
           <button class="btn link" id="btnCmpPals">Compare all palettes &rarr;</button>
         </div>
       </section>
@@ -432,12 +437,12 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
           <div class="pair">
             <div class="panel lt">
               <div style="font-size:19px;font-weight:500">The quick brown fox <span style="color:#6b6b6b">jumps over</span> <span style="color:#a5a5a5">the lazy dog</span></div>
-              <div class="chip-w">--primary-text-color #212121 &middot; --secondary-text-color #727272 &middot; --disabled-text-color #a5a5a5</div>
+              <div class="chip-w">Primary #212121 &middot; Secondary #727272 &middot; Disabled #a5a5a5</div>
               <div class="box" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading font &middot; body font &middot; longform paragraph &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span></div>
             </div>
             <div class="panel dk">
               <div style="font-size:19px;font-weight:500;color:#fff">The quick brown fox <span style="color:#c9c9c9">jumps over</span> <span style="color:#7c7c7c">the lazy dog</span></div>
-              <div class="chip-w" style="color:#8b9098">--primary-text-color #ffffff &middot; --secondary-text-color #cccccc &middot; --disabled-text-color #7c7c7c</div>
+              <div class="chip-w" style="color:#8b9098">Primary #ffffff &middot; Secondary #cccccc &middot; Disabled #7c7c7c</div>
               <div class="box dk" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading font &middot; body font &middot; longform paragraph &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span></div>
             </div>
           </div>
@@ -465,10 +470,10 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
           <div class="full"><div class="rampgrid" id="rampPreview"></div></div>
         </section>
 
-        <!-- 6. HA colors -->
+        <!-- 6. Entity colors -->
         <section class="sec">
           <div class="sec-hd">
-            <h2>Home Assistant colors</h2>
+            <h2>Entity colors</h2>
             <p>These color entity icons and badges — a light is amber, a lock is red. <span class="tag">§4.5 · 19 cards &rarr; 18 swatches</span></p>
             <span class="badge">Both modes</span>
           </div>
@@ -495,7 +500,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
   </div>
 
   <div class="grp">
-    <div class="t">From your Home Assistant colors <span class="tag" id="popPalName">Home Assistant</span></div>
+    <div class="t">From your entity colors <span class="tag" id="popPalName">Home Assistant</span></div>
     <div class="dots" id="popPal" role="radiogroup" aria-label="Palette colors"></div>
   </div>
 
@@ -618,6 +623,26 @@ const BRAND = [
   {id:"info",    label:"Info color",    hex:"#039be5"}
 ];
 
+/* ---------------- recent colors: localStorage, per-entry 7-day staleness — UX-SPEC §2.6, O-7 ---------------- */
+const RECENT_KEY = "ha-theme-builder:recent-colors";
+const RECENT_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+function loadRecent(){
+  try{
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const now = Date.now();
+    const fresh = JSON.parse(raw).filter(e => e && typeof e.hex === "string" && (now - e.lastUsedAt) < RECENT_STALE_MS);
+    saveRecent(fresh); /* a read prunes stale entries and writes the pruned list back */
+    return fresh;
+  } catch(e){
+    return []; /* localStorage unavailable — session-only for this load */
+  }
+}
+function saveRecent(list){
+  try{ localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0,8))); }
+  catch(e){ /* quota, private mode, disabled store — never throw */ }
+}
+
 /* ---------------- state ---------------- */
 const state = {
   ramp: 0, pal: 0,
@@ -626,7 +651,7 @@ const state = {
      primaryBackground "neutral-95", borderColor "neutral-05" */
   cardBg: 3, primaryBg: 2,   /* index into BG4 */
   border: 0,                  /* ramp step index -> neutral-05 */
-  recent: [],
+  recent: loadRecent(),       /* [{hex, lastUsedAt}], newest first, persisted */
   openKnob: null
 };
 const BG4 = [["Neutral","80",8],["Neutral","90",9],["Neutral","95",10],["White","",-1]];
@@ -654,6 +679,16 @@ document.querySelectorAll("select.fontsel").forEach(sel=>{
   sel.value = FONT_DEFAULTS[sel.id];
 });
 
+/* O-6: progressive disclosure — Headings/Longform/Code start hidden behind "More" */
+const fontMoreBtn = $("#fontMoreBtn");
+const fontMore = $("#fontMore");
+fontMoreBtn.addEventListener("click", ()=>{
+  const opening = fontMore.hidden;
+  fontMore.hidden = !opening;
+  fontMoreBtn.setAttribute("aria-expanded", String(opening));
+  fontMoreBtn.textContent = opening ? "Less" : "More";
+});
+
 /* ---------------- sidebar: brand knobs ---------------- */
 const brandKnobs = $("#brandKnobs");
 BRAND.forEach(b=>{
@@ -677,14 +712,17 @@ function paintBrandRows(){
 }
 
 /* ---------------- sidebar: preset lists ---------------- */
-function buildPresetList(node, data, getSel, setSel){
+/* O-8: the sidebar list strips the " (Tailwind)" suffix from preset.label. The compare-all
+   dialog (openCompare) keeps the full label — see UX-SPEC §3.3, §7 O-8. */
+function buildPresetList(node, data, getSel, setSel, stripSuffix){
   node.innerHTML = "";
   data.forEach(([name,colors],i)=>{
     const it = el("button","preset-item");
     it.type="button"; it.setAttribute("role","radio");
     it.setAttribute("aria-checked", String(i===getSel()));
+    const shown = stripSuffix ? name.replace(/ \(Tailwind\)$/, "") : name;
     const hd = el("div","pi-hd");
-    hd.innerHTML = '<span class="dot"></span><span class="pi-nm">'+name+'</span>';
+    hd.innerHTML = '<span class="dot"></span><span class="pi-nm">'+shown+'</span>';
     const st = el("div","pstrip");
     colors.forEach(c=>{ const s=el("span"); s.style.background=c; st.appendChild(s); });
     it.appendChild(hd); it.appendChild(st);
@@ -695,7 +733,7 @@ function buildPresetList(node, data, getSel, setSel){
   });
 }
 function paintPresets(){
-  buildPresetList($("#rampList"), RAMPS, ()=>state.ramp, i=>{ state.ramp=i; renderAll(); });
+  buildPresetList($("#rampList"), RAMPS, ()=>state.ramp, i=>{ state.ramp=i; renderAll(); }, true);
   buildPresetList($("#palList"),  PALETTES, ()=>state.pal, i=>{ state.pal=i; renderAll(); });
 }
 
@@ -755,10 +793,11 @@ function surfaceTiles(node, dark){
       f.appendChild(rule);
     }
     t.appendChild(f);
+    /* the CSS variable name (v) is not rendered — the preview shows the result, not the
+       identifier, per UX-SPEC §4, owner flag response §7.1 */
     const cp = el("div","cap"); cp.textContent = cap;
-    const vr = el("div","var"); vr.textContent = v;
     const hx = el("div","hex"); hx.textContent = hex || (dark ? "#ffffff2b" : ramp()[state.border]+"1f");
-    t.appendChild(cp); t.appendChild(vr); t.appendChild(hx);
+    t.appendChild(cp); t.appendChild(hx);
     node.appendChild(t);
   });
 }
@@ -821,7 +860,11 @@ function setKnob(hex, remember){
   if (!state.openKnob) return;
   state.brand[state.openKnob] = hex;
   if (remember){
-    state.recent = [hex].concat(state.recent.filter(h=>h.toLowerCase()!==hex.toLowerCase())).slice(0,8);
+    /* only a free-picker or hex-field commit writes a Recent entry — a ramp/palette/Recent
+       swatch pick does not (UX-SPEC §2.3, §2.6) */
+    const entry = { hex, lastUsedAt: Date.now() };
+    state.recent = [entry].concat(state.recent.filter(e=>e.hex.toLowerCase()!==hex.toLowerCase())).slice(0,8);
+    saveRecent(state.recent);
   }
   renderAll();
 }
@@ -864,7 +907,8 @@ function paintPop(){
 
   $("#popRecentGrp").style.display = state.recent.length ? "" : "none";
   const rc = $("#popRecent"); rc.innerHTML="";
-  state.recent.forEach(c=>{
+  state.recent.forEach(entry=>{
+    const c = entry.hex;
     const s = el("button"); s.type="button"; s.setAttribute("role","radio");
     s.setAttribute("aria-checked", String(c.toLowerCase()===hex.toLowerCase()));
     s.setAttribute("aria-label","Recent "+c); s.title = c;
