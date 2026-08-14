@@ -74,8 +74,15 @@ const NEUTRAL_IDS = {
   "Taupe (Tailwind)": "taupe",
 };
 
-const slotRows = neutralRows.filter(([name]) => name.startsWith("neutral-"));
-const slots = slotRows.map(([name]) => Number(name.slice("neutral-".length)));
+// "black" and "white" are the ramp's own 0 and 100 slots (real reference data,
+// not synthesized — every column ships #000000 / #ffffff), not a name filtered
+// out. See `NeutralRampSlot` in types.ts.
+const slotRows = neutralRows.filter(
+  ([name]) => name === "black" || name === "white" || name.startsWith("neutral-"),
+);
+const slotOf = (name) => (name === "black" ? 0 : name === "white" ? 100 : Number(name.slice("neutral-".length)));
+const slots = slotRows.map(([name]) => slotOf(name));
+const commentFor = (slot) => `neutral-${String(slot).padStart(2, "0")}`;
 
 let out = banner("black-white-ramps.html");
 out += `import type { NeutralRampPreset } from "../types.ts";\n\n`;
@@ -84,8 +91,8 @@ for (const { col, label } of neutralHeader) {
   const id = NEUTRAL_IDS[label];
   if (!id) throw new Error(`no id mapping for neutral ramp "${label}"`);
   out += `  {\n    id: "${id}",\n    label: ${JSON.stringify(label)},\n    ramp: {\n`;
-  slotRows.forEach(([name, cols], i) => {
-    out += `      ${slots[i]}: "${cols[col]}", // ${name}\n`;
+  slotRows.forEach(([, cols], i) => {
+    out += `      ${slots[i]}: "${cols[col]}", // ${commentFor(slots[i])}\n`;
   });
   out += `    },\n  },\n`;
 }

@@ -43,7 +43,8 @@ current theme.
 ### `derive(config?: PartialThemeConfig): DerivedTheme`
 
 The entry point. Throws `TypeError` on a malformed seed color and `RangeError`
-on an unknown font / ramp / palette id — it never silently substitutes.
+on an unknown font / ramp / palette id, or a `palette:` reference to a color
+the current palette doesn't have — it never silently substitutes.
 
 ```ts
 interface DerivedTheme {
@@ -58,7 +59,11 @@ interface DerivedTheme {
 
 `CssVarMap` keys are **bare** names — `primary-color`, not `--primary-color` —
 because that is the spelling HA's YAML uses. `common` / `light` / `dark` are
-disjoint: nothing appears in more than one.
+disjoint: nothing appears in more than one. `ramps.neutral` stays the
+11-shade `Ramp` shape (`05..95`) this always was, even though the preset
+data behind it now carries 13 shades — see [Neutral slots reach 00 and
+100](#neutral-slots-reach-00-and-100). The two extra shades are neutral-only
+plumbing for `surfaces()` and `borderColor`, not swatch-row data.
 
 ### `modeVars(theme, mode): CssVarMap`
 
@@ -128,18 +133,61 @@ interface ThemeConfig {
     success;   // seed for --ha-color-green-60
     accent;    // --accent-color, standalone
     info;      // --info-color, standalone
-  };
-  neutralRamp: NeutralRampId;      // "ha" | "gray" | "slate" | …
-  palette: ExtendedPaletteId;      // "ha" | "tailwind-v4" | …
-  borderColor: NeutralSlotId;      // "neutral-05" … "neutral-95"
-  cardBackground: SurfaceChoice;   // "white" | "neutral-95" | "neutral-90" | "neutral-80"
+  };             // each one a SeedColor: Hex | `palette:${PaletteColorName}`
+  neutralRamp: NeutralRampId;              // "ha" | "gray" | "slate" | …
+  palette: ExtendedPaletteId;              // "ha" | "tailwind-v4" | …
+  borderColor: NeutralSlotId | "match-card"; // "neutral-00" … "neutral-100", or the card colour
+  cardBackground: SurfaceChoice;           // "neutral-100" | "neutral-95" | "neutral-90" | "neutral-80"
   primaryBackground: SurfaceChoice;
 }
 ```
 
+Every field stays JSON-serializable — a `SeedColor` and a `borderColor` are
+both just strings — so the whole config still round-trips through a URL.
+
+### `SeedColor`: a literal hex, or a reference that follows a palette preset
+
+Each of the six `colors.*` fields is a `SeedColor`:
+
+```ts
+type PaletteRef = `palette:${PaletteColorName}`;   // e.g. "palette:red"
+type SeedColor = Hex | PaletteRef;
+```
+
+A literal hex behaves exactly as before. A `palette:${name}` reference
+resolves against the config's own `palette` field, every time `derive()`
+runs — so a knob set this way tracks the palette preset: change `palette`
+from `"ha"` to `"tailwind-v4"` and every reference on the config re-resolves
+to that preset's own colour for the same name, with no re-save needed.
+`derive()` resolves every reference before any ramp math runs, and it
+resolves it fresh each call — `theme.config.colors.*` always echoes back
+whatever the caller passed in, reference or literal, never the resolved hex.
+
+A reference can only name one of the 18 static `PaletteColorName` entries
+(`"red"`, `"blue"`, …) — never `primary`, `red`, `orange` or `green` as a
+*ramp*. Those four ramps (`generateRamp()`) are generated **from** these same
+`colors.*` seeds, so a reference into one of them would have no fixed point
+to resolve to before the ramp exists. `PaletteRef`'s own type makes that
+reference impossible to construct; `resolveSeed()` in `derive.ts` only has to
+guard against a malformed string reaching it past a type assertion, and
+throws `RangeError` when it does (the same posture `getFont` /
+`getNeutralRamp` / `getExtendedPalette` take for an unknown id). Note that
+`Hex` is a plain `string` alias like the rest of this codebase's colour
+types, so this is a runtime check, not a compile-time one — same as
+`normalizeHex` throwing on a malformed hex today.
+
+### `borderColor`'s `"match-card"` sentinel
+
+`"match-card"` is not a colour — it is an instruction to read the *current
+mode's own, already-computed* `card-background-color` instead of a ramp
+slot. This is what lets the border "disappear" into the card (the UI calls
+this option **Invisible**). It resolves to the literal per-mode card value
+`surfaces()` computes for `card-background-color` — never a ramp lookup, and
+never `mirrorSlot()`. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob)
+below for why a ramp-based mirror would give the wrong hex here.
+
 That is exactly the `KNOB` set in `template.css`, minus the custom-preset
-options PLAN.md §3 decision 6 defers to M7. Every field is JSON-serializable, so
-the whole config round-trips through a URL.
+options PLAN.md §3 decision 6 defers to M7.
 
 ---
 
@@ -195,23 +243,112 @@ text, input colors and shadows, and leaves `--primary-color` alone (§3.2).
 
 The neutral ramp itself never inverts. What inverts is *which slot* each role
 reads from: `mirrorSlot(s) = 100 - s`, the same inversion HA's
-`darkSemanticColorStyles` performs (§2.2). Exceptions, all deliberate:
+`darkSemanticColorStyles` performs (§2.2). `mirrorSlot` is generic over both
+slot domains this engine has, because both are symmetric about 50: the shared
+05..95 `RampSlot` scale (the scrollbar and the entity icon read this way) and
+the neutral ramp's own extended 00..100 `NeutralRampSlot` scale the border
+knob reads this way, since `borderColor` can itself be `neutral-00` or
+`neutral-100` (see [Neutral slots reach 00 and
+100](#neutral-slots-reach-00-and-100)). One formula covers 05↔95 and 00↔100
+alike. Exceptions, all deliberate:
 
 | Variable | Rule |
 |---|---|
 | `primary-text-color` | pure `white` in dark, per HA's documented override |
 | `secondary-text-color` | `neutral-80` in dark, per HA's documented override |
 | `disabled-text-color` | `neutral-50`, in the same "lighter than a plain mirror" direction as the two above. `mirrorSlot(60)` drops it to 2.1:1, where light mode gives 3.0:1 |
-| `shadow-color`, `ha-box-shadow-*` | keep the **light** base — a shadow is an absence of light, so it must not flip pale — and only raise alpha, to the values §2.6/§6 document for HA's dark theme |
-| backgrounds | derived as a pair, see below |
+| `shadow-color`, `ha-box-shadow-*` | fixed at `neutral-05` in **both** modes, and independent of the border knob — a shadow is an absence of light, so it must not flip pale and must not tint with the border. Only the alpha rises, to the values §2.6/§6 document for HA's dark theme. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob) |
+| backgrounds, border | derived jointly, see below |
 
-**Backgrounds are derived jointly, not one at a time.** A separate table per choice
-inverts the elevation for some combinations. For example, a neutral-95 card on a
-neutral-90 page puts the dark card *below* the dark page. Dark mode therefore
-reproduces the *gap*. The card keeps the same number of ramp steps of elevation
-that it had in light mode. The dark page position depends on how soft the light
-choice was. With the defaults this lands on `#202020` over `#141414`, as close to
-HA's `#1c1c1c` over `#111111` as the ramp allows.
+### Neutral slots reach 00 and 100
+
+The neutral ramp's own slot type, `NeutralRampSlot`, is 13 shades — `00,
+05, 10, … 90, 95, 100` — not the 11-shade `RampSlot` the generated
+primary/red/orange/green ramps share. `.references/colors/black-white-ramps.html`
+carries real, untinted reference data at both new ends: every one of the ten
+presets — including the tinted ones like Mauve — ships `#000000` at slot 0
+and `#ffffff` at slot 100 (`presets.test.ts` checks this explicitly). Slots 0
+and 100 are what a "black" or "white" knob option actually *is*: not a value
+off the ramp, but the ramp's own darkest and lightest real shades.
+
+This is deliberately its own type, not an extension of `RampSlot`: the other
+four ramps are generated (`generateRamp()`, `ramps.ts`) and have no reference
+data at those extremes, so widening the shared type would force every
+`Record<RampSlot, Hex>` — `HA_PRIMARY_RAMP` among them — to also carry slots
+it cannot supply. `NeutralSlotId` (the string form the config uses,
+`"neutral-00"` … `"neutral-100"`) grew the same two entries to match.
+`SurfaceChoice` moved into this same slot space as a consequence:
+`"white"` is now `"neutral-100"`, a real slot rather than a special case
+tacked one rung above the ramp.
+
+### Backgrounds and the border knob
+
+**Card, page and secondary backgrounds are derived jointly, not one at a
+time**, and the border knob's `"match-card"` option reads directly out of
+that joint result. Both live in `surfaces()`.
+
+**The rule, in plain language:** find whichever of the card and the page is
+*darker* in light mode. Mirror that one's own position on the ramp — same
+`100 - slot` inversion as everything else in dark mode — to get its dark-mode
+position. Then place the *other* surface the same number of ramp steps away
+from that anchor, moving toward the lighter end. The number of steps between
+card and page — the "gap" the user's two choices express — survives into dark
+mode unchanged; so does which one is on top. If the user picked the same
+slot for both, both mirror to that same anchor and the gap is zero.
+
+**Why anchor on the darker one, specifically.** Home Assistant's own theme
+keeps the card *lighter* than the page in both modes: light `#fafafa` page /
+`#ffffff` card, dark `#111111` page / `#1c1c1c` card
+(`color.globals.ts:46-47`, `:342-343`). Mirroring both surfaces
+independently preserves the *distance* between them but reverses which one
+sits on top — the dark card sinks below the dark page for every ordinary
+choice, including the default. Anchoring on the darker surface and deriving
+the other by addition is also the clamp-safe direction: the derived value
+only ever moves further from the ramp's dark floor, never past it. Anchoring
+on the *lighter* surface instead can drive the other one off the bottom — a
+`neutral-95` page under a `neutral-100` card would mirror the card to slot 0,
+and the page would then need to derive to slot −5, which doesn't exist.
+
+**Index space, not slot numbers.** The neutral ramp's 13 slots are unevenly
+spaced at both ends (`0, 5, 10, 20, … 90, 95, 100`), so subtracting *slot
+numbers* lands on values with no slot at all, like `neutral-15`. All of
+`surfaces()`'s arithmetic — the mirror, the gap, the "same number of steps"
+— runs on each slot's *position* in that 13-element array instead (`0`
+through `12`), the same thing `mirrorSlot` does implicitly by relying on the
+array being symmetric about its middle. `neutralRampAt()` is the lookup that
+turns a position back into a hex, and it is where the clamp lives.
+
+**The clamp, and what happens at the edge.** `neutralRampAt()` clamps any
+position outside `0..12` to the nearest end, rather than throwing or reading
+past the array. That is a deliberate choice, not an incidental one: at that
+boundary, the derived surface can land on the exact same slot as its anchor
+— the two backgrounds collapse onto one colour. This is not a new failure
+mode; it is the same thing that already happens on purpose when the user
+picks an equal slot for both choices in light mode (gap zero). Today's four
+`SurfaceChoice` values (`neutral-80`, `-90`, `-95`, `-100`) never actually
+reach that clamp: checked across all sixteen ordered pairs, the widest gap
+any two of them can express is 3 slot-positions, the anchor always lands
+between positions 0 and 3, and the derived surface between 0 and 6 — nowhere
+near the `0..12` boundary. The clamp exists for a `SurfaceChoice` union that
+might one day include slots nearer the ramp's own ends.
+
+**`secondary-background-color`** keeps the same relationship to card and page
+this always had — one ramp step below the darker of the two in light mode,
+two steps above the page (and never level with the card) in dark mode, per
+HA's own dark ordering `#111111` (page) `< #1c1c1c` (card) `< #282828`
+(secondary), §2.3/§2.6. That rule did not change; only the index space
+underneath it did, along with everything else once `SurfaceChoice` moved
+into slot space (above).
+
+**`borderColor`'s `"match-card"` reads `surface.card` directly**, the exact
+per-mode value this section just described — never a ramp lookup, and never
+`mirrorSlot()`. The dark card is a *joint* function of both surface knobs
+under the rule above, not a mirror of the light card's own slot in
+isolation, so a per-slot mirror gives a different — and wrong — hex here. A
+concrete case: the default config's card is `neutral-100`. `mirrorSlot(100)`
+is `neutral-00`, pure black. The actual dark card `surfaces()` computes is
+`#202020` (`neutral-10`). `derive.ts` reuses the one, real, already-computed
+card value; it does not add a second way to compute a card color.
 
 ---
 
@@ -302,6 +439,15 @@ against the committed data, so a hand edit or a bad regeneration cannot slip
 through. It also asserts the Home Assistant column of each table matches
 `template.css`.
 
+`black-white-ramps.html`'s `black` and `white` rows feed `neutral-00` and
+`neutral-100` the same way its `neutral-05`..`neutral-95` rows feed the rest
+of the ramp — they used to be filtered out by a name check
+(`name.startsWith("neutral-")`); the extractor and the independent re-parse
+in `presets.test.ts` both changed to include them. `presets.test.ts`'s
+independent re-parse is the actual proof the data is right, since it reads
+the reference HTML itself rather than trusting either the extractor or its
+own output.
+
 The app never parses HTML at runtime.
 
 ---
@@ -326,16 +472,25 @@ round-trips 2000 deterministic random colors to keep that honest.
 
 ## Tests
 
-`src/engine/__tests__/`, 133 assertions across six files:
+`src/engine/__tests__/`, 150 tests across six files:
 
 | File | Covers |
 |---|---|
 | `color.test.ts` | hex parsing and normalization, alpha helpers, OKLCH round-trips (including a 2000-color sweep), gamut mapping, clamping |
 | `ha-math.test.ts` | Lab conversions against published CIE values, `Kn = 18` brighten/darken, WCAG luminance and contrast against known answers, the contrast threshold and where it flips |
 | `ramps.test.ts` | seed survival at every slot, identity, monotonicity, hue/chroma transfer, and the edge cases: pure black, pure white, fully saturated seeds, achromatic seeds, seeds already at a ramp endpoint, an achromatic reference |
-| `presets.test.ts` | preset data re-parsed from the reference pages and diffed cell by cell. Font shortlist. HA columns against `template.css` |
-| `derive.test.ts` | the `template.css` regression net, knob → variable wiring, light/dark rules, contrast floors, elevation across all 16 background combinations |
+| `presets.test.ts` | preset data re-parsed from the reference pages and diffed cell by cell, including the `neutral-00`/`neutral-100` rows. Font shortlist. HA columns against `template.css` |
+| `derive.test.ts` | the `template.css` regression net, knob → variable wiring, light/dark rules, contrast floors, elevation across all 16 background combinations, palette-reference resolution (follows the preset; a literal hex does not), `match-card`, the `surfaces()` anchor rule at both directions and the equal case, the widest gap today's `SurfaceChoice` values reach, and the `neutralRampAt` clamp boundary itself |
 | `yaml.test.ts` | quoting rules through a real YAML parser, structure, the rgb-omission rule, and file snapshots of three complete themes |
 
 The snapshots live in `__tests__/__snapshots__/*.yaml` and are readable as YAML,
 so a diff in review shows the actual theme change.
+
+Run `pnpm test` (`vitest run`) from the repo root. If you're running vitest
+directly rather than through the `pnpm test` script and this checkout has
+other Claude Code sessions' worktrees under `.claude/worktrees/`, exclude
+that path explicitly (`vite.config.ts`'s `test.exclude` already does this for
+the `pnpm test` script) — vitest's own default excludes don't cover
+dot-directories other than `.git`, so it will otherwise discover and run
+those other sessions' test files too, against whatever mid-edit state their
+own branches happen to be in.

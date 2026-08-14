@@ -8,6 +8,7 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
     id: "ha",
     label: "Home Assistant",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#141414", // neutral-05
       10: "#202020", // neutral-10
       20: "#363636", // neutral-20
@@ -19,12 +20,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#cccccc", // neutral-80
       90: "#e6e6e6", // neutral-90
       95: "#f3f3f3", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "rounded",
     label: "Rounded Theme",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#121418", // neutral-05
       10: "#1d2029", // neutral-10
       20: "#313642", // neutral-20
@@ -36,12 +39,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#c7ccd8", // neutral-80
       90: "#e2e6ef", // neutral-90
       95: "#f1f3f9", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "slate",
     label: "Slate (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#0c1325", // neutral-05
       10: "#152034", // neutral-10
       20: "#29374c", // neutral-20
@@ -53,12 +58,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#c1cede", // neutral-80
       90: "#e0e7f0", // neutral-90
       95: "#eff4f9", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "gray",
     label: "Gray (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#0d1421", // neutral-05
       10: "#172030", // neutral-10
       20: "#2c3747", // neutral-20
@@ -70,12 +77,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#c7cdd5", // neutral-80
       90: "#e4e6eb", // neutral-90
       95: "#f2f3f6", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "zinc",
     label: "Zinc (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#141416", // neutral-05
       10: "#202023", // neutral-10
       20: "#35353b", // neutral-20
@@ -87,12 +96,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#cbcbd2", // neutral-80
       90: "#e6e6e8", // neutral-90
       95: "#f3f3f4", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "stone",
     label: "Stone (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#161412", // neutral-05
       10: "#231f1d", // neutral-10
       20: "#3a3532", // neutral-20
@@ -104,12 +115,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#d0cbc8", // neutral-80
       90: "#e8e6e4", // neutral-90
       95: "#f4f3f2", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "mauve",
     label: "Mauve (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#171218", // neutral-05
       10: "#251d26", // neutral-10
       20: "#3d323e", // neutral-20
@@ -121,12 +134,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#d1c9d1", // neutral-80
       90: "#e8e5e8", // neutral-90
       95: "#f4f3f4", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "olive",
     label: "Olive (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#141410", // neutral-05
       10: "#212119", // neutral-10
       20: "#37372c", // neutral-20
@@ -138,12 +153,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#cdcdc2", // neutral-80
       90: "#e7e7e0", // neutral-90
       95: "#f3f3ef", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "mist",
     label: "Mist (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#111516", // neutral-05
       10: "#1b2123", // neutral-10
       20: "#2f383a", // neutral-20
@@ -155,12 +172,14 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#c6ced0", // neutral-80
       90: "#e3e7e8", // neutral-90
       95: "#f1f4f4", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
   {
     id: "taupe",
     label: "Taupe (Tailwind)",
     ramp: {
+      0: "#000000", // neutral-00
       5: "#171312", // neutral-05
       10: "#251f1c", // neutral-10
       20: "#3d3431", // neutral-20
@@ -172,6 +191,7 @@ export const NEUTRAL_RAMPS: readonly NeutralRampPreset[] = [
       80: "#d2cac8", // neutral-80
       90: "#e9e5e4", // neutral-90
       95: "#f5f2f2", // neutral-95
+      100: "#ffffff", // neutral-100
     },
   },
 ] as const;
