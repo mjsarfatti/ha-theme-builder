@@ -14,7 +14,7 @@
  * Flagged in the PR body as a one-line gap the engine owner may want to
  * backport into the barrel.
  */
-import { getExtendedPalette, isHex, type ExtendedPaletteId, type Hex, type PaletteColorName } from "@/engine"
+import { getExtendedPalette, type ExtendedPaletteId, type Hex, type PaletteColorName } from "@/engine"
 
 export type PaletteRef = `palette:${PaletteColorName}`
 export type SeedColor = Hex | PaletteRef
@@ -41,9 +41,4 @@ export function resolveSeedColor(seed: SeedColor, paletteId: ExtendedPaletteId):
     return seed
   }
   return getExtendedPalette(paletteId).colors[name]
-}
-
-/** `true` when `value` parses as a hex color (3/4/6/8 digit, with or without `#`). */
-export function isValidHexInput(value: string): boolean {
-  return isHex(value)
 }
