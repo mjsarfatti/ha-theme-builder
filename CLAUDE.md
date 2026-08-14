@@ -5,6 +5,20 @@ live preview of tokens and HA cards, and paste-ready YAML output.
 
 **Read `docs/PLAN.md` first.** Do not change it without a PM decision.
 
+## How to write — everything, always
+
+Applies to PR bodies, PR and issue comments, commit messages, messages to and chats
+with the user, and briefs you write for subagents.
+
+- **BLUF** (bottom line up front).
+- **Describe the final state, not the work.**
+- **Simplified Technical English (ASD-STE100)**, without vocabulary compliance.
+- **Plain English**, per Strunk & White.
+- **No hedging.**
+- **No idioms and no metaphors.**
+- **Short.** Assume the reader gives it only 30 seconds, but write complete grammar
+  sentences and never skip information for the sake of brevity.
+
 ## Check versions — never assume them
 
 Your training data is out of date. This project failed twice for this reason.
