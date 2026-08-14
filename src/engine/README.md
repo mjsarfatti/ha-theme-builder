@@ -128,14 +128,58 @@ interface ThemeConfig {
     success;   // seed for --ha-color-green-60
     accent;    // --accent-color, standalone
     info;      // --info-color, standalone
-  };
-  neutralRamp: NeutralRampId;      // "ha" | "gray" | "slate" | …
-  palette: ExtendedPaletteId;      // "ha" | "tailwind-v4" | …
-  borderColor: NeutralSlotId;      // "neutral-05" … "neutral-95"
-  cardBackground: SurfaceChoice;   // "white" | "neutral-95" | "neutral-90" | "neutral-80"
+  };             // each one a SeedColor: Hex | `palette:${PaletteColorName}`
+  neutralRamp: NeutralRampId;              // "ha" | "gray" | "slate" | …
+  palette: ExtendedPaletteId;              // "ha" | "tailwind-v4" | …
+  borderColor: NeutralSlotId | "match-card"; // "neutral-00" … "neutral-100", or the card colour
+  cardBackground: SurfaceChoice;           // "neutral-100" | "neutral-95" | "neutral-90" | "neutral-80"
   primaryBackground: SurfaceChoice;
 }
 ```
+
+Every field stays JSON-serializable — a `SeedColor` and a `borderColor` are
+both just strings — so the whole config still round-trips through a URL.
+
+### `SeedColor`: a literal hex, or a reference that follows a palette preset
+
+Each of the six `colors.*` fields is a `SeedColor`:
+
+```ts
+type PaletteRef = `palette:${PaletteColorName}`;   // e.g. "palette:red"
+type SeedColor = Hex | PaletteRef;
+```
+
+A literal hex behaves exactly as before. A `palette:${name}` reference
+resolves against the config's own `palette` field, every time `derive()`
+runs — so a knob set this way tracks the palette preset: change `palette`
+from `"ha"` to `"tailwind-v4"` and every reference on the config re-resolves
+to that preset's own colour for the same name, with no re-save needed.
+`derive()` resolves every reference before any ramp math runs, and it
+resolves it fresh each call — `theme.config.colors.*` always echoes back
+whatever the caller passed in, reference or literal, never the resolved hex.
+
+A reference can only name one of the 18 static `PaletteColorName` entries
+(`"red"`, `"blue"`, …) — never `primary`, `red`, `orange` or `green` as a
+*ramp*. Those four ramps (`generateRamp()`) are generated **from** these same
+`colors.*` seeds, so a reference into one of them would have no fixed point
+to resolve to before the ramp exists. `PaletteRef`'s own type makes that
+reference impossible to construct; `resolveSeed()` in `derive.ts` only has to
+guard against a malformed string reaching it past a type assertion, and
+throws `RangeError` when it does (the same posture `getFont` /
+`getNeutralRamp` / `getExtendedPalette` take for an unknown id). Note that
+`Hex` is a plain `string` alias like the rest of this codebase's colour
+types, so this is a runtime check, not a compile-time one — same as
+`normalizeHex` throwing on a malformed hex today.
+
+### `borderColor`'s `"match-card"` sentinel
+
+`"match-card"` is not a colour — it is an instruction to read the *current
+mode's own, already-computed* `card-background-color` instead of a ramp
+slot. This is what lets the border "disappear" into the card (the UI calls
+this option **Invisible**). It resolves to the literal per-mode card value
+`surfaces()` computes for `card-background-color` — never a ramp lookup, and
+never `mirrorSlot()`. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob)
+below for why a ramp-based mirror would give the wrong hex here.
 
 That is exactly the `KNOB` set in `template.css`, minus the custom-preset
 options PLAN.md §3 decision 6 defers to M7. Every field is JSON-serializable, so

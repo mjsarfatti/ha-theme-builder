@@ -24,6 +24,7 @@ export type Ramp = Record<RampSlot, Hex>;
 
 /** Named neutral slots, as referenced from the knob config. */
 export type NeutralSlotId =
+  | "neutral-00"
   | "neutral-05"
   | "neutral-10"
   | "neutral-20"
@@ -34,13 +35,16 @@ export type NeutralSlotId =
   | "neutral-70"
   | "neutral-80"
   | "neutral-90"
-  | "neutral-95";
+  | "neutral-95"
+  | "neutral-100";
 
 /**
  * Surfaces the user may pick for card / page backgrounds.
- * Per `template.css`: "user can choose from Neutral Ramp 80, 90, 95 + white".
+ * Per `template.css`: "user can choose from Neutral Ramp 80, 90, 95 + white" —
+ * "white" is `neutral-100`, the ramp's own light extreme (see
+ * {@link NeutralRampSlot}), not a value outside it.
  */
-export type SurfaceChoice = "white" | "neutral-95" | "neutral-90" | "neutral-80";
+export type SurfaceChoice = "neutral-100" | "neutral-95" | "neutral-90" | "neutral-80";
 
 // ---------------------------------------------------------------------------
 // Presets
@@ -58,11 +62,28 @@ export type NeutralRampId =
   | "mist"
   | "taupe";
 
+/**
+ * The 13 shades the neutral ramp ships, unlike the 11-shade {@link RampSlot}
+ * that primary/red/orange/green share. `.references/colors/black-white-ramps.html`
+ * carries real reference data at pure black (`0`) and pure white (`100`) for
+ * every preset column — those two rows are what let a "white" or "black"
+ * knob option be expressed as a ramp slot rather than a special case. This is
+ * deliberately its own type, not an extension of {@link RampSlot}: the other
+ * four ramps are generated (`generateRamp()`) and have no reference data at
+ * those extremes, so sharing the type would force a `Record<RampSlot, Hex>`
+ * like `HA_PRIMARY_RAMP` to also carry slots it cannot supply.
+ */
+export const NEUTRAL_RAMP_SLOTS = [0, ...RAMP_SLOTS, 100] as const;
+export type NeutralRampSlot = (typeof NEUTRAL_RAMP_SLOTS)[number];
+
+/** A full 00..100 neutral ramp. Keys are slot numbers, values are `#rrggbb`. */
+export type NeutralRamp = Record<NeutralRampSlot, Hex>;
+
 export interface NeutralRampPreset {
   readonly id: NeutralRampId;
   /** Display label, verbatim from the reference page. */
   readonly label: string;
-  readonly ramp: Ramp;
+  readonly ramp: NeutralRamp;
 }
 
 export type ExtendedPaletteId =
@@ -133,6 +154,23 @@ export type FontId = string;
 // ---------------------------------------------------------------------------
 
 /**
+ * A reference to one of the 18 named entity-palette colours (`"palette:red"`),
+ * resolved against the config's own `palette` field. Reuses
+ * {@link PaletteColorName} rather than a new union.
+ *
+ * Deliberately **not** a reference to a generated ramp (primary, red, orange,
+ * green): those four ramps are generated *from* these same seed fields, so a
+ * reference into one of them would have no fixed point to resolve to before
+ * the ramp exists. `PaletteColorName` names only the static entity palette,
+ * so this union cannot express that cycle — the constraint is structural, not
+ * a runtime check.
+ */
+export type PaletteRef = `palette:${PaletteColorName}`;
+
+/** Either a literal colour, or a reference that follows a palette preset. */
+export type SeedColor = Hex | PaletteRef;
+
+/**
  * The complete set of user-facing knobs — exactly the `KNOB` annotations in
  * `.references/template.css`, minus the "custom" preset options that PLAN.md
  * §3 decision 6 defers to M7.
@@ -154,24 +192,29 @@ export interface ThemeConfig {
 
   readonly colors: {
     /** Seed for `--ha-color-primary-40`. */
-    readonly primary: Hex;
+    readonly primary: SeedColor;
     /** Seed for `--ha-color-red-50` (→ `--error-color`). */
-    readonly error: Hex;
+    readonly error: SeedColor;
     /** Seed for `--ha-color-orange-70` (→ `--warning-color`). */
-    readonly warning: Hex;
+    readonly warning: SeedColor;
     /** Seed for `--ha-color-green-60` (→ `--success-color`). */
-    readonly success: Hex;
+    readonly success: SeedColor;
     /** `--accent-color`, standalone (no ramp in HA). */
-    readonly accent: Hex;
+    readonly accent: SeedColor;
     /** `--info-color`, standalone (no ramp in HA). */
-    readonly info: Hex;
+    readonly info: SeedColor;
   };
 
   readonly neutralRamp: NeutralRampId;
   readonly palette: ExtendedPaletteId;
 
-  /** Neutral slot the border/divider colour is taken from (alpha stays `1f`). */
-  readonly borderColor: NeutralSlotId;
+  /**
+   * Neutral slot the border/divider colour is taken from (alpha stays `1f`),
+   * or `"match-card"` — a sentinel, not a colour — to resolve to the current
+   * mode's own `card-background-color` instead. See `derive.ts`'s `surfaces()`
+   * and the border-base resolution in `forMode()`.
+   */
+  readonly borderColor: NeutralSlotId | "match-card";
   readonly cardBackground: SurfaceChoice;
   readonly primaryBackground: SurfaceChoice;
 }

@@ -24,18 +24,24 @@ import {
   REFERENCE_RAMPS,
 } from "./presets/index.ts";
 import { generateRamp } from "./ramps.ts";
-import type {
-  CssVarMap,
-  DerivedTheme,
-  FontOption,
-  Hex,
-  NeutralSlotId,
-  PartialThemeConfig,
-  Ramp,
-  RampSlot,
-  SurfaceChoice,
-  ThemeConfig,
-  ThemeMode,
+import {
+  NEUTRAL_RAMP_SLOTS,
+  RAMP_SLOTS,
+  type CssVarMap,
+  type DerivedTheme,
+  type FontOption,
+  type Hex,
+  type NeutralRamp,
+  type NeutralRampSlot,
+  type NeutralSlotId,
+  type PaletteColorName,
+  type PartialThemeConfig,
+  type Ramp,
+  type RampSlot,
+  type SeedColor,
+  type SurfaceChoice,
+  type ThemeConfig,
+  type ThemeMode,
 } from "./types.ts";
 
 /**
@@ -64,7 +70,7 @@ export const DEFAULT_CONFIG: ThemeConfig = {
   neutralRamp: "ha",
   palette: "ha",
   borderColor: "neutral-05",
-  cardBackground: "white",
+  cardBackground: "neutral-100", // formerly "white" — see NeutralRampSlot
   primaryBackground: "neutral-95",
 };
 
@@ -84,51 +90,52 @@ export function resolveConfig(partial: PartialThemeConfig = {}): ThemeConfig {
 
 const WHITE: Hex = "#ffffff";
 
-function slotOf(id: NeutralSlotId): RampSlot {
-  return Number(id.slice("neutral-".length)) as RampSlot;
+function slotOf(id: NeutralSlotId): NeutralRampSlot {
+  return Number(id.slice("neutral-".length)) as NeutralRampSlot;
 }
 
 /**
- * The dark-mode counterpart of a neutral slot: `100 - slot`, so 05↔95, 10↔90,
- * 20↔80, 30↔70, 40↔60 and 50 maps to itself. This is the same inversion HA's
- * `darkSemanticColorStyles` performs on its surface and border tokens
- * (`ha_theme_analysis.md` §2.2), expressed as arithmetic instead of a table.
+ * The dark-mode counterpart of a slot: `100 - slot`, so 05↔95, 10↔90, 20↔80,
+ * 30↔70, 40↔60 and 50 maps to itself. Generic over {@link RampSlot} and
+ * {@link NeutralRampSlot} — both domains are symmetric about 50, the neutral
+ * one now including 00↔100 — so one function serves the text/border/scrollbar
+ * uses (which stay on the 11-slot domain) and the neutral-only lookups alike.
+ * This is the same inversion HA's `darkSemanticColorStyles` performs on its
+ * surface and border tokens (`ha_theme_analysis.md` §2.2), expressed as
+ * arithmetic instead of a table.
  */
-function mirrorSlot(slot: RampSlot): RampSlot {
-  return (100 - slot) as RampSlot;
+function mirrorSlot<S extends RampSlot | NeutralRampSlot>(slot: S): S {
+  return (100 - slot) as S;
 }
 
-const SLOT_ORDER: readonly RampSlot[] = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95];
+const SLOT_ORDER: readonly RampSlot[] = RAMP_SLOTS;
 
-/** Ramp lookup by position rather than slot number, clamped at both ends. */
-function rampAt(ramp: Ramp, index: number): Hex {
-  return ramp[SLOT_ORDER[Math.min(SLOT_ORDER.length - 1, Math.max(0, index))]];
+/** Neutral-ramp lookup by position along the full 00..100 slot order, clamped at both ends. */
+function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
+  const i = Math.min(NEUTRAL_RAMP_SLOTS.length - 1, Math.max(0, index));
+  return ramp[NEUTRAL_RAMP_SLOTS[i]];
+}
+
+/** The last valid index into {@link NEUTRAL_RAMP_SLOTS}. */
+const LAST_NEUTRAL_INDEX = NEUTRAL_RAMP_SLOTS.length - 1;
+
+/** An index's mirror in {@link NEUTRAL_RAMP_SLOTS}, unclamped (callers read through {@link neutralRampAt}, which clamps). */
+function mirrorNeutralIndex(index: number): number {
+  return LAST_NEUTRAL_INDEX - index;
 }
 
 /**
- * Where each background choice sits on the ramp, as a position. `white` is
- * treated as one rung above neutral-95 — it is not on the ramp, but it is one
- * step further from the ink, and that is what the elevation maths needs.
+ * Where each background choice sits in the neutral ramp's own 13-position
+ * index space ({@link NEUTRAL_RAMP_SLOTS}). Every `SurfaceChoice` is now a
+ * real ramp slot — `neutral-100` is what used to be the special-cased
+ * "white" — so this is a plain lookup, not a table with an off-ramp entry
+ * tacked on the end.
  */
-const LIGHT_SURFACE_INDEX: Record<SurfaceChoice, number> = {
-  white: 11,
-  "neutral-95": 10,
-  "neutral-90": 9,
-  "neutral-80": 8,
-};
-
-/**
- * Where the *page* background lands in dark mode: further from the dark end for
- * softer (darker) light choices, which is the dark-mode reading of "less
- * contrast". `white` and `neutral-95` both mean "maximum contrast", so both
- * bottom out at the darkest rung — matching HA, whose dark page `#111111` is
- * the darkest surface in its theme.
- */
-const DARK_PAGE_INDEX: Record<SurfaceChoice, number> = {
-  white: 0,
-  "neutral-95": 0,
-  "neutral-90": 1,
-  "neutral-80": 2,
+const SURFACE_INDEX: Record<SurfaceChoice, number> = {
+  "neutral-100": NEUTRAL_RAMP_SLOTS.indexOf(100),
+  "neutral-95": NEUTRAL_RAMP_SLOTS.indexOf(95),
+  "neutral-90": NEUTRAL_RAMP_SLOTS.indexOf(90),
+  "neutral-80": NEUTRAL_RAMP_SLOTS.indexOf(80),
 };
 
 interface Surfaces {
@@ -140,54 +147,80 @@ interface Surfaces {
 /**
  * Card, page and secondary backgrounds for one mode.
  *
- * The card and the page are derived **jointly**, not one at a time. Mapping
- * each choice through its own table looks fine until you pick, say, a
- * neutral-95 card on a neutral-90 page: two independent lookups can easily land
- * the dark card *below* the dark page and invert the elevation the user asked
- * for. So dark mode reproduces the *gap* between the two instead — the card
- * keeps however many ramp steps of elevation it had in light mode.
+ * **Dark mode keeps the light/dark relationship the user chose, not the raw
+ * distance.** Home Assistant's own theme keeps the card *lighter* than the
+ * page in both modes: light `#fafafa` page / `#ffffff` card, dark `#111111`
+ * page / `#1c1c1c` card (`color.globals.ts:46-47`, `:342-343`). Mirroring
+ * both surfaces independently preserves the gap between them but reverses
+ * which one is on top, sinking the dark card below the dark page for every
+ * ordinary configuration.
  *
- * With the defaults (white card, neutral-95 page, gap of one step) this lands
- * on `#202020` over `#141414`, which is as close to HA's own `#1c1c1c` over
- * `#111111` (§2.3) as the neutral ramp can express.
+ * So instead: identify whichever of the two is DARKER in light mode, mirror
+ * *that one's own index* to get its dark-mode position, then place the other
+ * surface the same number of index-steps away from that anchor, moving
+ * toward the lighter end. The gap the user chose survives; which surface is
+ * on top does too. If the two choices are equal, both mirror to the same
+ * anchor and the gap is zero.
+ *
+ * This is also the clamp-safe direction: the anchor only ever gains index
+ * steps to place the other surface, so the result can't fall below the ramp
+ * floor the way mirroring the *lighter* surface first can (a `neutral-95`
+ * page under a `neutral-100` card would mirror the card to index 0, then
+ * need to derive the page at index −1).
+ *
+ * All arithmetic happens in **index space** along {@link NEUTRAL_RAMP_SLOTS},
+ * not in slot numbers — the slots are unevenly spaced (`[0, 5, 10, 20, … 90,
+ * 95, 100]`), so subtracting slot numbers would land on non-existent slots
+ * like `neutral-15`. `neutralRampAt` clamps defensively at both ends, same as
+ * `rampAt` always has; with today's four `SurfaceChoice` values the clamp
+ * never actually fires (verified: across all sixteen combinations the
+ * furthest an index travels is 6, comfortably inside the valid `0..12`
+ * range), but a future, wider `SurfaceChoice` could reach it. At that
+ * boundary the two surfaces are allowed to collapse onto the same slot —
+ * the same thing already happens deliberately when the two choices are
+ * equal — rather than the engine throwing or silently escaping the ramp.
  *
  * `--secondary-background-color` is "5% darker than primary" per
- * `template.css`: one ramp step below the page in light mode — `#f3f3f3` →
- * `#e6e6e6` is a 4% drop in OKLCH lightness and lands one unit off HA's shipped
- * `#e5e5e5` — and two steps *above* it in dark mode. The asymmetry is HA's own:
- * its light pair differs by 0.06 in OKLCH lightness, its dark pair
- * (`#111111`/`#282828`) by 0.17, because near-black surfaces need a much larger
- * step to read as distinct. One dark step would be invisible and would collide
- * with the card.
+ * `template.css`: one ramp step below the darker of the two in light mode —
+ * `#f3f3f3` → `#e6e6e6` is a 4% drop in OKLCH lightness and lands one unit
+ * off HA's shipped `#e5e5e5` — and two steps *above* it in dark mode. The
+ * asymmetry is HA's own: its light pair differs by 0.06 in OKLCH lightness,
+ * its dark pair (`#111111`/`#282828`) by 0.17, because near-black surfaces
+ * need a much larger step to read as distinct. One dark step would be
+ * invisible and would collide with the card.
  */
-function surfaces(config: ThemeConfig, ramp: Ramp, mode: ThemeMode): Surfaces {
-  const cardIndex = LIGHT_SURFACE_INDEX[config.cardBackground];
-  const pageIndex = LIGHT_SURFACE_INDEX[config.primaryBackground];
+function surfaces(config: ThemeConfig, neutral: NeutralRamp, mode: ThemeMode): Surfaces {
+  const cardIndex = SURFACE_INDEX[config.cardBackground];
+  const pageIndex = SURFACE_INDEX[config.primaryBackground];
 
   if (mode === "light") {
-    const hex = (choice: SurfaceChoice) =>
-      choice === "white" ? WHITE : ramp[slotOf(choice)];
     return {
-      card: hex(config.cardBackground),
-      page: hex(config.primaryBackground),
-      // One step below the page, and never level with the card.
-      secondary: rampAt(ramp, Math.min(pageIndex, cardIndex) - 1),
+      card: neutralRampAt(neutral, cardIndex),
+      page: neutralRampAt(neutral, pageIndex),
+      // One step below the darker of the two, and never level with either.
+      secondary: neutralRampAt(neutral, Math.min(cardIndex, pageIndex) - 1),
     };
   }
 
-  const elevation = cardIndex - pageIndex;
-  let darkPage = DARK_PAGE_INDEX[config.primaryBackground];
-  // A card *below* its page (an odd but legal choice) needs headroom beneath
-  // the page, or the clamp at the dark end would silently flatten the pair.
-  if (darkPage + elevation < 0) darkPage = -elevation;
-  const darkCard = darkPage + elevation;
+  const darkerIndex = Math.min(cardIndex, pageIndex);
+  const lighterIndex = Math.max(cardIndex, pageIndex);
+  const gap = lighterIndex - darkerIndex;
+  const anchor = mirrorNeutralIndex(darkerIndex);
+  const other = anchor + gap;
+
+  // Whichever surface was darker in light mode keeps the anchor; the other
+  // is placed `gap` steps toward the lighter end from it. When the two
+  // choices are equal both comparisons pick `anchor`, so they mirror to the
+  // same slot together, per the doc comment above.
+  const darkCardIndex = cardIndex <= pageIndex ? anchor : other;
+  const darkPageIndex = pageIndex <= cardIndex ? anchor : other;
 
   return {
-    page: rampAt(ramp, darkPage),
-    card: rampAt(ramp, darkCard),
+    card: neutralRampAt(neutral, darkCardIndex),
+    page: neutralRampAt(neutral, darkPageIndex),
     // Two steps above the page, and never level with the card — HA's own dark
     // ordering is page (#111111) < card (#1c1c1c) < secondary (#282828).
-    secondary: rampAt(ramp, Math.max(darkPage + 2, darkCard + 1)),
+    secondary: neutralRampAt(neutral, Math.max(darkPageIndex + 2, darkCardIndex + 1)),
   };
 }
 
@@ -281,6 +314,42 @@ const TEXT_SLOTS: Record<ThemeMode, TextSlots> = {
 };
 
 // ---------------------------------------------------------------------------
+// Seed colour resolution — SeedColor -> Hex
+// ---------------------------------------------------------------------------
+
+const PALETTE_REF_PREFIX = "palette:";
+
+/** `true` for a `palette:${PaletteColorName}` reference, `false` for a literal hex. */
+function isPaletteRef(seed: SeedColor): seed is `palette:${PaletteColorName}` {
+  return seed.startsWith(PALETTE_REF_PREFIX);
+}
+
+/**
+ * Resolves a `colors.*` seed to a literal hex. A `palette:${name}` reference
+ * reads the *current* `palette` preset's own colour for that name, so the
+ * knob's colour follows the preset when the user later changes it — the
+ * literal hex it read is not cached anywhere.
+ *
+ * A reference can only ever name one of the 18 static entity-palette colours
+ * (`PaletteColorName`), never one of the four *generated* ramps (primary,
+ * red, orange, green): those ramps are generated *from* these same seed
+ * fields below, so a reference into one of them would have no fixed point to
+ * resolve to before the ramp exists. `SeedColor`'s own type makes that
+ * reference impossible to construct in the first place — this function only
+ * guards against a malformed string reaching it past a type assertion, the
+ * same posture `getFont` / `getNeutralRamp` / `getExtendedPalette` take.
+ *
+ * @throws {RangeError} when a reference names a colour the palette does not have.
+ */
+function resolveSeed(seed: SeedColor, palette: Record<PaletteColorName, Hex>): Hex {
+  if (!isPaletteRef(seed)) return seed;
+  const name = seed.slice(PALETTE_REF_PREFIX.length) as PaletteColorName;
+  const hex = palette[name];
+  if (!hex) throw new RangeError(`Unknown palette colour reference: ${JSON.stringify(seed)}`);
+  return hex;
+}
+
+// ---------------------------------------------------------------------------
 // derive()
 // ---------------------------------------------------------------------------
 
@@ -293,32 +362,50 @@ const TEXT_SLOTS: Record<ThemeMode, TextSlots> = {
 export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedTheme {
   const config = resolveConfig(input as PartialThemeConfig);
 
+  // --- presets, ahead of any ramp math: a palette reference below needs the
+  // resolved palette, and the neutral ramp's surface/border maths needs the
+  // full 00..100 ramp `getNeutralRamp` now ships -------------------------
+  const neutralExtended = getNeutralRamp(config.neutralRamp).ramp;
+  const neutral: Ramp = Object.fromEntries(
+    RAMP_SLOTS.map((s) => [s, neutralExtended[s]]),
+  ) as Ramp;
+  const palette = getExtendedPalette(config.palette).colors;
+
+  // --- seed resolution ----------------------------------------------------
+  // Resolved here, once, before any ramp math runs — see `resolveSeed`.
+  const seed = {
+    primary: resolveSeed(config.colors.primary, palette),
+    error: resolveSeed(config.colors.error, palette),
+    warning: resolveSeed(config.colors.warning, palette),
+    success: resolveSeed(config.colors.success, palette),
+    accent: resolveSeed(config.colors.accent, palette),
+    info: resolveSeed(config.colors.info, palette),
+  };
+
   // --- ramps ------------------------------------------------------------
   const primary = generateRamp({
-    seed: config.colors.primary,
+    seed: seed.primary,
     slot: KNOB_SLOT.primary,
     reference: REFERENCE_RAMPS.primary,
   });
   const red = generateRamp({
-    seed: config.colors.error,
+    seed: seed.error,
     slot: KNOB_SLOT.red,
     reference: REFERENCE_RAMPS.red,
   });
   const orange = generateRamp({
-    seed: config.colors.warning,
+    seed: seed.warning,
     slot: KNOB_SLOT.orange,
     reference: REFERENCE_RAMPS.orange,
   });
   const green = generateRamp({
-    seed: config.colors.success,
+    seed: seed.success,
     slot: KNOB_SLOT.green,
     reference: REFERENCE_RAMPS.green,
   });
-  const neutral = getNeutralRamp(config.neutralRamp).ramp;
-  const palette = getExtendedPalette(config.palette).colors;
 
-  const accent = normalizeHex(config.colors.accent);
-  const info = normalizeHex(config.colors.info);
+  const accent = normalizeHex(seed.accent);
+  const info = normalizeHex(seed.info);
 
   const fonts = {
     body: getFont(config.fonts.body),
@@ -439,27 +526,44 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
     vars["disabled-text-color"] = neutral[slots.disabled];
     vars["disabled-color"] = vars["disabled-text-color"];
 
-    // Lines. The knob picks a neutral slot and the `1f` alpha is preserved;
-    // outline-hover and shadow reuse that RGB at their own alphas.
-    const lightBorderBase = neutral[slotOf(config.borderColor)];
-    const borderBase = dark ? neutral[mirrorSlot(slotOf(config.borderColor))] : lightBorderBase;
-    vars["divider-color"] = withAlpha(borderBase, "1f");
-    vars["outline-color"] = vars["divider-color"];
-    vars["outline-hover-color"] = withAlpha(borderBase, "3d");
-    // `--shadow-color` keeps the *unmirrored* base: a shadow is an absence of
-    // light in either mode, so it must not flip pale in dark mode the way the
-    // divider does. Only the alpha grows — HA's own dark `--shadow-color` is
-    // `rgba(0, 0, 0, 0.48)` = 0x7a against `rgba(0, 0, 0, 0.16)` in light (§6).
-    vars["shadow-color"] = withAlpha(lightBorderBase, dark ? "7a" : "29");
-
-    vars["scrollbar-thumb-color"] = neutral[dark ? mirrorSlot(70) : 70];
-
-    // Backgrounds
-    const surface = surfaces(config, neutral, mode);
+    // Backgrounds. Computed ahead of the border knob below, because a
+    // `"match-card"` border reads this mode's own card colour directly.
+    const surface = surfaces(config, neutralExtended, mode);
     vars["card-background-color"] = surface.card;
     vars["primary-background-color"] = surface.page;
     vars["secondary-background-color"] = surface.secondary;
     vars["clear-background-color"] = surface.card;
+
+    // Lines. `"match-card"` resolves to this mode's own, already-computed
+    // card colour — not a ramp lookup, and not `mirrorSlot()`. `surfaces()`
+    // derives the dark card jointly from *both* surface knobs, so it is not
+    // the mirror of the light card's slot, and a per-slot mirror would give a
+    // different, wrong hex here. Otherwise the knob picks a neutral slot and
+    // the `1f` alpha is preserved; outline-hover reuses that RGB at its own
+    // alpha.
+    const borderBase: Hex =
+      config.borderColor === "match-card"
+        ? surface.card
+        : neutralExtended[
+            dark ? mirrorSlot(slotOf(config.borderColor)) : slotOf(config.borderColor)
+          ];
+    vars["divider-color"] = withAlpha(borderBase, "1f");
+    vars["outline-color"] = vars["divider-color"];
+    vars["outline-hover-color"] = withAlpha(borderBase, "3d");
+    // `--shadow-color` is decoupled from the border knob entirely — a shadow
+    // is an absence of light below a card, not a tint of the border, and once
+    // the border can resolve to the card colour the old coupling would turn a
+    // "match-card" shadow into card-on-card and make it vanish, alpha or no
+    // alpha. `template.css:144`'s block NOTE puts the whole Lines block —
+    // divider, outline, outline-hover *and* shadow — on
+    // `--ha-color-neutral-05`; only line 148's own per-line comment says the
+    // shadow derives from `--divider-color` instead. The owner decided in
+    // favour of the block NOTE. Fixed base, independent of the border knob
+    // and of mode; only the alpha grows — HA's own dark `--shadow-color` is
+    // `rgba(0, 0, 0, 0.48)` = 0x7a against `rgba(0, 0, 0, 0.16)` in light (§6).
+    vars["shadow-color"] = withAlpha(neutral[5], dark ? "7a" : "29");
+
+    vars["scrollbar-thumb-color"] = neutral[dark ? mirrorSlot(70) : 70];
 
     // Entity icons need to read against the surface, so this one slot flips.
     vars["state-icon-color"] = primary[dark ? mirrorSlot(30) : 30];

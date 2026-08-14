@@ -23,7 +23,7 @@ import {
   HA_PRIMARY_RAMP,
   HA_RED_RAMP,
 } from "../presets/reference-ramps.ts";
-import { RAMP_SLOTS } from "../types.ts";
+import { NEUTRAL_RAMP_SLOTS, RAMP_SLOTS, type NeutralRampSlot } from "../types.ts";
 import { readReference } from "./read-reference.ts";
 import { parseTemplateCss } from "./template-css.ts";
 
@@ -53,16 +53,22 @@ describe("neutral ramp presets", () => {
     expect(NEUTRAL_RAMPS).toHaveLength(10);
   });
 
-  it("transcribes every shade exactly", () => {
-    const slotRows = rows.filter(([name]) => name.startsWith("neutral-"));
-    expect(slotRows).toHaveLength(RAMP_SLOTS.length);
+  /** "black" and "white" are the ramp's own 0 and 100 rows, not a name filtered out. */
+  const slotOfRow = (name: string): NeutralRampSlot =>
+    name === "black" ? 0 : name === "white" ? 100 : (Number(name.slice("neutral-".length)) as NeutralRampSlot);
+
+  it("transcribes every shade exactly, including pure black and white", () => {
+    const slotRows = rows.filter(
+      ([name]) => name === "black" || name === "white" || name.startsWith("neutral-"),
+    );
+    expect(slotRows).toHaveLength(NEUTRAL_RAMP_SLOTS.length);
+    expect(slotRows.map(([name]) => slotOfRow(name))).toEqual([...NEUTRAL_RAMP_SLOTS]);
 
     for (const [i, { col, label }] of header.entries()) {
       const preset = NEUTRAL_RAMPS[i];
       expect(preset.label).toBe(label);
-      slotRows.forEach((row, r) => {
-        const slot = RAMP_SLOTS[r];
-        expect(`${label} ${slot}`).toBe(`${label} ${slot}`);
+      slotRows.forEach((row) => {
+        const slot = slotOfRow(row[0]);
         expect(preset.ramp[slot], `${label} neutral-${slot}`).toBe(stripMarker(row[col + 1]));
       });
     }
@@ -76,12 +82,23 @@ describe("neutral ramp presets", () => {
     }
   });
 
-  it("has monotonically lightening ramps", () => {
+  it("has monotonically lightening ramps, black and white included", () => {
     for (const preset of NEUTRAL_RAMPS) {
-      const values = RAMP_SLOTS.map((s) => Number.parseInt(preset.ramp[s].slice(1), 16));
+      const values = NEUTRAL_RAMP_SLOTS.map((s) => Number.parseInt(preset.ramp[s].slice(1), 16));
       for (let i = 1; i < values.length; i++) {
-        expect(values[i], `${preset.label} slot ${RAMP_SLOTS[i]}`).toBeGreaterThan(values[i - 1]);
+        expect(values[i], `${preset.label} slot ${NEUTRAL_RAMP_SLOTS[i]}`).toBeGreaterThan(
+          values[i - 1],
+        );
       }
+    }
+  });
+
+  it("anchors every preset at pure black (00) and pure white (100)", () => {
+    // The reference page ships #000000 / #ffffff untinted for all ten
+    // presets, even the tinted ones — the ramp's tint lives in 05..95 only.
+    for (const preset of NEUTRAL_RAMPS) {
+      expect(preset.ramp[0], preset.label).toBe("#000000");
+      expect(preset.ramp[100], preset.label).toBe("#ffffff");
     }
   });
 });

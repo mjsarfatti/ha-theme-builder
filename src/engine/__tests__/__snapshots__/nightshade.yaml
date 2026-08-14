@@ -169,7 +169,7 @@ Nightshade:
       divider-color: "#3d323e1f"
       outline-color: "#3d323e1f"
       outline-hover-color: "#3d323e3d"
-      shadow-color: "#3d323e29"
+      shadow-color: "#17121829"
       scrollbar-thumb-color: "#b7adb8"
 
       # Backgrounds
@@ -212,7 +212,7 @@ Nightshade:
       divider-color: "#d1c9d11f"
       outline-color: "#d1c9d11f"
       outline-hover-color: "#d1c9d13d"
-      shadow-color: "#3d323e7a"
+      shadow-color: "#1712187a"
       scrollbar-thumb-color: "#524554"
 
       # Backgrounds
