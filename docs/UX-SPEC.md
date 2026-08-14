@@ -1,7 +1,7 @@
 # HA Theme Builder — UX Spec (M2)
 
-> Status: **for sign-off** · Author: Claude (M2) · Last updated: 2026-08-11
-> Revalidated against the merged M1 engine (`src/engine/`) and the Base UI shadcn scaffold.
+> Status: **for sign-off** · Author: Claude (M2) · Last updated: 2026-08-14
+> Revalidated against `main` post-PR #18 (`src/engine/`) and the Base UI shadcn scaffold.
 > Wireframe: [`docs/wireframe/index.html`](./wireframe/index.html) — open the file directly in a
 > browser (no server, no build step). Deliberately low fidelity. It is a communication device, not
 > a head start on production code. **Real data:** all ten neutral ramps and all eight extended
@@ -173,9 +173,10 @@ It contains:
        the `frontend.reload_themes` action, not a restart.
     5. Open your profile page and pick the theme from the list.
 
-    Plus the `extra_module_url` font-loading snippet **shown only when a non-system, non-Roboto
-    font is selected** (PLAN §3). When all fonts are system or Roboto, that block is absent, not
-    empty.
+    Plus the `extra_module_url` font-loading snippet **shown only when Body is a non-system,
+    non-Roboto font** (PLAN §3). v1 ships one font knob (§3.2, §7.3), so `theme.webfonts` holds at
+    most one entry and the export ships at most one snippet — never the up-to-four case an earlier
+    draft of this spec planned for. When Body is system or Roboto, the block is absent, not empty.
 
 The sheet is ~560px wide, dismissible with Esc and the backdrop, and MUST carry a `SheetTitle`
 (shadcn requires one for accessibility, and `sr-only` hides it visually). Copy fires a
@@ -673,9 +674,9 @@ see that section for why.
 Five groups, **all permanently open**, in one scroll. Group headings are sticky within the
 sidebar scroll container (small uppercase, muted, with a `Separator` above).
 
-*Alternative considered:* an `Accordion` with one group open at a time. Rejected. It hides 12
-of the 15 knobs behind a click. Worse, it hides the fact that a change of base tone also moves the
-surfaces. A ~1300px sidebar scroll is acceptable on a desktop tool.
+*Alternative considered:* an `Accordion` with one group open at a time. Rejected. It hides most
+of the twelve knobs behind a click. Worse, it hides the fact that a change of base tone also moves
+the surfaces. A ~1300px sidebar scroll is acceptable on a desktop tool.
 
 ### 3.2 Groups, order, controls
 
@@ -685,49 +686,42 @@ Labels in `code` are verbatim from `template.css` and MUST be used as-is.
 
 **1 · Typography**
 
-| Label | Control | Writes | Default (`DEFAULT_CONFIG.fonts`) | At load |
-|---|---|---|---|---|
-| `Body font family` | Grouped `Select` | `fonts.body` | `"roboto"` | Visible |
-| `Headings font family` | Grouped `Select` | `fonts.heading` | `"roboto"` | Under **More** |
-| `Longform font family` | Grouped `Select` | `fonts.longform` | `"system-sans"` | Under **More** |
-| `Code font family` | Grouped `Select` | `fonts.code` | `"system-mono"` | Under **More** |
+| Label | Control | Writes | Default (`DEFAULT_CONFIG.fonts`) |
+|---|---|---|---|
+| `Body font family` | Grouped `Select` | `fonts.body`, `fonts.heading`, `fonts.longform` | `"roboto"` |
 
-Order within the group is **Body, Headings, Longform, Code** — most-used first — which differs
-from `template.css`'s declaration order. Labels are unchanged.
+**One knob in v1, not four (owner decision, §7, O-9).** Headings, Longform and Code are out of the
+sidebar. §7.3 has the full decision. They come back in a later version. This is a deferral, not a
+drop — the reason was the missing preview surface in an earlier draft, and the fix is one fewer
+knob, not an extra preview.
 
-**Progressive disclosure (owner decision, §7, O-6).** At load, only **Body font family** shows.
-The other three sit behind a **More** control. Most users only care about the body font — the
-other three are a small group's concern, and the owner made this call directly rather than as a
-recommendation.
+**The Body knob writes three fields, not one.** A pick sets `fonts.body` **and** `fonts.heading`
+**and** `fonts.longform` to the same font id in one store update. `fonts.code` stays untouched, at
+`DEFAULT_CONFIG.fonts.code` (`"system-mono"`), and no control writes to it in v1.
 
-Use the shadcn `collapsible` component: `Collapsible` / `CollapsibleTrigger` / `CollapsibleContent`,
-from `@base-ui/react/collapsible`, present in the `base-nova` registry and checked 2026-08-14
-(§6.4). This is not the `Accordion` §3.1 rejects for the whole sidebar. §3.1 rejects an accordion
-because it hides 12 of 15 knobs and hides a cross-knob relationship the user needs to see. This is
-one knob group's own extra rows, closed by default, with no relationship to the rest of the
-sidebar. One `Collapsible`, one trigger, and no other section to open or close in step with it.
+**Why the Body pick also sets Headings and Longform.** Home Assistant falls back to Roboto for any
+`--ha-font-family-*` variable a theme does not set (`typography.globals.ts:6-8`). A theme that
+sets only `--ha-font-family-body` puts Roboto under a DM Sans body — a mismatch this app must not
+ship. HA's own default stylesheet keeps the two in step:
+`--ha-font-family-heading: var(--ha-font-family-body)` (`typography.globals.ts:27`). This app
+follows the same rule and writes the literal font id to both engine fields, so the exported YAML
+states both explicitly.
 
-Anatomy:
+**Why Code keeps its own value.** A body-driven `--ha-font-family-code` would set code blocks and
+entity IDs in whatever face the user picked, a display serif included. HA's own default is the
+plain CSS keyword `monospace` (`typography.globals.ts:7`), and `DEFAULT_CONFIG.fonts.code` already
+resolves to that same stack (`presets/fonts.ts`, `id: "system-mono"`, `stack: "monospace"`). The
+export keeps this value fixed, in every theme, no control needed.
 
-- `CollapsibleTrigger` sits directly under the Body font row, styled as a small text `Button`,
-  `variant="ghost"`. Label reads **"More"** when closed and **"Less"** when open. A
-  `ChevronDownIcon` at `data-icon="inline-end"` turns 180 degrees on open, driven by the
-  component's own `data-state` attribute — no extra state to track by hand.
-- `CollapsibleContent` holds Headings, Longform and Code, each with its own row, label and help
-  text, unchanged from the table above.
-- The group loads **closed**. The app always starts at `DEFAULT_CONFIG` (§5.1), so there is no
-  saved open state to restore in v1.
-- `Tab` reaches the trigger in row order. `Enter` and `Space` toggle it, per Base UI's default
-  `Collapsible` keyboard behavior. A closed group takes Headings, Longform and Code out of the tab
-  order for free. Base UI hides a closed panel's content from the accessibility tree by default.
-  This needs no extra `tabIndex` work.
-- The open and close motion respects `prefers-reduced-motion`, the same rule as the popover
-  (§2.2).
+**No engine change, and no new type.** `ThemeConfig.fonts` keeps its four fields — `body`,
+`heading`, `longform`, `code` — unchanged since M1. Do not add a type for "the fonts a user can
+still pick" versus "the fonts they cannot." One `FontId` union already covers all four fields, and
+the store still writes plain `ThemeConfig`. §6.2 item 10 restates this for the M4 build.
 
-All four dropdowns share **one identical list**, built from the engine's `FONTS` array grouped by
-`FontOption.category`, with `FONT_CATEGORY_LABELS` supplying the group headings. **Do not hardcode
-the list or the group names.** The engine owns both. The key order of `FONT_CATEGORY_LABELS` is
-the order of the groups in the dropdown:
+The dropdown is built from the engine's `FONTS` array grouped by `FontOption.category`, with
+`FONT_CATEGORY_LABELS` supplying the group headings. **Do not hardcode the list or the group
+names.** The engine owns both. The key order of `FONT_CATEGORY_LABELS` is the order of the groups
+in the dropdown:
 
 | Group heading | Items (`FONTS`, in array order) |
 |---|---|
@@ -737,10 +731,10 @@ the order of the groups in the dropdown:
 | **Monospace** | JetBrains Mono, IBM Plex Mono |
 | **System** | System sans, System serif, System mono |
 
-19 items. Note **System is last, not first** — an earlier draft of this spec had it first and the
-group headings shortened ("Sans", "Mono"). The engine's order and wording win. Every `SelectItem`
-and `SelectLabel` MUST sit inside a `SelectGroup`, never directly in `SelectContent` (shadcn
-composition rule).
+19 items. **System is last, not first** — an earlier draft of this spec had it first, with the
+group headings shortened to "Sans" and "Mono". The engine's own order and wording win. Every
+`SelectItem` and `SelectLabel` MUST sit inside a `SelectGroup`, never directly in `SelectContent`
+(shadcn composition rule).
 
 **Each `SelectItem` MUST be rendered in its own typeface** at ~15px. That is the entire preview for
 this knob and it is worth loading the sixteen webfonts into the builder to get. The set to load is
@@ -748,12 +742,8 @@ exactly `FONTS.filter(f => f.needsWebfont)`. Load them from Google Fonts at 400/
 `display=swap` in the builder's own `index.html`. Builder-side only, unrelated to the exported
 theme — that ships its own `extra_module_url` snippet driven by `theme.webfonts` (§1.4).
 
-Each knob carries one line of helper text, because "longform" means nothing to a HA user:
-
-- Body font family — *Most of the UI: labels, buttons, entity names.*
-- Headings font family — *Card and section titles.*
-- Longform font family — *Long blocks of text, like a markdown card.*
-- Code font family — *Code and YAML, like the template editor.*
+Helper text under the row: *"Most of the UI: labels, buttons, entity names, headings and long
+text. Code stays monospace."*
 
 ---
 
@@ -933,35 +923,36 @@ reader about what the knob does.
 | `hex · rgb` | **Trim** to hex |
 | Ramp-link `<select>`, `reset` | **Cut** |
 
-**Font preview, corrected.** An earlier draft of this spec said the four font knobs have no
-preview anywhere. The owner's read is right: that overstates it (§7.1). The **Body**
-font already renders in the "Living room" applied demo (§4.6) — entity names, labels and buttons
-in a Home Assistant dashboard all take `--ha-font-family-body`. Body has two preview surfaces, not
-zero.
+**Font preview.** The **Body** font renders in the "Living room" applied demo (§4.6) — entity
+names, labels and buttons in a Home Assistant dashboard all take `--ha-font-family-body`. v1 ships
+only the Body knob (§3.2, §7.3), and it also drives `--ha-font-family-heading`, so that demo
+already previews the one font choice a user can make. This matches what a real `ha-card` already
+does: `.card-header` reads `font-family: var(--ha-card-header-font-family, inherit)`
+(`ha-card.ts:43`), and neither `template.css` nor the engine sets `--ha-card-header-font-family`,
+so a card header renders in the ambient body font already, with or without a separate Heading
+knob.
 
-**Heading, Longform and Code have no preview surface outside a dedicated specimen.** A check of
-every preview section, the "Living room" demo and its M5 second card included, found no text that
-takes `--ha-font-family-longform` or `--ha-font-family-code`. Neither section holds a long text
-block or a code string. Heading looked like a candidate — the "Living room" room header reads like
-a card title — but it is not one. Home Assistant's own `ha-card` sets `.card-header` to
-`font-family: var(--ha-card-header-font-family, inherit)` (`ha-card.ts:43`). Neither `template.css`
-nor the engine sets `--ha-card-header-font-family`. The header's font-family then resolves to
-`inherit` — the ambient body font, not the heading knob. HA's own rule that binds an `<h1>` to
-`--ha-font-family-heading` (`resources/styles.ts:52`) sits in a stylesheet outside `ha-card`'s
-shadow root, so it never reaches the header either. A mock card header in this app can render in
-the heading font. Nothing in §4.6 does so today.
+**Longform and Code still need a dedicated specimen.** A check of every preview section, the
+"Living room" demo and its M5 second card included, found no text that takes
+`--ha-font-family-longform` or `--ha-font-family-code`. Neither section holds a long text block or
+a code string. `--ha-font-family-longform` is not a knob in v1 either — it tracks Body, same as
+Heading — but its own line length and rhythm at the longform size show only in a longer paragraph,
+which no other section provides. `--ha-font-family-code` stays fixed at HA's own default monospace
+stack regardless of the Body pick (§3.2), and nothing proves that fact except a code line that
+does not move when Body changes.
 
-So the type specimen below is not an extra next to knobs the demo already covers. **It is the
-only preview surface for Headings, Longform and Code.** Extend this section with a short type
-specimen inside the same card:
+Extend this section with a short type specimen inside the same card:
 
-- a heading line in `--ha-font-family-heading`
+- a heading-size line, in the Body face — `--ha-font-family-heading` tracks `--ha-font-family-body`
+  (§3.2), and this line shows the pair at its real size and weight
 - a sentence in `--ha-font-family-body`
-- a two-line paragraph in `--ha-font-family-longform`
-- a single code line in `--ha-font-family-code` (for example, `sensor.living_room_temperature`)
+- a two-line paragraph at the longform size, also in the Body face — `--ha-font-family-longform`
+  tracks the same knob
+- a single code line in `--ha-font-family-code` (for example, `sensor.living_room_temperature`),
+  fixed at a monospace stack and unaffected by the Body knob
 
-Each labeled with its role in small muted text. This is the only place the spec *adds* to the
-artifact, and it closes the real gap — three knobs, not four.
+Each line carries its role in small muted text. This specimen is now the only place a reader sees
+the theme's full type hierarchy at once, and the one place that shows Code does not follow Body.
 
 ### 4.3 Brand & status — **keep, restructured**
 
@@ -1035,10 +1026,11 @@ the label of a dashboard, not the label of a design exhibit.
 
 It exercises: card background, primary background, divider, both text colors, primary, and the
 border radius. It does **not** exercise error / warning / success / info, or the extended palette.
-It does not exercise Headings, Longform or Code either — the room header MUST render in
-`--ha-font-family-body`, not `--ha-font-family-heading`, because it copies Home Assistant's own
-`ha-card` header rule (§4.2 has the citation). Do not special-case the header to the heading
-knob. That renders a font combination the real exported theme never produces.
+It does not exercise Longform or Code either. The room header MUST render in
+`--ha-font-family-body`, because it copies Home Assistant's own `ha-card` header rule (§4.2 has
+the citation) — this now also stands in for `--ha-font-family-heading`, since v1's single font
+knob sets both to the same value (§3.2). Do not set the header to a different variable than the
+rest of the card. That renders a font pairing the real exported theme never produces.
 So M5 adds **one second card** below it, in the same two-panel grid:
 
 - a row of four entity icons in extended-palette colors (amber light, red lock, blue climate,
@@ -1182,7 +1174,7 @@ not destructive. Never a toast. Toasts are for things that already happened.
    font, ramp or palette id. It never substitutes a value silently. So the hex field must validate
    before it commits (§2.4). Preset ids must be read from the preset arrays, never from a string
    literal.
-1. Fifteen knobs, five groups, §3.2. Labels verbatim from `template.css`.
+1. Twelve knobs, five groups, §3.2. Labels verbatim from `template.css`.
 2. **Zero `<input type="color">`.** Grep for it before opening the PR.
 3. Three distinct color controls, not one: popover picker (×6), inline mini-card list for Border
    color (×1, five named steps — §2.5), inline 4-swatch row (×2). §2.1.
@@ -1201,8 +1193,11 @@ not destructive. Never a toast. Toasts are for things that already happened.
    an acceptance criterion. Base UI's `RadioGroup` gives it for free — prefer it over hand-rolling.
 9. A knob change updates the preview immediately. Debounce only the drag on the saturation
    square, to ~16ms or one `requestAnimationFrame`. Every other change is discrete.
-10. The Typography group loads with only Body visible. Headings, Longform and Code sit inside a
-    `Collapsible`, closed at load, opened by a **More** trigger (§3.2, O-6).
+10. **The Typography group is one control, not four (§3.2, §7.3, O-9).** The Body `Select`'s
+    `onValueChange` writes the same font id to `fonts.body`, `fonts.heading` and `fonts.longform`
+    in one store update. Leave `fonts.code` untouched — no control writes to it in v1. Do not add
+    a `Collapsible`, a **More** trigger, or a fifth `ThemeConfig` field for this. `ThemeConfig.fonts`
+    already has all four fields it needs, unchanged since M1.
 11. `ThemeConfig.colors.*` is `SeedColor` (§2.7, Change 1 — shipped in PR #18). Build the "picked
     color follows its preset" behavior: an entity-palette swatch click writes a `PaletteRef`
     (`"palette:red"`, not a resolved hex), and the engine re-resolves it against the current
@@ -1232,18 +1227,16 @@ component (CLAUDE.md). Editing `src/components/ui/` afterwards is fine, but say 
 Already in the repo: `button`, `card`.
 
 To add. Every one of them returned 200 from
-`https://ui.shadcn.com/r/styles/base-nova/<name>.json` on 2026-08-11, `collapsible` re-checked
-2026-08-14 — §6.4):
+`https://ui.shadcn.com/r/styles/base-nova/<name>.json` on 2026-08-11 — §6.4):
 
 | Component | Used for |
 |---|---|
 | `popover` | Color picker (§2.2) |
-| `collapsible` | Typography group's **More** disclosure (§3.2, O-6) |
 | `toggle-group` | The app bar's Auto/Light/Dark mode toggle, single-select, three items (§1.1) |
 | `input` | Hex field, theme name |
 | `label` | Every knob |
-| `field` | *Recommended* wrapper for a knob row — `FieldLabel` / `FieldDescription` (the helper text) / `FieldError`. Saves hand-rolling the label + help + error stack fifteen times. Pulls in `label` and `separator`. |
-| `select` | Font dropdowns (`SelectGroup` + `SelectLabel` required) |
+| `field` | *Recommended* wrapper for a knob row — `FieldLabel` / `FieldDescription` (the helper text) / `FieldError`. Saves hand-rolling the label + help + error stack twelve times. Pulls in `label` and `separator`. |
+| `select` | Font dropdown (`SelectGroup` + `SelectLabel` required) |
 | `radio-group` | Ramp picker, palette picker, all swatch groups (`RadioGroup` + `RadioGroupItem`) |
 | `dialog` | "Compare all" tables — needs a `DialogTitle` |
 | `alert-dialog` | Reset confirmation (destructive → `AlertDialog`, not `Dialog`) |
@@ -1266,7 +1259,7 @@ and, checked **2026-08-14** for the mode toggle (§1.1), `SunIcon`, `MonitorIcon
 a `Button` take `data-icon="inline-start"` / `"inline-end"` and **no sizing classes** — the
 component sizes them.
 
-**Do not use:** the shadcn `sidebar` block (§1.1). `command` / `combobox` for the font pickers
+**Do not use:** the shadcn `sidebar` block (§1.1). `command` / `combobox` for the font picker
 (nineteen items in five groups do not need search). `native-select` (we need per-item typefaces,
 which a native `<option>` cannot render reliably across browsers).
 
@@ -1286,7 +1279,6 @@ again. Do not trust this document alone for them.
 |---|---|
 | `@base-ui/react` | **1.7.0**, installed. `radix-ui` is no longer a dependency, so every Radix reference in the first draft of this spec was wrong. `PopoverRootChangeEventDetails` carries `reason` (one value is `"outsidePress"`), `event` and `cancel()`. The refinement in §2.3 uses those three. |
 | shadcn style | `components.json` → `"style": "base-nova"`. All 17 components in §6.3 return 200 from `https://ui.shadcn.com/r/styles/base-nova/<name>.json`. `radio-group` exports `RadioGroup`, `RadioGroupItem` from `@base-ui/react/radio{,-group}`. `popover` exports `Popover`, `PopoverContent`, `PopoverDescription`, `PopoverHeader`, `PopoverTitle`, `PopoverTrigger` — note there is **no `PopoverAnchor`**. |
-| `collapsible` | Checked **2026-08-14**, for O-6. Returns 200 from `.../base-nova/collapsible.json`. Exports `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@base-ui/react/collapsible`, against the same `@base-ui/react` 1.7.0 already installed. No new dependency. |
 | `toggle-group` | Checked **2026-08-14**, for the app bar mode toggle (§1.1). Returns 200 from `.../base-nova/toggle-group.json`, with a `toggle` registry dependency the CLI installs alongside it. Exports `ToggleGroup`, `ToggleGroupItem` from `@base-ui/react/toggle-group` and `@base-ui/react/toggle`. No new npm dependency, same `@base-ui/react` 1.7.0. |
 | `react-colorful` | **5.8.0**, published 2026-07-13, **not yet a dependency**. Peer deps `react >=16.8.0` — React 19 is fine. Exports whole pickers only (`HexColorPicker`, `HexColorInput`, …). **no** saturation/hue sub-exports. Arrow keys move in 5% steps. Interactive areas are `tabIndex=0` `role="slider"` with `aria-valuetext`. `aria-label` is hardcoded `"Color"`. `validHex` accepts 3- and 6-digit. |
 | `lucide-react` | **1.31.0**, installed. Both `TriangleAlert` and `TriangleAlertIcon` are exported. Same dual naming for the rest. |
@@ -1301,7 +1293,7 @@ rules, including the differences between Base UI and Radix.
 
 ## 7. Decisions from the owner — 2026-08-14
 
-O-1 to O-8 are now settled. This table keeps each original question for the record and states
+O-1 to O-9 are now settled. This table keeps each original question for the record and states
 the decision next to it. Later sections cite a decision as `(§7, O-n)`.
 
 | # | Question | Decision |
@@ -1311,9 +1303,10 @@ the decision next to it. Later sections cite a decision as `(§7, O-n)`.
 | **O-3** | A user picks a color *from* the ramp or palette strip, then changes the preset. Does that color follow the preset, or does it stay? This spec's earlier draft said it stays, and stores a literal hex. | **REVERSED.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue, not the resolved hex. A later review comment cut the ramp as a swatch source for this popover entirely (§2.2), so only the palette half of this decision still applies. **Shipped in PR #18** — §2.7 Change 1 has the full specification. M3 and M4 build the real behavior. |
 | **O-4** | The always-visible "Generated values" YAML section is cut in favor of an export sheet. Keep the live YAML as a permanent panel? | **No**, and the "12 variables changed" counter this spec's earlier draft floated as a cheaper trust signal is also cut. A plain **Export theme** button, no counter (§1.4). |
 | **O-5** | Applied demo promoted to the **first** preview section, above the token sections. Agreed? | **Yes.** No change (§1.3, §4.6). |
-| **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system, 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? | **Yes**, one grouped `Select`, each item in its own typeface, unchanged from this spec's earlier draft — **plus progressive disclosure.** At load, only **Body font family** shows. A **More** `Collapsible` reveals Headings, Longform and Code. Most users only care about the body font (§3.2). |
+| **O-6** | Font shortlist sign-off (PLAN §3, ✅ 2026-08-09): 8 sans, 4 serif, 2 display serif, 2 mono and 3 system, 19 items in one grouped list, shared by all four font knobs. Is one dropdown of 19 items acceptable? | **Yes**, one grouped `Select`, each item in its own typeface, unchanged from this spec's earlier draft — **plus progressive disclosure.** At load, only **Body font family** shows. A **More** `Collapsible` reveals Headings, Longform and Code. Most users only care about the body font (§3.2). **Superseded by O-9 (§7.3):** the three knobs behind the disclosure are cut from v1, not merely collapsed. The 19-item list and the single grouped `Select` for Body still stand. |
 | **O-7** | Recent colors are session-only, and a reload loses them. Move them to `localStorage`? | **REVERSED.** Recent colors persist to `localStorage`, with a 7-day staleness period **per entry** — each entry carries its own last-used time, and a read drops any entry past 7 days. Storage key, entry shape and the cleanup point are at §2.6. |
 | **O-8** | The ramp picker rows take their labels from `preset.label`, so eight of the ten read **"Stone (Tailwind)"**, "Zinc (Tailwind)" and so on. In a sidebar 300px wide, that suffix takes a third of the row, eight times over. Remove the suffix in the UI, or change the engine labels? | **Remove it in the UI.** The sidebar list renders "Stone". The compare-all dialog keeps the full `preset.label`, suffix included (§3.3). The engine's own label is untouched — its API stays frozen. |
+| **O-9** | Heading, Longform and Code have no preview surface anywhere except a dedicated specimen — the flag §7.1 already answered once. Keep the three knobs and add more preview, or cut them? | **Cut them from v1.** They return in a later version — deferred, not dropped. §7.3 has the full decision and the reasons. |
 
 ### 7.1 Flag responses — 2026-08-14
 
@@ -1322,7 +1315,7 @@ attention, not open questions. The owner responded to each.
 
 | Flag | Response |
 |---|---|
-| The four font knobs have no preview anywhere. | Overstated. The Body font already renders in the applied demo. Corrected at §4.2 — only Heading, Longform and Code lack an organic preview surface, and the type specimen is their one preview. |
+| The four font knobs have no preview anywhere. | Overstated at first — the Body font already renders in the applied demo (§4.2). The follow-up question of what to do about the other three (only Heading, Longform and Code lacked an organic preview surface) became O-9 (§7.3): cut the three knobs rather than add more preview. |
 | The extended palette cut is the heaviest in the audit, 19 cards down to 18 flat swatches. | Approved. No change (§4.5). |
 | The numeric contrast readout stays gone, replaced by the on-color chip (§4.3). | The chip stays, and the CSS variable name under every preview swatch is now also cut — Surfaces and Text included, not only the sections that already cut it (§4). |
 | The sidebar is a ~1300px scroll with all five groups open. | Approved. No change (§3.1). |
@@ -1353,6 +1346,37 @@ drives `--outline-hover-color` and `--shadow-color`, not only the divider line.
 §6.2 items 11 and 13 tell M3/M4 to build the real behavior now, not the placeholder this section
 described in an earlier draft.
 
+### 7.3 Font knobs — cut to v1, 2026-08-14
+
+A third round the same day, closing the flag §7.1 already carried once. The owner's read: the
+gap is real (Heading, Longform and Code have no preview surface outside a dedicated specimen), and
+the fix is fewer knobs, not more preview.
+
+| Part | Decision |
+|---|---|
+| Headings, Longform and Code font knobs | **Cut from v1.** Only **Body font family** ships. The other three return in a later version — **deferred, not dropped** (§9's revalidation log restates this). |
+| The Body knob's own reach | **Widened.** It now writes `fonts.body`, `fonts.heading` **and** `fonts.longform` on every change, not `fonts.body` alone. `fonts.code` stays fixed. §3.2 has the full mechanics and the citations. |
+| The O-6 progressive disclosure (**More** / **Less**) | **Removed.** With the three knobs gone, the `Collapsible` it opened holds nothing. §3.2 replaces it with one row. |
+| `ThemeConfig.fonts` | **Unchanged.** Still four fields — `body`, `heading`, `longform`, `code`. No engine change, no new type. §6.2 item 10 restates this for the M4 build so an implementer does not add one. |
+
+**Why the reach widens instead of the variable going unset.** Home Assistant falls back to Roboto
+for any `--ha-font-family-*` a theme omits (`typography.globals.ts:6-8`). A theme that sets only
+`--ha-font-family-body` would put Roboto under the user's chosen body face for headings and long
+text — a mismatch no user asked for. HA's own default stylesheet keeps Heading in step with Body
+already: `--ha-font-family-heading: var(--ha-font-family-body)` (`typography.globals.ts:27`). This
+app writes the same value to both engine fields explicitly, so the exported YAML states the intent
+rather than leaning on a fallback.
+
+**Why Code is the one exception.** `--ha-font-family-code` keeps its own fixed value instead of
+following Body. A body-driven code font would set code blocks and entity IDs in whatever face the
+user picked, a display serif included — unreadable for `sensor.living_room_temperature`. HA's own
+default is the plain CSS keyword `monospace` (`typography.globals.ts:7`), and this app's
+`DEFAULT_CONFIG.fonts.code` already resolves to that stack (`id: "system-mono"`,
+`stack: "monospace"`, `presets/fonts.ts`). The export keeps this value fixed in every theme.
+
+This closes the flag from §7.1 by removing the knobs it was raised about, not by adding a preview
+surface those knobs never had a real use for.
+
 ---
 
 ## 8. Summary of changes against the artifact
@@ -1367,7 +1391,7 @@ described in an earlier draft.
 | Per-swatch metadata | label + var + hex + rgb + select + reset | label + hex (+ var where it matters) |
 | Extended palette | 19 cards, ~114 elements | 18 flat swatches, 36 elements |
 | Export | Section at the bottom | Sheet from the app bar |
-| Font preview | None | Type specimen in "Text & type" + fonts rendered in the dropdown |
+| Font preview | None | Type specimen in "Text & type" + the dropdown renders each option in its own face |
 | Ramp/palette choice | A `<select>` of names | Ten/eight stacked strips + a compare-all table |
 
 ---
@@ -1430,6 +1454,34 @@ default dark card (`#202020`) are unchanged in the shipped engine.
 Unchanged and still believed right: everything the 2026-08-11 entry above already covers, plus
 §2.5's four named border steps and their composited numbers, §3.3's overall dialog pattern, and
 §7.2's three approved decisions.
+
+### 2026-08-14 — rebase onto `main`
+
+`feat/engine-refs-and-surfaces` (PR #18) merged to `main` as `29e9287`. This branch rebased onto
+the new `main` tip with no conflicts. Every fact the entry above checked against the PR branch was
+checked again against the merged commit: `derive.ts:198` (`surfaces()`), `derive.ts:550-554` (the
+`"match-card"` read), `derive.ts:570` (the fixed `--shadow-color` base), and the `ThemeConfig`
+shape in `types.ts`. All still match. §2.7 and §7.2 still name the branch — that is provenance for
+where the change shipped from, and it stays correct after the merge.
+
+### 2026-08-14 — the three secondary font knobs are cut
+
+The owner cut Headings, Longform and Code from v1 (§7.3, O-9), closing the flag §7.1 raised about
+their missing preview surface. What that changed, and what stayed:
+
+| Was | Now | Where |
+|---|---|---|
+| Four font knobs, one grouped `Select` each, three behind a **More** disclosure | **One knob, Body font family.** It writes `fonts.body`, `fonts.heading` and `fonts.longform` together. `fonts.code` has no control. | §3.2 |
+| The O-6 progressive disclosure (`Collapsible`, **More** / **Less**) | **Removed.** Nothing sits behind it any more. | §3.2, §6.2 item 10, §6.3, §6.4 |
+| `ThemeConfig.fonts`, four fields | **Unchanged.** Still `body`, `heading`, `longform`, `code`. No engine change. | §6.2 item 10 |
+| Type specimen showed four independent typefaces | Shows the Body face at heading, body and longform size, plus a fixed code line that does not follow it | §4.2 |
+| Applied demo did not exercise Heading | Exercises it by construction, since Heading now tracks Body | §4.6 |
+| Export snippet sized for up to four webfonts | At most one — Heading and Longform can no longer add a second | §1.4 |
+| Fifteen knobs, five groups | **Twelve knobs**, five groups (Typography now holds one) | §3.1, §6.2 |
+
+**Headings, Longform and Code are deferred, not dropped.** They come back in a later version. The
+engine already carries their fields with no migration needed to bring them back — §7.3 and §6.2
+item 10 both say so for an implementer who reaches this document later.
 
 ---
 

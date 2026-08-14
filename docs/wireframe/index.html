@@ -117,9 +117,6 @@ button{font:inherit;color:inherit}
 .group-bd{padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px}
 .knob > label,.knob > .lbl{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
 .knob .help{font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.35}
-/* O-6: Typography's progressive disclosure — closed at load, "More" reveals Headings/Longform/Code */
-.collapsible{display:flex;flex-direction:column;gap:14px;padding-top:2px}
-.collapsible[hidden]{display:none}
 select{
   width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface);
   padding:7px 8px;font-size:13px;
@@ -291,7 +288,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
 
   <div class="wf-banner">
     <div><b>LOW-FI WIREFRAME</b> · structure and flow only — not production styling, not wired to the engine. Preset data, order, labels and knob defaults mirror <code>src/engine/</code>.</div>
-    <div>Try: the Auto/Light/Dark toggle · a color row · Base tone · More fonts · Compare all · Export theme</div>
+    <div>Try: the Auto/Light/Dark toggle · a color row · Base tone · Body font family · Compare all · Export theme</div>
   </div>
 
   <!-- ============ APP BAR ============ -->
@@ -325,25 +322,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
           <div class="knob">
             <label for="f-body">Body font family</label>
             <select id="f-body" class="fontsel"></select>
-            <div class="help">Most of the UI: labels, buttons, entity names.</div>
-          </div>
-          <button type="button" class="btn link" id="fontMoreBtn" aria-expanded="false" aria-controls="fontMore">More</button>
-          <div id="fontMore" class="collapsible" hidden>
-            <div class="knob">
-              <label for="f-head">Headings font family</label>
-              <select id="f-head" class="fontsel"></select>
-              <div class="help">Card and section titles.</div>
-            </div>
-            <div class="knob">
-              <label for="f-long">Longform font family</label>
-              <select id="f-long" class="fontsel"></select>
-              <div class="help">Long blocks of text, like a markdown card.</div>
-            </div>
-            <div class="knob">
-              <label for="f-code">Code font family</label>
-              <select id="f-code" class="fontsel"></select>
-              <div class="help">Code and YAML, like the template editor.</div>
-            </div>
+            <div class="help">Most of the UI: labels, buttons, entity names, headings and long text. Code stays monospace.</div>
           </div>
         </div>
       </section>
@@ -459,18 +438,18 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
         <section class="sec">
           <div class="sec-hd">
             <h2>Text &amp; type</h2>
-            <p>Three text colors, four typefaces. <span class="tag">§4.2 · type specimen added</span></p>
+            <p>Three text colors, one typeface at three sizes, plus fixed code. <span class="tag">§4.2 · type specimen</span></p>
           </div>
           <div class="pair">
             <div class="panel lt">
               <div style="font-size:19px;font-weight:500">The quick brown fox <span style="color:#6b6b6b">jumps over</span> <span style="color:#a5a5a5">the lazy dog</span></div>
               <div class="chip-w">Primary #212121 &middot; Secondary #727272 &middot; Disabled #a5a5a5</div>
-              <div class="box" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading font &middot; body font &middot; longform paragraph &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span></div>
+              <div class="box" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading size, body face &middot; body sentence &middot; longform paragraph, body face &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span> (fixed monospace)</div>
             </div>
             <div class="panel dk">
               <div style="font-size:19px;font-weight:500;color:#fff">The quick brown fox <span style="color:#c9c9c9">jumps over</span> <span style="color:#7c7c7c">the lazy dog</span></div>
               <div class="chip-w" style="color:#8b9098">Primary #ffffff &middot; Secondary #cccccc &middot; Disabled #7c7c7c</div>
-              <div class="box dk" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading font &middot; body font &middot; longform paragraph &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span></div>
+              <div class="box dk" style="height:104px;margin-top:11px">TYPE SPECIMEN<br>heading size, body face &middot; body sentence &middot; longform paragraph, body face &middot; <span style="font-family:var(--mono)">sensor.living_room_temperature</span> (fixed monospace)</div>
             </div>
           </div>
         </section>
@@ -573,7 +552,7 @@ table.cmp .cs{display:block;height:20px;border-radius:4px;box-shadow:inset 0 0 0
   </div>
   <div id="tab-install" style="display:none">
     <div class="box" style="height:170px;margin-bottom:12px">1. Create a themes folder next to configuration.yaml, if you do not have one<br>2. Save the downloaded file into that folder<br>3. Under frontend: add themes: !include_dir_merge_named themes (once)<br>4. First time: restart. After that: the "Reload themes" action<br>5. Pick the theme on your profile page<span class="tag">§1.4 · checked against HA's own docs</span></div>
-    <div class="box" style="height:120px">FONT LOADING SNIPPET<br>shown only when a non-system, non-Roboto font is selected<br>extra_module_url: ...</div>
+    <div class="box" style="height:120px">FONT LOADING SNIPPET<br>at most one — shown only when Body is a non-system, non-Roboto font<br>extra_module_url: ...</div>
   </div>
 </div>
 
@@ -673,7 +652,10 @@ const FONTS = [
   ["Monospace", ["JetBrains Mono","IBM Plex Mono"]],
   ["System", ["System sans","System serif","System mono"]]
 ];
-const FONT_DEFAULTS = {"f-body":"Roboto","f-head":"Roboto","f-long":"System sans","f-code":"System mono"};
+/* v1 ships one font knob, Body — it drives fonts.body, fonts.heading AND fonts.longform.
+   fonts.code stays fixed at its own default ("System mono" here, "monospace" in the engine)
+   — Heading/Longform/Code are no longer knobs, see UX-SPEC §3.2. */
+const FONT_DEFAULTS = {"f-body":"Roboto"};
 
 const BRAND = [
   {id:"primary", label:"Primary color", hex:"#009ac7"},
@@ -772,16 +754,6 @@ document.querySelectorAll("select.fontsel").forEach(sel=>{
     sel.appendChild(og);
   });
   sel.value = FONT_DEFAULTS[sel.id];
-});
-
-/* O-6: progressive disclosure — Headings/Longform/Code start hidden behind "More" */
-const fontMoreBtn = $("#fontMoreBtn");
-const fontMore = $("#fontMore");
-fontMoreBtn.addEventListener("click", ()=>{
-  const opening = fontMore.hidden;
-  fontMore.hidden = !opening;
-  fontMoreBtn.setAttribute("aria-expanded", String(opening));
-  fontMoreBtn.textContent = opening ? "Less" : "More";
 });
 
 /* ---------------- sidebar: brand knobs ---------------- */
