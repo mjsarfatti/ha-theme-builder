@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeHex, rgbTriplet, withAlpha } from "../color.ts";
-import { DEFAULT_CONFIG, derive, modeVars, resolveConfig, toCssProperties } from "../derive.ts";
+import {
+  DEFAULT_CONFIG,
+  derive,
+  modeVars,
+  neutralRampAt,
+  resolveConfig,
+  toCssProperties,
+} from "../derive.ts";
 import { contrastingText } from "../ha-math.ts";
 import { getExtendedPalette, getNeutralRamp, KNOB_SLOT } from "../presets/index.ts";
 import { RAMP_SLOTS } from "../types.ts";
@@ -331,9 +338,25 @@ describe("derive — border colour: match-card", () => {
 });
 
 describe("derive — shadow colour is decoupled from the border knob", () => {
-  it("stays fixed at neutral-05 regardless of the border knob's value", () => {
+  it("stays fixed at neutral-05 across the whole borderColor range, including match-card", () => {
     const neutral05 = getNeutralRamp("ha").ramp[5];
-    for (const borderColor of ["neutral-05", "neutral-40", "neutral-95", "match-card"] as const) {
+    const wholeRange = [
+      "neutral-00",
+      "neutral-05",
+      "neutral-10",
+      "neutral-20",
+      "neutral-30",
+      "neutral-40",
+      "neutral-50",
+      "neutral-60",
+      "neutral-70",
+      "neutral-80",
+      "neutral-90",
+      "neutral-95",
+      "neutral-100",
+      "match-card",
+    ] as const;
+    for (const borderColor of wholeRange) {
       const theme = derive({ borderColor });
       expect(theme.light["shadow-color"], borderColor).toBe(withAlpha(neutral05, "29"));
       expect(theme.dark["shadow-color"], borderColor).toBe(withAlpha(neutral05, "7a"));
@@ -442,6 +465,19 @@ describe("derive — light and dark", () => {
     const pageDarker = derive({ cardBackground: "neutral-100", primaryBackground: "neutral-80" });
     expect(pageDarker.dark["primary-background-color"]).toBe(ha[20]);
     expect(pageDarker.dark["card-background-color"]).toBe(ha[50]);
+  });
+
+  it("clamps to the ramp's own ends instead of escaping it — the boundary itself", () => {
+    // `neutralRampAt` is the exact function `surfaces()` reads every dark-mode
+    // slot through. Today's four SurfaceChoice values never push an index
+    // past 0..12 (previous test), so this exercises the clamp directly,
+    // module-only (not part of the frozen public API — see its doc comment).
+    const ha = getNeutralRamp("ha").ramp;
+    expect(neutralRampAt(ha, -1)).toBe(ha[0]); // one past the dark end
+    expect(neutralRampAt(ha, -50)).toBe(ha[0]); // arbitrarily far past it
+    expect(neutralRampAt(ha, 12)).toBe(ha[100]); // the light end itself
+    expect(neutralRampAt(ha, 13)).toBe(ha[100]); // one past the light end
+    expect(neutralRampAt(ha, 50)).toBe(ha[100]); // arbitrarily far past it
   });
 
   it("keeps the secondary background distinct from the card and the page", () => {

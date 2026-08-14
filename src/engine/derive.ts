@@ -110,8 +110,14 @@ function mirrorSlot<S extends RampSlot | NeutralRampSlot>(slot: S): S {
 
 const SLOT_ORDER: readonly RampSlot[] = RAMP_SLOTS;
 
-/** Neutral-ramp lookup by position along the full 00..100 slot order, clamped at both ends. */
-function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
+/**
+ * Neutral-ramp lookup by position along the full 00..100 slot order, clamped
+ * at both ends. This is where `surfaces()`'s defensive clamp actually lives —
+ * exported (module-only, not part of the `index.ts` barrel / the frozen
+ * public API) purely so `derive.test.ts` can exercise the boundary directly,
+ * since today's four `SurfaceChoice` values never drive an index past it.
+ */
+export function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
   const i = Math.min(NEUTRAL_RAMP_SLOTS.length - 1, Math.max(0, index));
   return ramp[NEUTRAL_RAMP_SLOTS[i]];
 }
