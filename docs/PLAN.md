@@ -9,8 +9,8 @@ number of "knobs" (fonts, a handful of seed colors, ramp presets) and instantly 
 live preview of design tokens and realistic HA cards — then copies or downloads a
 ready-to-paste YAML theme.
 
-**Why:** HA theming is powerful but hostile: hundreds of undocumented variables, a
-four-tier token cascade, derivation rules you have to know by heart (rgb companions,
+**Why:** HA theming is powerful but difficult: hundreds of undocumented variables, a
+four-tier token cascade, derivation rules you have to memorize (rgb companions,
 `text-primary-color` contrast, dark-mode `modes:` blocks). Nobody has shipped a builder
 that works at the *token* level (the new `--ha-color-*` ramps) rather than pasting hex
 codes into legacy vars.
@@ -74,7 +74,7 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
 9. ✅ **The starting point is "Home Assistant Refined", not stock HA** (decided
    2026-08-11). `template.css` is a *redesign*. About 40 variables per mode differ
    from what HA ships, because a few values moved onto the ramps:
-   - `neutral-95` for the page background, instead of the off-ramp `#fafafa`
+   - `neutral-95` for the page background, instead of `#fafafa`, a value not on any ramp
    - primary-30, primary-20 and primary-50 for the legacy Material blues
    - `--ha-color-neutral-05` instead of black as the shadow base
 
@@ -199,7 +199,7 @@ theme-name field, install instructions **including the font-loading snippet**
 - Theme import
 - State and energy color groups
 - **A "Home Assistant (stock)" starter preset.** This is the one place where the
-  40 off-ramp values from §3 decision 9 make sense.
+  40 values from §3 decision 9 that are not on any ramp make sense.
 
 **Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M5 → M6. The engine API freezes at the
 end of M1. The UX spec freezes at the end of M2. A later change to either one

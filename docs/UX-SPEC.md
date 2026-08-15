@@ -14,8 +14,8 @@ This document is the single source of truth for the v1 UI. M3 and M4 implementer
 this document alone.
 
 - **MUST** = an acceptance criterion. Not negotiable without a PM decision.
-- ***Recommended*** = a suggested implementation route, not a mandate. You have latitude. If you
-  pick differently, say so in the PR rather than changing it silently.
+- ***Recommended*** = a suggested implementation route, not a mandate. The implementer can choose
+  a different route. If you pick differently, say so in the PR rather than changing it silently.
 - ***Alternative considered*** = rejected on purpose. Do not silently adopt it.
 
 Every library, component and API named here is **checked on 2026-08-11** against three sources:
@@ -206,7 +206,7 @@ The two-column preview MUST NOT produce a horizontal scrollbar at any width. Wid
 (the ramp strip, the palette grid) shrinks its swatches. Below ~28px per swatch it removes labels
 per the compact rule above. It never overflows.
 
-This is not a phone tool. It must not *break* below 768px, but nothing is optimized there.
+This is not a phone tool. It must still work below 768px, but nothing is optimized there.
 
 ---
 
@@ -285,12 +285,12 @@ background and Primary background still pick from the neutral ramp directly (§2
 is unchanged. This cut is about the six-knob popover only.
 
 **Palette swatches come before the free picker, always.** That ordering is the whole point of
-"palette-aware": the anchored choice is the default path, free picking is the escape hatch. A
-user who wants the palette amber as the accent color reaches it in one tap. That user never sees
-a color wheel.
+"palette-aware": the anchored choice is the default path, and free picking is there for a color
+the palette does not offer. A user who wants the palette amber as the accent color reaches it in
+one tap. That user never sees a color wheel.
 
 *Alternative considered:* `Tabs` — "Palette" / "Custom". Rejected: it adds a mode, hides the
-escape hatch behind a click, and saves 200px of popover height we can afford.
+free-picker option behind a click, and saves 200px of popover height we can afford.
 
 ### 2.3 The swatch groups
 
@@ -371,7 +371,7 @@ rules below are what they lose. Raise it rather than silently changing the behav
 | | |
 |---|---|
 | Trigger | `<button>`, `aria-haspopup="dialog"`, `aria-expanded`, accessible name `"Primary color, currently #009ac7"` |
-| Open | `Enter` / `Space`. Base UI moves focus into the popover. Focus lands on the hex `Input`. |
+| Open | `Enter` / `Space`. Base UI moves focus into the popover. Focus moves to the hex `Input`. |
 | Close | `Escape` closes and returns focus to the trigger. Click-outside closes and commits. |
 | Between groups | `Tab` moves group to group: hex → palette grid → recent → saturation → hue. |
 | Within a group | **Roving tabindex.** One swatch per group is in the tab order. `←`/`→` (and `↑`/`↓` in the palette grid) move the roving focus and, per WAI-ARIA radiogroup semantics, select as they move. `Home`/`End` jump to first/last. |
@@ -405,13 +405,14 @@ outcome, not the ingredient.**
 
 Hairline through Strong run progressively **darker** than the card surface, in that order. This
 part needs no engine change. `borderColor` stays a plain `NeutralSlotId` for these four values —
-it is a UI restriction on top of the existing eleven-value union, the same kind of restriction the
+it is a UI restriction in addition to the existing eleven-value union, the same kind of restriction the
 font dropdown already applies to `FONTS`. It does not touch the engine's own list.
 
 **Why these four slots, and not four others.** I did not pick these from memory. I rendered all
 eleven slots — the KNOB's own light-mode semantics, with the engine's real `mirrorSlot` applied
 for the dark-mode render — at `1f` alpha over every `SurfaceChoice`, in both modes, on the default
-`ha` ramp and on a tinted ramp (`mauve`, to check a tint does not break the ladder). The numbers
+`ha` ramp and on a tinted ramp (`mauve`, to check that a tint keeps the four steps in the same
+order). The numbers
 below are the composited result against the default card (`neutral-100`), on the `ha` ramp:
 
 | Slot | Light, composited over `#ffffff` | Dark, composited over `#202020` |
@@ -428,7 +429,7 @@ below are the composited result against the default card (`neutral-100`), on the
 | neutral-90 | `#fcfcfc` | `#202020` |
 | neutral-95 | `#fefefe` | `#1f1f1f` |
 
-Two things follow from this table. First, the eleven raw slots really do bunch up towards the light
+Two things follow from this table. First, the eleven raw slots really do cluster towards the light
 end — `neutral-80` through `neutral-95` composite within two or three points of each other and of
 the card. This confirms the flag. Four slots spread across the full range, rather than four
 adjacent ones, keep each step visually distinct. Second, **`neutral-90` is disqualified, not just
@@ -439,10 +440,10 @@ common configuration a user sees (`DEFAULT_CONFIG.cardBackground` is `"neutral-1
 the four I picked produces an exact collision on any of the four `SurfaceChoice` values, in either
 mode, on either ramp I checked.
 
-The ladder holds as a ladder under both checks the owner asked for: it stays monotonic in dark
-mode, where the render slot mirrors (`neutral-05` always renders as the *lightest* dark-mode
+The four steps stay in the same order under both checks the owner asked for: they stay monotonic
+in dark mode, where the render slot mirrors (`neutral-05` always renders as the *lightest* dark-mode
 slot and still reads as the strongest step, because a light border on a dark card and a dark
-border on a light card carry the same *strength*), and it stays monotonic on a tinted ramp
+border on a light card carry the same *strength*), and they stay monotonic on a tinted ramp
 (`mauve`'s four picks composite to `#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#3e373f /
 #372f38 / #2d242e / #282029` in dark — same spread, same order, tinted instead of grey).
 
@@ -482,7 +483,7 @@ and a check. Helper text under both: *"Dark mode uses the matching dark shade au
 ### 2.6 Recent colors persist across a reload
 
 Settled with the owner (§7, O-7). This reverses this spec's earlier recommendation. Recent colors
-survive a reload. Each entry carries its own age. The picker drops a stale entry on read. It does
+persist across a reload. Each entry carries its own age. The picker drops a stale entry on read. It does
 not clear the whole list at once.
 
 - **Storage:** `window.localStorage`, key `"ha-theme-builder:recent-colors"`.
@@ -493,7 +494,7 @@ not clear the whole list at once.
 - **Staleness is per entry, not per list.** The staleness period is 7 days
   (`7 * 24 * 60 * 60 * 1000` milliseconds). A read drops every entry whose `lastUsedAt` is older
   than 7 days from the current time, then writes the filtered list back to `localStorage`. A read
-  happens at app load and at every popover open, so a stale entry never survives past the next
+  happens at app load and at every popover open, so a stale entry is never present the next
   time a user looks at the list.
 - **What writes an entry.** Only a hex committed from the free picker or the hex field writes or
   refreshes an entry — the same rule §2.3 already sets for what counts as "recent". A pick from
@@ -504,8 +505,8 @@ not clear the whole list at once.
   list to 8 after the write.
 - **`localStorage` can fail** — private mode, a full quota, a disabled store. A failed read or
   write MUST NOT throw. The picker then uses the session-only behavior this spec's earlier draft
-  already describes. Recent still works for the rest of the session. It does not survive the next
-  reload.
+  already describes. Recent still works for the rest of the session. It does not persist across
+  the next reload.
 
 ### 2.7 Shipped: palette-relative colors and border color's Invisible step
 
@@ -566,7 +567,7 @@ shipped `surfaces()` computes a different answer for the same pair —
 anything about the shipped code. The proof still holds. Only the numbers
 need to come from a config that does not depend on which version of
 `surfaces()` a reader has open. The **default config** makes the same case
-and does not rot the next time the math changes: the light card is
+and stays correct the next time the math changes: the light card is
 `neutral-100`. `mirrorSlot(100)` is `neutral-00` — pure black, `#000000`.
 The real dark card `surfaces()` computes is `#202020` (`neutral-10`),
 because the dark card is a *joint* function of both surface knobs (below),
@@ -594,23 +595,23 @@ time, and `"match-card"` reads directly out of the joint result
    as everywhere else in dark mode — to place it in dark mode.
 3. **Place the other surface the same number of steps away from that
    anchor, toward the lighter end.** The gap the user's two choices express
-   survives into dark mode. So does which surface sits on top. Equal
+   stays the same in dark mode. So does which surface sits on top. Equal
    choices mirror to the same anchor, and the gap is zero.
 
 The darker surface is the anchor for a second reason: it is also the
 clamp-safe direction. The derived value only ever gains steps away from the
 ramp's dark floor, never past it. The lighter surface as the anchor can
-drive the other one off the bottom instead.
+push the other value's index below zero instead.
 
 **All the arithmetic runs in index space, not slot numbers.** The neutral
 ramp's 13 slots are unevenly spaced (`0, 5, 10, 20, … 90, 95, 100`). A
-subtraction of slot numbers lands on values with no slot at all, like
+subtraction of slot numbers can produce a value with no matching slot, like
 `neutral-15`. `surfaces()` works on each slot's position in that 13-element
 array instead (`0` through `12`).
 
 **The clamp, and where it does not reach.** A position outside `0..12`
 clamps to the nearest end. It does not read past the array, and it does
-not throw. At that boundary, the derived surface is allowed to land on the same slot
+not throw. At that boundary, the derived surface is allowed to equal the same slot
 as its anchor — the two backgrounds collapse onto one color. That is not a
 new failure mode. It is the same thing that already happens on purpose when
 a user picks an equal slot for both choices, gap zero. **Today's four
@@ -806,7 +807,8 @@ Group helper text: *"These color entity icons and badges — a light is amber, a
 **Ordering rationale.** Fonts first: the fastest visible change, zero risk, and it matches
 `template.css`. Brand colors second: the single thing most users came here to change. Then the
 neutral system and the surfaces built on it, adjacent so their interaction is visible. The
-extended palette last: eighteen values that only affect entity icon colors — the longest tail.
+extended palette last: eighteen values that only affect entity icon colors, the smallest effect of
+any group.
 
 ### 3.3 Comparing ~10 ramps and ~8 palettes
 
@@ -848,7 +850,7 @@ hardcode names or reorder for aesthetics:
 compare-all dialog keeps the full `preset.label`**, suffix included, since that view is the
 place for it. Strip only the pattern `" (Tailwind)"` at the end of the label. Do not touch
 `preset.label` itself, the ids, or the sort order — this is a display transform in the UI layer
-only, decided at the owner's call (§7, O-8). The engine's label stays as it is. Ramp swatch order
+only, decided by the owner (§7, O-8). The engine's label stays as it is. Ramp swatch order
 is `rampEntries()`: slots 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, dark to light. There are no
 black or white endpoints. Palette swatch order is `PALETTE_COLOR_NAMES`. Palette labels carry no
 such suffix and stay untouched.
@@ -857,12 +859,12 @@ Implementation: `RadioGroup` / `RadioGroupItem` with the visual indicator suppre
 rendered as the `Label` content. Selected row: 2px ring in the builder's accent + a filled radio
 dot. Full keyboard support comes free from Base UI (`↑`/`↓` moves and selects).
 
-**Plus a "Compare all" escape hatch.** A text button under each list opens a `Dialog` at ~1100px.
+**Plus a "Compare all" option.** A text button under each list opens a `Dialog` at ~1100px.
 That dialog needs a real `DialogTitle`, and `sr-only` hides it visually. It holds the
 reference-table view: rows are steps and columns are presets, exactly as in
 `.references/colors/*.html`. A click on a column header selects that preset and closes the dialog.
 This costs almost nothing (the data is already there) and serves the user who wants to read
-individual hexes rather than eyeball strips.
+individual hexes instead of comparing strips visually.
 
 **The Base tone dialog's table has thirteen rows, not eleven.** Read it from the raw preset
 (`getNeutralRamp(id).ramp`, the 13-shade `NeutralRamp`, §2.7), never from `theme.ramps.neutral`
@@ -894,7 +896,7 @@ is of three kinds, and all three go:
   the YAML where HA auto-derives them from hex (PLAN M1). A number that nobody copies and that
   nothing exports is noise.
 - **CSS variable names under every swatch.** **Cut everywhere.** Surfaces and Text lose them too —
-  an earlier draft of this spec kept them there. The owner's call (§7.1): the preview shows the
+  an earlier draft of this spec kept them there. The owner's decision (§7.1): the preview shows the
   rendered result, not the identifier. §4.1 and §4.2 name the variable each tile stands for once,
   in prose. Neither section restates it on every tile.
 
@@ -995,7 +997,7 @@ information, and the user reads it instantly.
 
 Renders **once, full width, tagged `Both modes`** (§1.2).
 
-### 4.5 Extended palette → **"Entity colors". The heaviest cut**
+### 4.5 Extended palette → **"Entity colors". The largest cut**
 
 The artifact renders nineteen cards. Each card holds a tint tile with a color dot, a label, a var
 name, a contrast row, a hex, and sometimes a ramp-link select. That is six pieces of chrome per
@@ -1154,7 +1156,7 @@ not destructive. Never a toast. Toasts are for things that already happened.
 6. Do not memo-optimize prematurely. The whole preview re-rendering on a knob change is fine at
    this size. If it is not, memoize at the section boundary.
 7. The user can set `--divider-color` to fully transparent, or `--primary-background-color` to
-   white. The preview panels must survive both. Panel separation must not depend on a theme
+   white. The preview panels must still render correctly in both cases. Panel separation must not depend on a theme
    variable alone. Give each panel a fallback outline in the *builder's* border color.
 8. The **Neutral ramp** section renders `theme.ramps.neutral` through `rampEntries()`, not the raw
    preset (`getNeutralRamp(id).ramp`). The two are not the same shape any more: `theme.ramps.neutral`
@@ -1263,7 +1265,7 @@ component sizes them.
 (nineteen items in five groups do not need search). `native-select` (we need per-item typefaces,
 which a native `<option>` cannot render reliably across browsers).
 
-*Latitude:* `toggle-group` also works for the 4-swatch background rows, and `item` works for the
+*Implementer's choice:* `toggle-group` also works for the 4-swatch background rows, and `item` works for the
 preset rows. I recommend `radio-group` for both, because one pattern then covers every swatch
 group in the app. If you find `toggle-group` cleaner for the 4-option case, say so in the PR
 rather than mixing both patterns silently.
@@ -1310,13 +1312,13 @@ the decision next to it. Later sections cite a decision as `(§7, O-n)`.
 
 ### 7.1 Flag responses — 2026-08-14
 
-The same PR round also carried five items under "Still flagging" — judgment calls for the owner's
-attention, not open questions. The owner responded to each.
+The same PR round also carried five items under "Still flagging" — points needing the owner's
+judgment, not open questions. The owner responded to each.
 
 | Flag | Response |
 |---|---|
 | The four font knobs have no preview anywhere. | Overstated at first — the Body font already renders in the applied demo (§4.2). The follow-up question of what to do about the other three (only Heading, Longform and Code lacked an organic preview surface) became O-9 (§7.3): cut the three knobs rather than add more preview. |
-| The extended palette cut is the heaviest in the audit, 19 cards down to 18 flat swatches. | Approved. No change (§4.5). |
+| The extended palette cut is the largest in the audit, 19 cards down to 18 flat swatches. | Approved. No change (§4.5). |
 | The numeric contrast readout stays gone, replaced by the on-color chip (§4.3). | The chip stays, and the CSS variable name under every preview swatch is now also cut — Surfaces and Text included, not only the sections that already cut it (§4). |
 | The sidebar is a ~1300px scroll with all five groups open. | Approved. No change (§3.1). |
 | `--ha-font-size-scale` sits in `template.css` with no `KNOB` annotation, flagged in case that was an upstream oversight. | Confirmed out of v1 (PLAN §3, decision 8). Dropped. |
@@ -1331,7 +1333,7 @@ drives `--outline-hover-color` and `--shadow-color`, not only the divider line.
 |---|---|
 | Render the outcome | **Approved.** Each option is a mini-card — real card background, real border, real shadow — split diagonally, light half top-left, dark half bottom-right, both modes visible at once. §2.5 has the anatomy. |
 | Four named steps, not eleven slots | **Approved.** Hairline / Subtle / Medium / Strong, each darker than the card and darker than the step before it. UI-only — `borderColor` stays `NeutralSlotId`, no engine change. §2.5 has the slot picks and the rendered evidence behind them. |
-| A fifth step, Invisible | **Approved.** Resolves to the chosen card surface, so the border disappears into the card. Needed a new engine sentinel and a fix to `--shadow-color` so the shadow survives it — both specified at §2.7 (Change 2), and both **shipped in PR #18**. |
+| A fifth step, Invisible | **Approved.** Resolves to the chosen card surface, so the border disappears into the card. Needed a new engine sentinel and a fix to `--shadow-color` so the shadow still renders when the border is Invisible — both specified at §2.7 (Change 2), and both **shipped in PR #18**. |
 
 **One work package, three changes, all shipped in PR #18
 (`feat/engine-refs-and-surfaces`).** M3 and M4 build all three now:
@@ -1412,7 +1414,7 @@ still Radix. Both landed. What that invalidated, and what changed:
 | Border color default unstated (wireframe used `neutral-80`) | **`neutral-05`**, the darkest slot — that is where `#0000001f` comes from | §3.2 |
 | "loads with the complete Home Assistant default theme" | **Home Assistant Refined**, PLAN §3 decision 9. Reset button reworded. No UI claims parity with stock HA. | §5.1 |
 | Contrast "4.5" used ambiguously | **6 selects** (`contrastingText`, HA's rule), **4.5 warns** (WCAG AA). Use the engine's `contrastRatio`. | §4.3, §5.3 |
-| Data flow described loosely | `derive()` / `toCssProperties()` / `modeVars()` named, plus the trap that `theme.light` is a *partial* map | §6.1 |
+| Data flow described loosely | `derive()` / `toCssProperties()` / `modeVars()` named, plus the detail, easy to miss, that `theme.light` is a *partial* map | §6.1 |
 | Store shape unstated | The store **is** `ThemeConfig`. `derive()` throws rather than substituting | §6.2 |
 
 The inlined preset data of the wireframe is now diffed against the engine, cell by cell. The diff
@@ -1509,3 +1511,10 @@ Conventions, so that later edits stay consistent:
   values, file paths and quoted text. `blue-grey` and `Display serif` keep their spelling because
   they are identifiers in `PALETTE_COLOR_NAMES` and `FONT_CATEGORY_LABELS`. The quoted artifact
   string `"vs list row: 3.2"` also stays exact.
+- **No idioms and no metaphors** (CLAUDE.md, "How to write"). Every word carries its literal,
+  dictionary sense. `ramp`, `slot`, `knob`, `swatch`, `palette`, `elevation`, `mirror` and `anchor`
+  stay — each names one exact thing in this product and carries no second, figurative sense here.
+  A word borrowed from an unrelated domain to stand for a plain fact (`latitude` for "the
+  implementer can choose", `ladder` for "steps in order", `escape hatch` for "an alternative
+  path") is a defect even when the word itself is common. State the fact instead, in as many
+  words as it needs — do not shorten a sentence by trading a plain description for a metaphor.
