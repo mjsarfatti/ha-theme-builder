@@ -34,7 +34,7 @@ export function MobileSidebarSheet({
         <SheetHeader>
           <SheetTitle>Design</SheetTitle>
         </SheetHeader>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <SidebarContent recentColors={recentColors} />
         </ScrollArea>
       </SheetContent>
