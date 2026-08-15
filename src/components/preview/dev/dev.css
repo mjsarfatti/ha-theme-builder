@@ -1,0 +1,10 @@
+@import "../../../index.css";
+
+/*
+ * This harness's own `vite.config.ts` sets `root` to this `dev/` directory,
+ * so Tailwind's automatic source detection — which scans from the Vite
+ * root — never reaches the rest of `src/`. Register it explicitly instead
+ * of relying on detection. Path is relative to this stylesheet, per
+ * https://tailwindcss.com/docs/detecting-classes-in-source-files#explicitly-registering-sources.
+ */
+@source "../../../";
