@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+node_major="$(tr -d '[:space:]' < "$repo_root/.nvmrc")"
+pnpm_version="$(sed -n 's/.*"packageManager": "pnpm@\([^"]*\)".*/\1/p' "$repo_root/package.json")"
+
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME/bin:$HOME/.local/bin:$PATH"
+
+if [[ "$(node --version)" != v"$node_major".* ]]; then
+  echo "Expected Node.js $node_major, found $(node --version). Run .agents/setup." >&2
+  exit 1
+fi
+if [[ "$(pnpm --version)" != "$pnpm_version" ]]; then
+  echo "Expected pnpm $pnpm_version, found $(pnpm --version). Run .agents/setup." >&2
+  exit 1
+fi

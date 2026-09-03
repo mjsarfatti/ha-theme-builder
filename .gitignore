@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code local settings (per-machine, not shared)
 .claude/settings.local.json
+
+# Amp orb portal metadata
+.amp/portals/*
