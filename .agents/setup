@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+node_major="$(tr -d '[:space:]' < .nvmrc)"
+package_manager="$(sed -n 's/.*"packageManager": "\([^"]*\)".*/\1/p' package.json)"
+pnpm_version="${package_manager#pnpm@}"
+
+if [[ -z "$node_major" || "$package_manager" == "$pnpm_version" ]]; then
+  echo "Could not read the pinned Node.js and pnpm versions." >&2
+  exit 1
+fi
+
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME/bin:$HOME/.local/bin:$PATH"
+
+profile_marker="# ha-theme-builder orb toolchain"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
+  cat >> "$HOME/.bash_profile" <<'EOF'
+
+# ha-theme-builder orb toolchain
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME/bin:$HOME/.local/bin:$PATH"
+EOF
+fi
+
+echo "==> Preparing pnpm $pnpm_version"
+if [[ ! -x "$HOME/.local/bin/pnpm" ]] ||
+  [[ "$($HOME/.local/bin/pnpm --version 2>/dev/null)" != "$pnpm_version" ]]; then
+  npm install --global --prefix "$HOME/.local" --no-audit --no-fund "pnpm@$pnpm_version"
+fi
+
+echo "==> Preparing Node.js $node_major"
+if [[ ! -x "$PNPM_HOME/bin/node" ]] ||
+  [[ "$($PNPM_HOME/bin/node --version 2>/dev/null)" != v"$node_major".* ]]; then
+  "$HOME/.local/bin/pnpm" runtime set node "$node_major" --global
+fi
+hash -r
+
+if [[ "$(node --version)" != v"$node_major".* ]]; then
+  echo "Expected Node.js $node_major, found $(node --version)." >&2
+  exit 1
+fi
+if [[ "$(pnpm --version)" != "$pnpm_version" ]]; then
+  echo "Expected pnpm $pnpm_version, found $(pnpm --version)." >&2
+  exit 1
+fi
+
+echo "==> Installing repository dependencies"
+pnpm install --frozen-lockfile
+
+echo "==> Orb setup complete"
