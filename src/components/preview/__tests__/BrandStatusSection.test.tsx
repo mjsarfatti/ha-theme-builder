@@ -41,6 +41,7 @@ describe("BrandStatusSection", () => {
   })
 
   it("warns on exactly the chips under 3:1, for the default config", () => {
+    // Default config: Accent (2.16:1) and Warning (2.21:1) fall under 3:1 against #ffffff, in 2 panels.
     renderSection(derive())
 
     const warnings = screen.getAllByLabelText(/Low contrast/)

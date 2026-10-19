@@ -6,6 +6,7 @@ import { defineConfig } from "vite"
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// Separate from the root config: alias "@" to src again.
 export default defineConfig({
   root: dirname,
   plugins: [react(), tailwindcss()],

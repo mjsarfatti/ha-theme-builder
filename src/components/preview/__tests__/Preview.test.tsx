@@ -25,6 +25,7 @@ describe("Preview", () => {
     const lightPanels = container.querySelectorAll('[data-preview-mode="light"]')
     const darkPanels = container.querySelectorAll('[data-preview-mode="dark"]')
 
+    // 4 paired sections give a light and a dark panel. 2 sections give a light panel only.
     expect(darkPanels).toHaveLength(4)
     expect(lightPanels).toHaveLength(6)
   })

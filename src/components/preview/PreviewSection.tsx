@@ -7,10 +7,22 @@ interface PreviewSectionProps {
   id: string
   title: string
   description: string
+  /** Shows the "Both modes" badge for sections that look the same in both modes. */
   bothModes?: boolean
   children: ReactNode
 }
 
+/**
+ * Section chrome: a title, a rule and a one-line description.
+ *
+ * The chrome uses the builder's own tokens, so theme variables never
+ * restyle it.
+ *
+ * @example
+ * <PreviewSection id="surfaces" title="Surfaces" description="…">
+ *   {panels}
+ * </PreviewSection>
+ */
 export function PreviewSection({ id, title, description, bothModes, children }: PreviewSectionProps) {
   const headingId = `${id}-heading`
 

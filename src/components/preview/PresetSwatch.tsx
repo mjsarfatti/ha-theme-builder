@@ -6,6 +6,16 @@ interface PresetSwatchProps {
   hex: string
 }
 
+/**
+ * Flat color tile with a label and a hex caption.
+ *
+ * The tile fills with the raw preset hex, so a section can compare
+ * presets directly. The caption shows when the preview is wide. The
+ * tooltip always shows the hex.
+ *
+ * @example
+ * <PresetSwatch label="05" hex="#8a8a8a" />
+ */
 export function PresetSwatch({ label, hex }: PresetSwatchProps) {
   return (
     <Tooltip>

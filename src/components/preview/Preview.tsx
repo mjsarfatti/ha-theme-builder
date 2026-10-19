@@ -13,6 +13,15 @@ export interface PreviewProps {
   theme: DerivedTheme
 }
 
+/**
+ * Preview pane: a light and a dark panel for each theme section.
+ *
+ * The pane scrolls on its own. It computes the CSS variables for each
+ * mode once per theme and passes them to every section.
+ *
+ * @example
+ * <Preview theme={derive(config)} />
+ */
 export function Preview({ theme }: PreviewProps) {
   const lightVars = useMemo(() => toCssProperties(theme, "light") as CSSProperties, [theme])
   const darkVars = useMemo(() => toCssProperties(theme, "dark") as CSSProperties, [theme])

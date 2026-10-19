@@ -11,7 +11,6 @@ const TILES = [
   { label: "Secondary background", key: "secondary-background-color" },
 ] as const
 
-/** UX-SPEC §4.1. */
 export function SurfacesSection({ theme, lightVars, darkVars }: PreviewSectionProps) {
   const light = modeVars(theme, "light")
   const dark = modeVars(theme, "dark")
@@ -52,6 +51,7 @@ function SurfaceTiles({ values }: { values: CssVarMap }) {
 }
 
 function DividerTile({ hex }: { hex?: string }) {
+  // The divider is a low-alpha color, so a hairline across a card shows it best.
   return (
     <div
       className="relative flex h-[180px] flex-col justify-end rounded-lg p-3"

@@ -4,13 +4,13 @@ import { PresetSwatch } from "../PresetSwatch"
 import { PreviewSection } from "../PreviewSection"
 import type { PreviewSectionProps } from "../types"
 
-/** `"deep-purple"` → `"Deep purple"`, `"blue-grey"` → `"Blue grey"`. */
 function paletteColorLabel(name: PaletteColorName): string {
   const [first, ...rest] = name.split("-")
   return [first.charAt(0).toUpperCase() + first.slice(1), ...rest].join(" ")
 }
 
 export function EntityColorsSection({ theme, lightVars }: PreviewSectionProps) {
+  // Palette colors are equal in both modes.
   const values = modeVars(theme, "light")
 
   return (

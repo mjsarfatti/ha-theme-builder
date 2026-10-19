@@ -7,6 +7,7 @@ import { PreviewPanel } from "../Panel"
 import { PreviewSection } from "../PreviewSection"
 import type { PreviewSectionProps } from "../types"
 
+/** Contrast ratio below which a chip shows a warning (WCAG AA, large text). */
 const WARNING_CONTRAST_THRESHOLD = 3
 
 const CHIPS = [
@@ -18,7 +19,6 @@ const CHIPS = [
   { label: "Info color", colorVar: "info-color" },
 ] as const
 
-/** UX-SPEC §4.3. */
 export function BrandStatusSection({ theme, lightVars, darkVars }: PreviewSectionProps) {
   const light = modeVars(theme, "light")
   const dark = modeVars(theme, "dark")
@@ -49,6 +49,7 @@ function BrandChips({ values }: { values: CssVarMap }) {
     >
       {CHIPS.map((chip) => {
         const bg = values[chip.colorVar]
+        // Home Assistant computes an on-color for primary only. Every chip label reuses it.
         const text = values["text-primary-color"]
         const ratio = contrastRatio(text, bg)
         const fails = ratio < WARNING_CONTRAST_THRESHOLD

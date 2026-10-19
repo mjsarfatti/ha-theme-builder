@@ -8,7 +8,6 @@ import type { PreviewSectionProps } from "../types"
 
 const PANGRAM = "The quick brown fox jumps over the lazy dog."
 
-/** UX-SPEC §4.2. */
 export function TextTypeSection({ theme, lightVars, darkVars }: PreviewSectionProps) {
   const light = modeVars(theme, "light")
   const dark = modeVars(theme, "dark")
