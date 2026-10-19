@@ -20,7 +20,7 @@ function SidebarGroupHeading({ children }: { children: ReactNode }) {
   )
 }
 
-/** The five groups, with no opinion on how they're docked. */
+/** The five knob groups. The docked sidebar and the mobile sheet both render them. */
 export function SidebarContent({ recentColors }: { recentColors: UseRecentColorsResult }) {
   const { config, theme, updateConfig } = useThemeConfig()
 
@@ -81,6 +81,7 @@ export function SidebarContent({ recentColors }: { recentColors: UseRecentColors
   )
 }
 
+/** Docked sidebar, visible from `lg` (1024px) up. */
 export function Sidebar({ recentColors }: { recentColors: UseRecentColorsResult }) {
   return (
     <aside className="hidden shrink-0 border-r bg-sidebar lg:block lg:w-75 xl:w-80 min-[1440px]:w-85">

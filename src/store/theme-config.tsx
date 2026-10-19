@@ -18,20 +18,20 @@ function mergeConfig(base: ThemeConfig, patch: PartialThemeConfig): ThemeConfig 
   }
 }
 
-/** Every field of `ThemeConfig` is plain JSON, so a deep structural compare is exact. */
 function configsEqual(a: ThemeConfig, b: ThemeConfig): boolean {
+  // ThemeConfig is plain JSON, so a string compare is exact.
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
 interface ThemeConfigContextValue {
   readonly config: ThemeConfig
   readonly theme: DerivedTheme
-  /** Merges a partial config into the store. Nested `fonts`/`colors` merge one level deep. */
+  /** Merge a partial config. `fonts` and `colors` merge one level deep. */
   readonly updateConfig: (patch: PartialThemeConfig) => void
-  /** Replaces the whole config outright — used by import/reset, never by a single knob. */
+  /** Replace the whole config. */
   readonly setConfig: (config: ThemeConfig) => void
   readonly resetToDefaults: () => void
-  /** `true` once any field differs from `DEFAULT_CONFIG` (§5.1). */
+  /** `true` when any field differs from `DEFAULT_CONFIG`. */
   readonly isDirty: boolean
 }
 
@@ -39,6 +39,12 @@ const ThemeConfigContext = React.createContext<ThemeConfigContextValue | undefin
   undefined
 )
 
+/**
+ * Store for the app's `ThemeConfig` and its derived theme.
+ *
+ * Every knob writes one field of the config through `useThemeConfig`.
+ * The provider runs `derive()` once per config change.
+ */
 export function ThemeConfigProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = React.useState<ThemeConfig>(() => resolveConfig())
 
@@ -63,7 +69,13 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
   )
 }
 
-/** The full store: config, its derived theme, and the mutators every knob needs. */
+/**
+ * Read the config, its derived theme and the mutators.
+ *
+ * @example
+ * const { config, updateConfig } = useThemeConfig()
+ * updateConfig({ neutralRamp: "mauve" })
+ */
 export function useThemeConfig(): ThemeConfigContextValue {
   const context = React.useContext(ThemeConfigContext)
   if (context === undefined) {
@@ -72,7 +84,7 @@ export function useThemeConfig(): ThemeConfigContextValue {
   return context
 }
 
-/** Convenience for a consumer that only reads the derived theme (e.g. the preview slot). */
+/** Read only the derived theme. */
 export function useDerivedTheme(): DerivedTheme {
   return useThemeConfig().theme
 }

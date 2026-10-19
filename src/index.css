@@ -129,6 +129,7 @@
     }
 }
 
+/* Override hook for react-colorful's inline styles. */
 .ha-color-picker .react-colorful {
   width: 100%;
   height: 190px;

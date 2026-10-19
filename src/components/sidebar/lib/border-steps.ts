@@ -1,6 +1,11 @@
 import { withAlpha, type DerivedTheme, type Hex, type RampSlot, type NeutralSlotId } from "@/engine"
 
-/** `mirrorSlot(s) = 100 - s` — README, "How colors are derived → Dark mode". */
+/**
+ * Dark-mode counterpart of a neutral slot (`100 - slot`).
+ *
+ * @example
+ * mirrorSlot(80) // 20
+ */
 export function mirrorSlot(slot: RampSlot): RampSlot {
   return (100 - slot) as RampSlot
 }
@@ -11,7 +16,7 @@ export interface BorderStepDefinition {
   readonly slot: RampSlot | null
 }
 
-/** Darkest to lightest is Strong → Hairline; `"match-card"` (Invisible) is a fifth, separate option. */
+/** Border color options, from Invisible (`"match-card"`) to Strong. */
 export const BORDER_STEPS: readonly BorderStepDefinition[] = [
   { value: "match-card", label: "Invisible", slot: null },
   { value: "neutral-80", label: "Hairline", slot: 80 },
@@ -22,9 +27,9 @@ export const BORDER_STEPS: readonly BorderStepDefinition[] = [
 
 export interface BorderStepRender {
   readonly cardHex: Hex
-  /** The color composited at 12% alpha (`1f`) — the border's own source hex, before the alpha. */
+  /** Ramp color the border derives from, before alpha. */
   readonly sourceHex: Hex
-  /** `sourceHex` at `1f` alpha, ready for a CSS `border-color`. */
+  /** `sourceHex` at 12% alpha, ready for a CSS `border-color`. */
   readonly borderColor: Hex
   readonly boxShadow: string
 }
@@ -35,6 +40,18 @@ export interface BorderStepOption extends BorderStepDefinition {
   readonly accessibleName: string
 }
 
+/**
+ * Build the light and dark render data for every Border color step.
+ *
+ * The engine derives only the selected border. This function derives all
+ * five steps from the neutral ramp, the mirror rule and `withAlpha`.
+ *
+ * Every option shares the card background and shadow of `theme`. Only the
+ * border color differs.
+ *
+ * A test compares the result with the engine's `divider-color`, so a
+ * drift between the two fails the test.
+ */
 export function getBorderStepOptions(theme: DerivedTheme): readonly BorderStepOption[] {
   const ramp = theme.ramps.neutral
   const lightCard = theme.light["card-background-color"]

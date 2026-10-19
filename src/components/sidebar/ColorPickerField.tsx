@@ -27,6 +27,7 @@ import type { UseRecentColorsResult } from "@/components/sidebar/hooks/use-recen
 import { HEX_FIELD_ERROR_MESSAGE, parseHexFieldInput } from "@/components/sidebar/lib/hex-field"
 import { paletteRef, resolveSeedColor, type SeedColor } from "@/components/sidebar/lib/seed-color"
 
+/** Contrast ratio below which the picker warns (WCAG AA, body text). */
 const CONTRAST_WARNING_THRESHOLD = 4.5
 
 function paletteColorLabel(name: PaletteColorName): string {
@@ -43,6 +44,16 @@ interface ColorPickerFieldProps {
   readonly onChange: (seed: SeedColor) => void
 }
 
+/**
+ * Popover color picker for one color knob.
+ *
+ * The popover holds a hex field with Reset, the palette swatches, the
+ * Recent swatches, a free picker and a contrast warning.
+ *
+ * @example
+ * <ColorPickerField label="Primary" value={seed} defaultValue={initial}
+ *   paletteId="ha" recentColors={recentColors} onChange={setSeed} />
+ */
 export function ColorPickerField({
   label,
   value,
@@ -61,6 +72,7 @@ export function ColorPickerField({
   const hexInputRef = React.useRef<HTMLInputElement>(null)
   const rafRef = React.useRef<number | null>(null)
 
+  // Sync from the store, except while the user types in the hex field.
   React.useEffect(() => {
     if (!hexFieldFocused.current) {
       setDraftHex(resolvedHex)
@@ -75,6 +87,7 @@ export function ColorPickerField({
     }
   }, [])
 
+  // Commit once per animation frame while the saturation square drags.
   const throttledCommit = React.useCallback(
     (hex: Hex) => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
@@ -120,6 +133,7 @@ export function ColorPickerField({
     <Popover
       open={open}
       onOpenChange={(next, details) => {
+        // A click on the preset list keeps the popover open, so its palette row updates live.
         if (
           !next &&
           details.reason === "outside-press" &&

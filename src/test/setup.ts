@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest"
 
+// jsdom lacks matchMedia, which ThemeProvider reads. `matches: false` resolves "auto" to light.
 if (!window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList => ({
     matches: false,

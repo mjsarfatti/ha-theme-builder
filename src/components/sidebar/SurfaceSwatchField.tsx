@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { FieldDescription } from "@/components/ui/field"
 import { RadioGroup } from "@/components/ui/radio-group"
 
+// The engine has no runtime list of SurfaceChoice. `satisfies` fails typecheck when the union grows.
 const SURFACE_STEPS = [
   { choice: "neutral-80", slot: 80 },
   { choice: "neutral-90", slot: 90 },
@@ -24,6 +25,7 @@ interface SurfaceSwatchFieldProps {
   readonly onChange: (value: SurfaceChoice) => void
 }
 
+/** Row of four neutral-ramp swatches that sets a surface background. */
 export function SurfaceSwatchField({
   value,
   neutralRamp,

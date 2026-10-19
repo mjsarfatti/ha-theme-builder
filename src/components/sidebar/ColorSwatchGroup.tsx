@@ -19,10 +19,19 @@ interface ColorSwatchGroupProps {
   readonly selectedHex: Hex | null
   readonly onSelect: (item: ColorSwatchItem) => void
   readonly className?: string
-  /** Marks the list so an open popover elsewhere can tell a click here isn't an outside press (§2.3). */
+  /** Sets `data-preset-list`, so the color popover treats a click here as inside. */
   readonly presetListMarker?: boolean
 }
 
+/**
+ * Radio group of small round color swatches.
+ *
+ * Base UI's `Radio.Root` supplies the radio semantics and the arrow-key
+ * navigation. A swatch shows a check mark when it matches `selectedHex`.
+ *
+ * @example
+ * <ColorSwatchGroup ariaLabel="Recent" items={items} selectedHex={hex} onSelect={pick} />
+ */
 export function ColorSwatchGroup({
   ariaLabel,
   items,

@@ -9,6 +9,7 @@ import {
 } from "@/components/sidebar/PresetStripList"
 import { sidebarPresetLabel } from "@/components/sidebar/lib/preset-label"
 
+/** Contrast ratio below which secondary text on the card shows a warning (WCAG AA). */
 const CONTRAST_WARNING_THRESHOLD = 4.5
 
 const STRIP_SLOTS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as const
@@ -34,6 +35,7 @@ const COMPARE_COLUMNS: readonly CompareAllColumn[] = NEUTRAL_RAMPS.map((preset) 
   label: preset.label,
 }))
 
+// The dialog reads the raw 13-shade preset: `theme.ramps.neutral` lacks neutral-00 and neutral-100.
 const COMPARE_ROWS: readonly CompareAllRow[] = NEUTRAL_RAMP_STEP_LABELS.map(([slot, label]) => ({
   label,
   cells: Object.fromEntries(NEUTRAL_RAMPS.map((preset) => [preset.id, preset.ramp[slot]])),
@@ -46,6 +48,7 @@ interface BaseToneGroupProps {
 }
 
 export function BaseToneGroup({ neutralRamp, theme, onChange }: BaseToneGroupProps) {
+  // Each row shows its own preset's ramp, taken from the raw preset.
   const items = NEUTRAL_RAMPS.map((preset) => ({
     id: preset.id,
     label: sidebarPresetLabel(preset.label),

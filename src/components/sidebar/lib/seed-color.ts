@@ -1,6 +1,12 @@
 import { getExtendedPalette, type ExtendedPaletteId, type Hex, type PaletteColorName } from "@/engine"
 
 export type PaletteRef = `palette:${PaletteColorName}`
+/**
+ * A literal hex, or `palette:<name>` to follow the active palette.
+ *
+ * The shape equals the engine's `SeedColor`, so `ThemeConfig.colors`
+ * values assign directly.
+ */
 export type SeedColor = Hex | PaletteRef
 
 const PALETTE_REF_PREFIX = "palette:"

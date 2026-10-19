@@ -49,6 +49,13 @@ interface PresetStripListProps {
   readonly compareRows: readonly CompareAllRow[]
 }
 
+/**
+ * Radio list of named color strips with a "Compare all" dialog.
+ *
+ * The caller supplies the items and the dialog columns and rows. A column
+ * header in the dialog selects that preset. The root element carries
+ * `data-preset-list`, which the color popover reads.
+ */
 export function PresetStripList({
   ariaLabel,
   items,

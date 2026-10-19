@@ -15,6 +15,7 @@ describe("mirrorSlot", () => {
 })
 
 describe("getBorderStepOptions", () => {
+  // Card background and shadow stay equal for every borderColor, so one theme serves all steps.
   const theme = derive({})
 
   it("returns the five named steps, in the spec's own order", () => {

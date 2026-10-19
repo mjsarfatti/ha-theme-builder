@@ -12,11 +12,11 @@ import {
 
 export interface UseRecentColorsResult {
   readonly entries: readonly RecentColorEntry[]
-  /** Writes/refreshes an entry for a hex committed from the free picker or the hex field (§2.3). */
+  /** Save a color committed from the free picker or the hex field. */
   readonly commit: (hex: Hex) => void
-  /** Re-reads from storage and prunes stale entries. Call on every popover open (§2.6). */
+  /** Reload from storage and drop stale entries. Call it when a popover opens. */
   readonly refresh: () => void
-  /** Clears Recent from both state and storage — used by Reset to defaults (§5.4). */
+  /** Remove all entries from state and storage. */
   readonly clear: () => void
 }
 

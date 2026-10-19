@@ -8,6 +8,7 @@ import { ThemeConfigProvider, useThemeConfig } from "@/store/theme-config"
 
 function AppShell() {
   const { theme } = useThemeConfig()
+  // One instance: the docked sidebar and the mobile sheet share the Recent list.
   const recentColors = useRecentColors()
 
   return (

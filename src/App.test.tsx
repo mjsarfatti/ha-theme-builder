@@ -14,10 +14,8 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: /ha theme builder/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /export theme/i })).toBeInTheDocument()
 
-    // §5.1: Reset to defaults starts disabled, nothing has changed yet.
     expect(screen.getByRole("button", { name: /reset to defaults/i })).toBeDisabled()
 
-    // A representative knob from each group is present and shows the default.
     expect(screen.getByText(/body font family/i)).toBeInTheDocument()
     const primaryRow = screen.getByRole("button", { name: /primary color, currently #009ac7/i })
     expect(primaryRow).toBeInTheDocument()

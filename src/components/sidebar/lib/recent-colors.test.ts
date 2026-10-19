@@ -147,7 +147,6 @@ describe("withCommittedColor", () => {
 
     expect(result).toHaveLength(RECENT_COLORS_CAP)
     expect(result[0]).toEqual({ hex: "#ffffff", lastUsedAt: now })
-    // The oldest entry (last in the newest-first list) was dropped.
     expect(result.at(-1)).toEqual(existing.at(-2))
   })
 })

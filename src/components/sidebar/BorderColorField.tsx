@@ -39,6 +39,13 @@ interface BorderColorFieldProps {
   readonly onChange: (value: NeutralSlotId | "match-card") => void
 }
 
+/**
+ * Radio list of the Border color steps, each drawn as a mini card.
+ *
+ * Each card shows the real background, border and shadow. A step reads in
+ * opposite directions per mode, so the card splits along a diagonal:
+ * light in the upper-left triangle, dark in the lower-right.
+ */
 export function BorderColorField({ config, theme, onChange }: BorderColorFieldProps) {
   const options = getBorderStepOptions(theme)
 
