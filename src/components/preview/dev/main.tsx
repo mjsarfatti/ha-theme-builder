@@ -5,12 +5,6 @@ import "./dev.css"
 import { Preview } from "@/components/preview"
 import { derive, type PartialThemeConfig } from "@/engine"
 
-/**
- * Fixtures for this harness only — not shipped, not app state. They exist to
- * put the preview through a few configs the default alone does not reach:
- * a re-tinted ramp and palette together, a primary color that trips the
- * §4.3 contrast warning, and the border knob's `"match-card"` sentinel.
- */
 const FIXTURES: Record<string, PartialThemeConfig> = {
   "Home Assistant Refined (default)": {},
   Nightshade: {

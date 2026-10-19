@@ -51,9 +51,6 @@ function SurfaceTiles({ values }: { values: CssVarMap }) {
   )
 }
 
-/** Renders as a card with a hairline rule across it, not a solid fill — a
- * solid block of a 12%-alpha value misleads the reader about what the knob
- * does (§4.1). */
 function DividerTile({ hex }: { hex?: string }) {
   return (
     <div

@@ -12,14 +12,6 @@ const ENTITIES = [
   { name: "Nest mini", state: "Idle", on: false },
 ] as const
 
-/**
- * UX-SPEC §4.6, promoted to M5's own milestone in full. This is a
- * structurally correct placeholder, not the M5 build: a room header and a
- * grid of inert entity tiles, driven only by theme variables — card and
- * primary backgrounds, both text colors, the divider and the primary color
- * — so the section proves the seam works without building M5's dashboard,
- * icon set or second card.
- */
 export function LivingRoomSection({ lightVars, darkVars }: PreviewSectionProps) {
   return (
     <PreviewSection

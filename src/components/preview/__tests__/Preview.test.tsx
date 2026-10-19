@@ -25,8 +25,6 @@ describe("Preview", () => {
     const lightPanels = container.querySelectorAll('[data-preview-mode="light"]')
     const darkPanels = container.querySelectorAll('[data-preview-mode="dark"]')
 
-    // Living room, Surfaces, Text & type, Brand & status: paired (light + dark).
-    // Neutral ramp, Entity colors: one panel each, light only (§1.2's "Both modes" rule).
     expect(darkPanels).toHaveLength(4)
     expect(lightPanels).toHaveLength(6)
   })
@@ -74,8 +72,6 @@ describe("Preview", () => {
 
   it("reflects the neutral ramp preset in the Neutral ramp section", () => {
     render(<Preview theme={derive({ neutralRamp: "mauve" })} />)
-    // The 05 step of the mauve neutral ramp — read from the derived theme
-    // itself so this does not hardcode a hex the preset data could change.
     const theme = derive({ neutralRamp: "mauve" })
     const hex = theme.ramps.neutral[5]
     expect(screen.getByLabelText(`05, ${hex}`)).toBeInTheDocument()

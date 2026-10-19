@@ -13,16 +13,6 @@ export interface PreviewProps {
   theme: DerivedTheme
 }
 
-/**
- * The whole preview pane (UX-SPEC §1, §6.1). It owns its scroll area: the
- * `main` fills the space the shell gives it and scrolls on its own. Stateless: it reads no global
- * state and owns no state beyond local UI state such as a tooltip. `theme`
- * is the only input, and every section renders from it.
- *
- * `lightVars` / `darkVars` are computed once per theme change and handed to
- * every section, so each of the (up to) ten panels below applies the same
- * object to its own `style` instead of recomputing `toCssProperties`.
- */
 export function Preview({ theme }: PreviewProps) {
   const lightVars = useMemo(() => toCssProperties(theme, "light") as CSSProperties, [theme])
   const darkVars = useMemo(() => toCssProperties(theme, "dark") as CSSProperties, [theme])

@@ -7,19 +7,10 @@ interface PreviewSectionProps {
   id: string
   title: string
   description: string
-  /** Renders the `Both modes` badge (UX-SPEC §1.2) — for the two sections
-   * whose values do not differ between light and dark. */
   bothModes?: boolean
   children: ReactNode
 }
 
-/**
- * The chrome every preview section shares (UX-SPEC §1.3, §6.1 item 5): a
- * small uppercase label, a hairline rule across the full preview width, and
- * a one-line description of what the section controls. This chrome is
- * builder UI, not preview content — it styles itself with the builder's own
- * tokens (`text-muted-foreground`, `Separator`), not a theme variable.
- */
 export function PreviewSection({ id, title, description, bothModes, children }: PreviewSectionProps) {
   const headingId = `${id}-heading`
 

@@ -32,9 +32,6 @@ describe("BrandStatusSection", () => {
   })
 
   it("colors every chip's label with --text-primary-color, not a per-color computation", () => {
-    // Home Assistant computes an on-color for the primary color only. Every
-    // other color reuses that same `--text-primary-color` value — see the
-    // citations in BrandStatusSection.tsx and UX-SPEC §4.3.
     renderSection(derive())
     for (const label of CHIP_LABELS) {
       const [lightChip] = screen.getAllByText(label)
@@ -44,16 +41,8 @@ describe("BrandStatusSection", () => {
   })
 
   it("warns on exactly the chips under 3:1, for the default config", () => {
-    // Verified against the engine directly (`contrastRatio` on the derived
-    // theme): under `DEFAULT_CONFIG`, `--text-primary-color` is `#ffffff`.
-    // Accent (2.16:1) and Warning (2.21:1) fail 3:1 against it. Primary
-    // (3.26:1), Error (4.59:1), Success (3.00:1) and Info (3.08:1) clear it.
-    // Not a contrived fixture — this is Home Assistant's own theme.
     renderSection(derive())
 
-    // Two warning chips × two panels (light + dark, since brand/status
-    // colors and `--text-primary-color` are both mode-independent per the
-    // engine README).
     const warnings = screen.getAllByLabelText(/Low contrast/)
     expect(warnings).toHaveLength(4)
     for (const warning of warnings) {

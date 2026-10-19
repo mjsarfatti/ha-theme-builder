@@ -18,8 +18,6 @@ describe("PreviewPanel", () => {
     expect(panel.style.getPropertyValue("--primary-color")).toBe("#009ac7")
     expect(panel.style.getPropertyValue("--divider-color")).toBe("#0000001f")
 
-    // The single most important constraint in this milestone (CLAUDE.md,
-    // UX-SPEC §6.1 item 2): theme variables never land on `:root`.
     expect(document.documentElement.style.getPropertyValue("--primary-color")).toBe("")
     expect(document.body.style.getPropertyValue("--primary-color")).toBe("")
   })

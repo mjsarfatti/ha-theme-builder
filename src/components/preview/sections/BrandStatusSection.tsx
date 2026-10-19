@@ -7,34 +7,8 @@ import { PreviewPanel } from "../Panel"
 import { PreviewSection } from "../PreviewSection"
 import type { PreviewSectionProps } from "../types"
 
-/**
- * WCAG AA for large text, distinct from the engine's own selection threshold
- * of 6 (`HA_CONTRAST_THRESHOLD`). The engine picks the text color for the
- * primary chip at 6, because that is what Home Assistant uses. This warning
- * uses 3, the WCAG AA level for large text — the owner's decision, since
- * each chip's label renders at a large size. A chip can pass selection and
- * still raise this warning (UX-SPEC §4.3).
- */
 const WARNING_CONTRAST_THRESHOLD = 3
 
-/**
- * Every chip's label takes `--text-primary-color`. Home Assistant computes
- * an on-color for the primary color only — every other color reuses that
- * same value, not a color-specific computation.
- *
- * Checked against the source: `ha-sidebar.ts`'s notification badge sets
- * `color: var(--text-accent-color, var(--text-primary-color))`, and
- * `--text-accent-color` has no definition anywhere in `color.globals.ts`, so
- * the fallback always applies. `color.globals.ts:288` sets
- * `--mdc-theme-on-secondary: var(--text-primary-color)`, and secondary is
- * the accent color. A real screenshot (`home-assistant.io`,
- * `source/images/integrations/repairs/number-of-repairs.png`) shows a white
- * numeral on the orange accent badge — `--text-primary-color`'s own default
- * (`color.globals.ts:10`), not a computed on-accent color. The newer
- * `--ha-color-*` layer agrees: `semantic.globals.ts` sets every
- * `--ha-color-on-*-loud` value to `var(--white-color)`, in light and dark
- * mode, except `--ha-color-on-disabled-loud`.
- */
 const CHIPS = [
   { label: "Primary color", colorVar: "primary-color" },
   { label: "Accent color", colorVar: "accent-color" },
