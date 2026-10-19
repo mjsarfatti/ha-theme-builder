@@ -1,11 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
-/**
- * The builder's own light/dark/auto mode, for its chrome only —
- * `docs/UX-SPEC.md` §1.1. Separate from the preview, which always renders
- * both modes side by side and never reads this value.
- */
 export type Theme = "dark" | "light" | "auto"
 type ResolvedTheme = "dark" | "light"
 

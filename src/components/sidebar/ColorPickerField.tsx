@@ -1,9 +1,3 @@
-/**
- * The six-knob popover color picker (`docs/UX-SPEC.md` §2.2–§2.4): Primary,
- * Accent, Error, Warning, Success, Info. Anatomy top to bottom — header
- * (swatch + hex `Input` + Reset), the entity-palette swatch group, Recent,
- * the free `react-colorful` picker, and a conditional contrast warning.
- */
 import * as React from "react"
 import { HexColorPicker } from "react-colorful"
 import { RotateCcwIcon } from "lucide-react"
@@ -67,10 +61,6 @@ export function ColorPickerField({
   const hexInputRef = React.useRef<HTMLInputElement>(null)
   const rafRef = React.useRef<number | null>(null)
 
-  // Re-sync the draft and the field text from the store whenever the
-  // resolved value changes from outside this popover — a palette-ref knob
-  // following a preset change, or the trigger being reopened — but never
-  // while the field itself is mid-edit.
   React.useEffect(() => {
     if (!hexFieldFocused.current) {
       setDraftHex(resolvedHex)
@@ -85,8 +75,6 @@ export function ColorPickerField({
     }
   }, [])
 
-  // §6.2 item 9: debounce only the saturation-square drag, to one
-  // requestAnimationFrame. Every other change is discrete.
   const throttledCommit = React.useCallback(
     (hex: Hex) => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
@@ -132,15 +120,6 @@ export function ColorPickerField({
     <Popover
       open={open}
       onOpenChange={(next, details) => {
-        // §2.3 recommended refinement: don't let a click on the Entity
-        // colors preset list behind this popover count as an outside press —
-        // that's the one moment a user wants to watch this popover's own
-        // palette group update live. The spec's own code sample checks
-        // `reason === "outsidePress"`; the installed @base-ui/react 1.7.0
-        // spells the runtime value `"outside-press"` (kebab-case) even
-        // though the JS export it comes from is the camelCase
-        // `REASONS.outsidePress` — checked directly against
-        // `node_modules/@base-ui/react/internals/reason-parts.d.ts`.
         if (
           !next &&
           details.reason === "outside-press" &&

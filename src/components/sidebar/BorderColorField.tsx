@@ -1,12 +1,3 @@
-/**
- * The Border color knob: five named steps rendered as split mini-cards, not
- * a raw color chip (`docs/UX-SPEC.md` §2.5, §7.2). Each option shows its own
- * real card background, a real `1px` border at the step's alpha, and a real
- * shadow — composited live by the browser, not precomputed. The card
- * splits diagonally because the step reads in opposite directions per mode
- * (`derive.ts` mirrors the slot in dark): light on the upper-left triangle,
- * dark on the lower-right, both visible at once.
- */
 import { Radio } from "@base-ui/react/radio"
 
 import type { DerivedTheme, NeutralSlotId, ThemeConfig } from "@/engine"

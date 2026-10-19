@@ -1,8 +1,3 @@
-/**
- * Base tone: the neutral-ramp preset picker (`docs/UX-SPEC.md` §3.2 group 3,
- * §3.3). Also carries the one cross-knob contrast warning that lives outside
- * a popover (§5.3): secondary text against the card background.
- */
 import { contrastRatio, NEUTRAL_RAMPS, type DerivedTheme, type NeutralRampId } from "@/engine"
 import { FieldDescription } from "@/components/ui/field"
 import { ContrastWarning } from "@/components/sidebar/ContrastWarning"
@@ -16,12 +11,8 @@ import { sidebarPresetLabel } from "@/components/sidebar/lib/preset-label"
 
 const CONTRAST_WARNING_THRESHOLD = 4.5
 
-// The sidebar strip stays at 11 shades (§4.4, §6.1 item 8) — the same
-// `rampEntries()` order, dark to light.
 const STRIP_SLOTS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as const
 
-// `as const` keeps each slot number a literal, so it indexes `NeutralRamp`
-// (a `Record` of specific slot literals) without a cast.
 const NEUTRAL_RAMP_STEP_LABELS = [
   [0, "neutral-00"],
   [5, "neutral-05"],
@@ -43,9 +34,6 @@ const COMPARE_COLUMNS: readonly CompareAllColumn[] = NEUTRAL_RAMPS.map((preset) 
   label: preset.label,
 }))
 
-// The base-tone dialog is the one place that shows all 13 shades, read from
-// the raw preset — `theme.ramps.neutral` is narrowed to 11 and does not
-// carry `neutral-00`/`neutral-100` (§3.3, §6.1 item 8).
 const COMPARE_ROWS: readonly CompareAllRow[] = NEUTRAL_RAMP_STEP_LABELS.map(([slot, label]) => ({
   label,
   cells: Object.fromEntries(NEUTRAL_RAMPS.map((preset) => [preset.id, preset.ramp[slot]])),
@@ -58,10 +46,6 @@ interface BaseToneGroupProps {
 }
 
 export function BaseToneGroup({ neutralRamp, theme, onChange }: BaseToneGroupProps) {
-  // Every row needs its *own* preset's swatches, not the currently-selected
-  // one repeated — `rampEntries` only accepts the narrow 11-shade `Ramp`
-  // shape `theme.ramps.neutral` carries for the *selected* preset, so each
-  // row reads its 11 shades straight from that preset's own raw `.ramp`.
   const items = NEUTRAL_RAMPS.map((preset) => ({
     id: preset.id,
     label: sidebarPresetLabel(preset.label),

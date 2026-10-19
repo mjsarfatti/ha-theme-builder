@@ -1,8 +1,3 @@
-/**
- * The fixed app bar (`docs/UX-SPEC.md` §1.1): product name, the builder's
- * own mode toggle, Reset to defaults, and Export theme. Below `lg` (1024px)
- * it also carries the Design button that undocks the sidebar (§1.5).
- */
 import { ExportSheet } from "@/components/app-bar/ExportSheet"
 import { MobileSidebarSheet } from "@/components/app-bar/MobileSidebarSheet"
 import { ModeToggle } from "@/components/app-bar/ModeToggle"

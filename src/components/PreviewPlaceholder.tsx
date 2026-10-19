@@ -1,22 +1,3 @@
-/**
- * TEMPORARY. Deleted the moment M3 merges `src/components/preview/index.ts`.
- *
- * M3 owns the real preview pane and exports a single root component:
- *
- * ```ts
- * export function Preview(props: { theme: DerivedTheme }): JSX.Element
- * ```
- *
- * The integration step is one line in `App.tsx`: replace
- * `<PreviewPlaceholder theme={theme} />` with
- * `<Preview theme={theme} />` from `@/components/preview`, and delete this
- * file. Nothing else in the shell changes — `AppShell` already holds the
- * `ThemeConfig` store, calls `derive()` once per change, and hands the
- * result down as `theme`.
- *
- * Until then, this renders the live derived theme as plain data, so a build
- * of the sidebar has something to watch react to a knob change.
- */
 import type { DerivedTheme } from "@/engine"
 
 export function PreviewPlaceholder({ theme }: { theme: DerivedTheme }) {

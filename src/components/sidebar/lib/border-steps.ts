@@ -1,21 +1,3 @@
-/**
- * The five named steps of the Border color knob (`docs/UX-SPEC.md` §2.5).
- * `NeutralSlotId` stays the engine's own type — this is a UI-only subset of
- * it, plus the `"match-card"` sentinel (§2.7 Change 2).
- *
- * The composited preview each mini-card renders is not exposed by the
- * engine, because the engine only ever computes the *current* border
- * choice, not all five candidates at once. So this module reproduces the
- * engine's own math by hand from public building blocks: the ramp swatch row
- * (`theme.ramps.neutral`), the mirror rule documented in
- * `src/engine/README.md` (`mirrorSlot(s) = 100 - s`), and `withAlpha`. Every
- * one of the four named slots and its mirror (80↔20, 60↔40, 30↔70, 05↔95)
- * stays inside the 11-shade `Ramp` `theme.ramps.neutral` already carries, so
- * this never needs the wider 13-shade preset. `border-steps.test.ts` checks
- * each step against `derive.ts`'s own `divider-color` for the
- * currently-selected step, so a drift between this copy and the engine's own
- * `forMode()` fails a test rather than silently rendering the wrong swatch.
- */
 import { withAlpha, type DerivedTheme, type Hex, type RampSlot, type NeutralSlotId } from "@/engine"
 
 /** `mirrorSlot(s) = 100 - s` — README, "How colors are derived → Dark mode". */
@@ -53,13 +35,6 @@ export interface BorderStepOption extends BorderStepDefinition {
   readonly accessibleName: string
 }
 
-/**
- * Computes every named step's light/dark render, for the mini-card list.
- * `theme` supplies the current mode's own already-computed
- * `card-background-color` and `ha-box-shadow-s` — both independent of which
- * step is being rendered, so every option shares the same card and shadow
- * and differs only in its border color.
- */
 export function getBorderStepOptions(theme: DerivedTheme): readonly BorderStepOption[] {
   const ramp = theme.ramps.neutral
   const lightCard = theme.light["card-background-color"]

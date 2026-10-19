@@ -1,10 +1,3 @@
-/**
- * The export panel shell (`docs/UX-SPEC.md` §1.4). This is the app bar
- * button and the sheet itself — theme name field, `Tabs` for YAML/Install.
- * The generated YAML, the Copy/Download actions and the install steps are
- * M6's deliverable; the placeholders below mark exactly where that content
- * lands.
- */
 import { DownloadIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"

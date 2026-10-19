@@ -1,12 +1,3 @@
-/**
- * The knob sidebar (`docs/UX-SPEC.md` §3.1, §1.5): five permanently-open
- * groups in one scroll, never an accordion. `SidebarContent` is the shared
- * body — `Sidebar` docks it in a fixed-width `<aside>` at `lg` (1024px) and
- * up, narrowing at the two breakpoints §1.5 sets (300px / 320px / 340px).
- * Below that, `MobileSidebarSheet` (in `app-bar/`) renders the same content
- * inside a left `Sheet`, since it needs the app bar's own trigger button.
- * Every knob here writes one field of `ThemeConfig` (§6.2 item 0).
- */
 import type { ReactNode } from "react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -90,12 +81,6 @@ export function SidebarContent({ recentColors }: { recentColors: UseRecentColors
   )
 }
 
-/**
- * The desktop docked sidebar — hidden below `lg` (1024px), where the app
- * bar's Design button takes over (§1.5). `recentColors` is a single instance
- * owned by the app shell and shared with `MobileSidebarSheet`, so Recent
- * stays one list regardless of which docking mode is visible.
- */
 export function Sidebar({ recentColors }: { recentColors: UseRecentColorsResult }) {
   return (
     <aside className="hidden shrink-0 border-r bg-sidebar lg:block lg:w-75 xl:w-80 min-[1440px]:w-85">

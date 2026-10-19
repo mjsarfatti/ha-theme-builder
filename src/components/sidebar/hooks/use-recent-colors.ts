@@ -1,8 +1,3 @@
-/**
- * React binding for `lib/recent-colors.ts`. One instance is shared by every
- * popover picker (`docs/UX-SPEC.md` §2.3) — call it once, near the app root,
- * and pass the returned value down.
- */
 import * as React from "react"
 
 import type { Hex } from "@/engine"

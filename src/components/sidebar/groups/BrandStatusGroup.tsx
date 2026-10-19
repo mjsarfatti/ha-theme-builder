@@ -1,7 +1,3 @@
-/**
- * Brand & status colors: six popover pickers (`docs/UX-SPEC.md` §3.2 group
- * 2), in the spec's own fixed order.
- */
 import { DEFAULT_CONFIG, type ExtendedPaletteId, type ThemeConfig } from "@/engine"
 import { FieldDescription } from "@/components/ui/field"
 import { ColorPickerField } from "@/components/sidebar/ColorPickerField"

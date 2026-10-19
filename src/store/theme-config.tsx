@@ -1,19 +1,3 @@
-/**
- * The app's single store. Per `docs/UX-SPEC.md` §6.2 item 0, the store *is*
- * `ThemeConfig`, verbatim — no parallel UI-state shape. Every knob in
- * `src/components/sidebar/` writes one field of this config, through
- * {@link useThemeConfig}. `resolveConfig()` and `DEFAULT_CONFIG` (both from
- * the engine) give the load state and the "is it dirty?" comparison for
- * free, so this file adds no defaults of its own.
- *
- * `derive()` is not free — README calls out that a knob's own popover only
- * needs the config, not the full derived theme. This module still runs it
- * once per config change, memoized, because two sidebar controls need the
- * derived values: the border knob's five mini-cards read the current mode's
- * `card-background-color` (§2.5), and the base-tone group's contrast warning
- * reads `secondary-text-color` against it (§5.3). Both call sites consume
- * {@link useDerivedTheme} rather than re-deriving themselves.
- */
 import * as React from "react"
 
 import {

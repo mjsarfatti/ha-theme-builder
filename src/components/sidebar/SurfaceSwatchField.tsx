@@ -1,11 +1,3 @@
-/**
- * The 4-swatch row shared by Card background and Primary background
- * (`docs/UX-SPEC.md` §2.5). `SurfaceChoice` is a type-only union in
- * `src/engine/types.ts` — the engine exports no runtime array for it (unlike
- * `RAMP_SLOTS`), so the four options are listed here and pinned to the type
- * with `satisfies`, so a future widening of the union fails typecheck
- * instead of silently going unlisted.
- */
 import { Radio } from "@base-ui/react/radio"
 import { CheckIcon } from "lucide-react"
 
@@ -14,9 +6,6 @@ import { cn } from "@/lib/utils"
 import { FieldDescription } from "@/components/ui/field"
 import { RadioGroup } from "@/components/ui/radio-group"
 
-// `slot` keeps its number *literal* type via `as const`, so it indexes
-// `NeutralRamp` (a `Record` of specific slot literals, not `Record<number,
-// Hex>`) without a cast.
 const SURFACE_STEPS = [
   { choice: "neutral-80", slot: 80 },
   { choice: "neutral-90", slot: 90 },

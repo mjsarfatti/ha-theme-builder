@@ -1,9 +1,3 @@
-/**
- * Entity colors: the extended-palette preset picker (`docs/UX-SPEC.md` §3.2
- * group 5, §3.3). `template.css` still calls this knob "Home Assistant
- * colors" — only the sidebar label changed (§7, O-2); `EXTENDED_PALETTES`
- * and the CSS variables it feeds keep their engine names.
- */
 import { EXTENDED_PALETTES, PALETTE_COLOR_NAMES, type ExtendedPaletteId } from "@/engine"
 import { FieldDescription } from "@/components/ui/field"
 import { SidebarField } from "@/components/sidebar/SidebarField"

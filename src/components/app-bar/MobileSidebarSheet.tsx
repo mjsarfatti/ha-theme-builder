@@ -1,10 +1,3 @@
-/**
- * The sidebar's mobile fallback (`docs/UX-SPEC.md` §1.5): below `lg`
- * (1024px) the sidebar undocks, and this "Design" button opens the same
- * `SidebarContent` in a left `Sheet` instead. The only collapsing behavior
- * the sidebar has — the five groups themselves are never behind an
- * accordion (§3.1).
- */
 import { PanelLeftIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"

@@ -1,11 +1,3 @@
-/**
- * The shared preset-picker pattern for Base tone and Entity colors
- * (`docs/UX-SPEC.md` §3.3): a vertical list of named color strips, radio
- * semantics, plus a "Compare all" escape hatch into a reference-table
- * dialog. Both call sites build their own `items`/`compareColumns`/
- * `compareRows` from engine data — this file renders, it does not decide
- * preset order or labels.
- */
 import * as React from "react"
 import { Radio } from "@base-ui/react/radio"
 

@@ -1,9 +1,3 @@
-/**
- * Typography: the single Body font knob (`docs/UX-SPEC.md` §3.2 group 1,
- * §7.3). One `Select`, grouped and ordered by `FONT_CATEGORY_LABELS`/`FONTS`
- * — never a hardcoded list. A pick writes `fonts.body`, `fonts.heading` and
- * `fonts.longform` together; `fonts.code` has no control in v1.
- */
 import { FONT_CATEGORY_LABELS, FONTS, getFont, type FontCategory, type FontId } from "@/engine"
 import { FieldDescription } from "@/components/ui/field"
 import {

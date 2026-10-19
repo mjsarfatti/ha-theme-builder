@@ -1,9 +1,3 @@
-/**
- * "Reset to defaults" (`docs/UX-SPEC.md` §5.1, §5.4). Disabled until the
- * config differs from `DEFAULT_CONFIG`. Confirms with an `AlertDialog`
- * (destructive, not a plain `Dialog`) and clears the Recent colors list from
- * `localStorage`, not only from memory.
- */
 import { RotateCcwIcon } from "lucide-react"
 
 import {

@@ -1,8 +1,3 @@
-/**
- * The warn-never-block contrast notice (`docs/UX-SPEC.md` §5.3). Informational,
- * never a toast — a toast is for something that already happened, and this is
- * a standing fact about the current choice.
- */
 import type { ReactNode } from "react"
 import { TriangleAlertIcon } from "lucide-react"
 

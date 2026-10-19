@@ -1,15 +1,3 @@
-/**
- * Recent colors persistence (`docs/UX-SPEC.md` §2.6). Shared across all six
- * popover pickers, capped at 8, newest first, with a 7-day staleness period
- * **per entry** — each entry carries its own `lastUsedAt`, and a read drops
- * any entry older than 7 days before returning the list.
- *
- * Pure and side-effect-isolated on purpose: every function here either reads
- * or writes `localStorage` through a single try/catch that never throws, so
- * `useRecentColors` (the React half, in `hooks/use-recent-colors.ts`) can
- * hold its own state as the source of truth for the session even when
- * storage is unavailable (private mode, a full quota, a disabled store).
- */
 import type { Hex } from "@/engine"
 
 export interface RecentColorEntry {
@@ -34,11 +22,6 @@ function parseEntries(raw: string | null): RecentColorEntry[] {
   return data.filter(isRecentColorEntry)
 }
 
-/**
- * Reads the persisted list, drops entries past the staleness window, and
- * (best-effort) writes the pruned list back. Never throws — a storage
- * failure of any kind reads back as an empty list.
- */
 export function loadRecentColors(now: number = Date.now()): RecentColorEntry[] {
   try {
     const parsed = parseEntries(window.localStorage.getItem(RECENT_COLORS_STORAGE_KEY))
@@ -57,16 +40,9 @@ export function persistRecentColors(entries: readonly RecentColorEntry[]): void 
   try {
     window.localStorage.setItem(RECENT_COLORS_STORAGE_KEY, JSON.stringify(entries))
   } catch {
-    // Storage unavailable. Recent still works for the rest of the session
-    // from in-memory state; it just won't survive a reload (§2.6).
   }
 }
 
-/**
- * Applies one commit to a list: a case-insensitive match moves to the front
- * with a fresh `lastUsedAt`; no match prepends a new entry. Either way the
- * result is trimmed to {@link RECENT_COLORS_CAP}.
- */
 export function withCommittedColor(
   entries: readonly RecentColorEntry[],
   hex: Hex,

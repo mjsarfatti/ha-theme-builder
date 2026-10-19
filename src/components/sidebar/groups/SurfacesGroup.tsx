@@ -1,7 +1,3 @@
-/**
- * Surfaces: the three constrained knobs (`docs/UX-SPEC.md` §3.2 group 4,
- * §2.5) — Card background, Primary background, Border color.
- */
 import type { DerivedTheme, NeutralSlotId, SurfaceChoice, ThemeConfig } from "@/engine"
 import { BorderColorField } from "@/components/sidebar/BorderColorField"
 import { SidebarField } from "@/components/sidebar/SidebarField"

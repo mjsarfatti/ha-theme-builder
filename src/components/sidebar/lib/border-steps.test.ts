@@ -15,10 +15,6 @@ describe("mirrorSlot", () => {
 })
 
 describe("getBorderStepOptions", () => {
-  // A theme with the default config. `card-background-color` and
-  // `ha-box-shadow-s` don't depend on `borderColor`, so this one theme is a
-  // valid source for every step's card/shadow regardless of which step is
-  // currently selected in the store.
   const theme = derive({})
 
   it("returns the five named steps, in the spec's own order", () => {

@@ -1,12 +1,3 @@
-/**
- * A `radiogroup` of small circular color swatches — the popover's entity-
- * palette group and Recent row (`docs/UX-SPEC.md` §2.3). `Radio.Root` is
- * Base UI's own primitive, the same one `@/components/ui/radio-group`
- * re-exports as `RadioGroupItem` — used directly here (not through that
- * wrapper) because a swatch's look is a filled circle, not the dot-in-ring
- * shadcn ships. Roving tabindex, arrow-key navigation and `role="radio"`
- * come from the primitive either way.
- */
 import { Radio } from "@base-ui/react/radio"
 import { CheckIcon } from "lucide-react"
 

@@ -1,9 +1,3 @@
-/**
- * The app bar's own light/dark/auto toggle (`docs/UX-SPEC.md` §1.1). This
- * changes the builder's own chrome only — a separate control from the
- * preview, which always renders both modes side by side and never reads
- * this value.
- */
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
