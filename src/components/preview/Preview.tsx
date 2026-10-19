@@ -14,7 +14,8 @@ export interface PreviewProps {
 }
 
 /**
- * The whole preview pane (UX-SPEC §1, §6.1). Stateless: it reads no global
+ * The whole preview pane (UX-SPEC §1, §6.1). It owns its scroll area: the
+ * `main` fills the space the shell gives it and scrolls on its own. Stateless: it reads no global
  * state and owns no state beyond local UI state such as a tooltip. `theme`
  * is the only input, and every section renders from it.
  *
@@ -30,14 +31,16 @@ export function Preview({ theme }: PreviewProps) {
 
   return (
     <TooltipProvider>
-      <div className="@container/preview flex min-w-0 flex-col gap-10 p-6">
-        <LivingRoomSection {...sectionProps} />
-        <SurfacesSection {...sectionProps} />
-        <TextTypeSection {...sectionProps} />
-        <BrandStatusSection {...sectionProps} />
-        <NeutralRampSection {...sectionProps} />
-        <EntityColorsSection {...sectionProps} />
-      </div>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-muted/30">
+        <div className="@container/preview flex min-w-0 flex-col gap-10 p-6">
+          <LivingRoomSection {...sectionProps} />
+          <SurfacesSection {...sectionProps} />
+          <TextTypeSection {...sectionProps} />
+          <BrandStatusSection {...sectionProps} />
+          <NeutralRampSection {...sectionProps} />
+          <EntityColorsSection {...sectionProps} />
+        </div>
+      </main>
     </TooltipProvider>
   )
 }
