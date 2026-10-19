@@ -19,6 +19,33 @@ with the user, and briefs you write for subagents.
 - **Short.** Assume the reader gives it only 30 seconds, but write complete grammar
   sentences and never skip information for the sake of brevity.
 
+## Comments
+
+Code MUST be self-explanatory. You MUST avoid comments that simply state _what_ the code does. Exceptions:
+
+- you MAY add comments to explain _why_ the code is written a certain way to clarify edge cases or workarounds that the code structure itself cannot convey
+- you MUST NEVER include "change narrative" in comments (phrases about the change itself, review remarks, rejected alternatives, previous behaviour): comments describe the code as it is now, for a reader who never saw the diff
+- you MUST add JSDoc comments to all reusable components and utilities
+- you SHOULD keep "_why_" comments to one liner, but MAY expand to 3 lines for complex logic (avoid 2-line comments) — "JSDoc" comments do not count as "_why_" comments: be thorough and consider adding one @example
+
+Use the following JSDoc comment template:
+
+```
+/**
+ * [1 line: superbrief description]
+ *
+ * [optional*: 1-3 blocks, each either:
+ *   - a prose paragraph, hard-wrapped at ≤3 lines of ≤72 chars each, OR
+ *   - a short intro sentence followed by a bullet list (any number of items)]
+ *
+ * [optional*: 1-3 @example usage]
+ */
+```
+
+[*: prose/list blocks and @example are to be added only for (a) common components, (b) shared functions and utilities, (c) very complex business logic — do not add 10 lines of comments for a 4 line function]
+
+If you happen to work on a file that doesn't follow these conventions, you MUST update it to follow these conventions. If this means deleting comments, do it.
+
 ## Check versions — never assume them
 
 Your training data is out of date. This project failed twice for this reason.
@@ -84,11 +111,3 @@ GitHub Actions versions, CLI flags and framework APIs.
   active ramp and palette.
 - HA ships only Roboto. Other fonts need an `extra_module_url` snippet with the
   exported YAML.
-
-## Network
-
-The egress allowlist varies by session. Check it, do not assume it.
-`registry.npmjs.org`, `raw.githubusercontent.com` and `ui.shadcn.com` are
-reachable. `unpkg.com` and `cdn.jsdelivr.net` are blocked. A 403 on CONNECT is a
-policy denial: report the host, never bypass it or disable TLS.
-Diagnose with `curl -sS "$HTTPS_PROXY/__agentproxy/status"`.
