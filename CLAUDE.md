@@ -28,6 +28,8 @@ Code MUST be self-explanatory. You MUST avoid comments that simply state _what_ 
 - you MUST add JSDoc comments to all reusable components and utilities
 - you SHOULD keep "_why_" comments to one liner, but MAY expand to 3 lines for complex logic (avoid 2-line comments) — "JSDoc" comments do not count as "_why_" comments: be thorough and consider adding one @example
 
+Use `//` for "_why_" comments inside code. Use `/** */` for anything that documents a declaration (exports, props, fields): a one-line JSDoc is fine there.
+
 Use the following JSDoc comment template:
 
 ```
