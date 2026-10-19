@@ -20,6 +20,15 @@ export interface UseRecentColorsResult {
   readonly clear: () => void
 }
 
+/**
+ * Keep the recently used colors, saved in localStorage.
+ *
+ * Call it once, near the app root. Pass the result to every color picker.
+ *
+ * @example
+ * const recentColors = useRecentColors()
+ * recentColors.commit("#009ac7")
+ */
 export function useRecentColors(): UseRecentColorsResult {
   const [entries, setEntries] = React.useState<readonly RecentColorEntry[]>(() =>
     loadRecentColors()
