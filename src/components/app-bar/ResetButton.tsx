@@ -4,6 +4,8 @@
  * (destructive, not a plain `Dialog`) and clears the Recent colors list from
  * `localStorage`, not only from memory.
  */
+import { RotateCcwIcon } from "lucide-react"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +27,8 @@ export function ResetButton({ recentColors }: { recentColors: UseRecentColorsRes
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button variant="outline" size="sm" disabled={!isDirty} />}>
-        Reset to defaults
+        <RotateCcwIcon className="sm:hidden" />
+        <span className="max-sm:sr-only">Reset to defaults</span>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

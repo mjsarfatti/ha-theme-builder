@@ -11,8 +11,8 @@ import type { UseRecentColorsResult } from "@/components/sidebar/hooks/use-recen
 
 export function AppBar({ recentColors }: { recentColors: UseRecentColorsResult }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
-      <h1 className="text-sm font-semibold">HA Theme Builder</h1>
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3 sm:gap-3 sm:px-4">
+      <h1 className="text-sm font-semibold max-sm:sr-only">HA Theme Builder</h1>
       <div className="flex-1" />
       <MobileSidebarSheet recentColors={recentColors} />
       <ModeToggle />

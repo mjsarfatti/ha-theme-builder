@@ -28,7 +28,7 @@ export function MobileSidebarSheet({
     <Sheet>
       <SheetTrigger render={<Button variant="outline" size="sm" className="lg:hidden" />}>
         <PanelLeftIcon data-icon="inline-start" />
-        Design
+        <span className="max-sm:sr-only">Design</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-full sm:max-w-85">
         <SheetHeader>

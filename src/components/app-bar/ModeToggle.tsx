@@ -25,15 +25,15 @@ export function ModeToggle() {
     >
       <ToggleGroupItem value="auto" aria-label="Auto">
         <MonitorIcon data-icon="inline-start" />
-        Auto
+        <span className="max-sm:sr-only">Auto</span>
       </ToggleGroupItem>
       <ToggleGroupItem value="light" aria-label="Light">
         <SunIcon data-icon="inline-start" />
-        Light
+        <span className="max-sm:sr-only">Light</span>
       </ToggleGroupItem>
       <ToggleGroupItem value="dark" aria-label="Dark">
         <MoonIcon data-icon="inline-start" />
-        Dark
+        <span className="max-sm:sr-only">Dark</span>
       </ToggleGroupItem>
     </ToggleGroup>
   )

@@ -27,7 +27,7 @@ export function ExportSheet() {
     <Sheet>
       <SheetTrigger render={<Button size="sm" />}>
         <DownloadIcon data-icon="inline-start" />
-        Export theme
+        <span className="max-sm:sr-only">Export theme</span>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-[560px]">
         <SheetHeader>
