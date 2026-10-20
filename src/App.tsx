@@ -1,27 +1,35 @@
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { AppBar } from "@/components/app-bar/AppBar"
+import { Preview } from "@/components/preview"
+import { Sidebar } from "@/components/sidebar/Sidebar"
+import { useRecentColors } from "@/components/sidebar/hooks/use-recent-colors"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toast"
+import { ThemeConfigProvider, useThemeConfig } from "@/store/theme-config"
+
+function AppShell() {
+  const { theme } = useThemeConfig()
+  // One instance: the docked sidebar and the mobile sheet share the Recent list.
+  const recentColors = useRecentColors()
+
+  return (
+    <div className="flex h-svh flex-col">
+      <AppBar recentColors={recentColors} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar recentColors={recentColors} />
+        <Preview theme={theme} />
+      </div>
+    </div>
+  )
+}
 
 function App() {
   return (
-    <main className="flex min-h-svh items-center justify-center p-8">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>HA Theme Builder</CardTitle>
-          <CardDescription>
-            Scaffold is up. Product features land in later milestones.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button>It works</Button>
-        </CardContent>
-      </Card>
-    </main>
+    <ThemeProvider>
+      <ThemeConfigProvider>
+        <AppShell />
+        <Toaster />
+      </ThemeConfigProvider>
+    </ThemeProvider>
   )
 }
 
