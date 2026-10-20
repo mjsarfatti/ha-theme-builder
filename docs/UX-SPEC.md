@@ -403,17 +403,22 @@ outcome, not the ingredient.**
 | Medium | `"neutral-30"` | |
 | Strong | `"neutral-05"` — the default, unchanged from this spec's earlier draft | The darkest of the four. |
 
-Hairline through Strong run progressively **darker** than the card surface, in that order. This
-part needs no engine change. `borderColor` stays a plain `NeutralSlotId` for these four values —
-it is a UI restriction in addition to the existing eleven-value union, the same kind of restriction the
-font dropdown already applies to `FONTS`. It does not touch the engine's own list.
+**The border is derived from the card.** A `borderColor` slot is a distance from white:
+`k = 12 - position`, where the position is the slot's index in the 13-slot neutral ramp. Hairline
+has k = 3, Subtle 5, Medium 8 and Strong 11. The border sits `k / 12` of the room between the card
+and the end of the ramp, rounded half up. In light mode the room is the card position (down to
+position 0) and the border is darker than the card. In dark mode the room is `12 - card position`
+(up to position 12) and the border is lighter than the card. Hairline through Strong run
+progressively farther from the card, in that order. `borderColor` stays a
+plain `NeutralSlotId` for these four values — it is a UI restriction in addition to the existing
+eleven-value union, the same kind of restriction the font dropdown already applies to `FONTS`. It
+does not touch the engine's own list.
 
-**Why these four slots, and not four others.** I did not pick these from memory. I rendered all
-eleven slots — the KNOB's own light-mode semantics, with the engine's real `mirrorSlot` applied
-for the dark-mode render — at `1f` alpha over every `SurfaceChoice`, in both modes, on the default
-`ha` ramp and on a tinted ramp (`mauve`, to check that a tint keeps the four steps in the same
-order). The numbers
-below are the composited result against the default card (`neutral-100`), on the `ha` ramp:
+**Why these four slots, and not four others.** I rendered all eleven slots at `1f` alpha over every
+`SurfaceChoice`, in both modes, on the default `ha` ramp and on a tinted ramp (`mauve`, to check
+that a tint keeps the four steps in the same order). The numbers
+below are the composited result against the default card (`neutral-100`; dark card `neutral-05`),
+on the `ha` ramp:
 
 | Slot | Light, composited over `#ffffff` | Dark, composited over `#141414` |
 |---|---|---|
@@ -422,37 +427,32 @@ below are the composited result against the default card (`neutral-100`), on the
 | neutral-20 | `#e7e7e7` | `#2a2a2a` |
 | neutral-30 (**Medium**) | `#e9e9e9` | `#272727` |
 | neutral-40 | `#ebebeb` | `#242424` |
-| neutral-50 | `#efefef` | `#202020` |
-| neutral-60 (**Subtle**) | `#f2f2f2` | `#1d1d1d` |
-| neutral-70 | `#f6f6f6` | `#1b1b1b` |
-| neutral-80 (**Hairline**) | `#f9f9f9` | `#181818` |
-| neutral-90 | `#fcfcfc` | `#151515` |
-| neutral-95 | `#fefefe` | `#141414` |
+| neutral-50 | `#efefef` | `#242424` |
+| neutral-60 (**Subtle**) | `#f2f2f2` | `#202020` |
+| neutral-70 | `#f6f6f6` | `#1d1d1d` |
+| neutral-80 (**Hairline**) | `#f9f9f9` | `#1b1b1b` |
+| neutral-90 | `#fcfcfc` | `#181818` |
+| neutral-95 | `#fefefe` | `#151515` |
 
 Two things follow from this table. First, the eleven raw slots really do cluster towards the light
-end — `neutral-80` through `neutral-95` composite within two or three points of each other and of
-the card. This confirms the flag. Four slots spread across the full range, rather than four
-adjacent ones, keep each step visually distinct. Second, **`neutral-95` is disqualified, not just
-skipped.** At the default config in dark mode, the card is `neutral-05` (`#141414`) and
-`neutral-95`'s mirrored render slot is `neutral-05`, which composites to `#141414` — the *exact*
-hex of the dark card background. That is an accidental full match, not the deliberate Invisible
-step, and it happens on the single most common configuration a user sees. None of the four
-chosen slots produces an exact collision at the default config, in either mode, on either ramp
-I checked.
+end in light mode — `neutral-80` through `neutral-95` composite within two or three points of each
+other and of the card. Four slots spread across the full range, rather than four adjacent ones,
+keep each step visually distinct. Second, **the border never equals the card, in both modes, for
+every surface choice and each of the four steps, and the four steps stay at four distinct
+positions.** A test checks all 16 surface combinations, the four steps and both modes. The offset
+never exceeds the room, so the border position stays between 0 and 12.
 
-The four steps stay in the same order under both checks the owner asked for: they stay monotonic
-in dark mode, where the render slot mirrors (`neutral-05` always renders as the *lightest* dark-mode
-slot and still reads as the strongest step, because a light border on a dark card and a dark
-border on a light card carry the same *strength*), and they stay monotonic on a tinted ramp
-(`mauve`'s four picks composite to `#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#322d33 /
-#2a252b / #211b22 / #1c161d` in dark — same spread, same order, tinted instead of grey).
+The four steps keep their order in both modes: Strong is the most visible step and Hairline the
+least. They keep the same order on a tinted ramp (`mauve`'s four picks composite to
+`#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#322d33 / #2a252b / #241e25 / #1e181f` in dark — same spread, same order,
+tinted instead of grey).
 
 **The mini-card.** Each of the five options renders as a small card, not a color chip: that
 option's real card background, a real `1px` border at the step's alpha, and a real shadow under
 it. This is possible without any precomputed blend — a CSS border with an alpha color, painted
 over a background of the actual card color, is composited by the browser itself, so what renders
 already **is** the on-card result. The sidebar is mode-agnostic everywhere else, but this knob
-reads in opposite directions per mode (`derive.ts:445` mirrors the slot in dark), so each mini-card
+reads in opposite directions per mode (the border is darker than the card in light and lighter in dark), so each mini-card
 splits diagonally: the light render on the upper-left triangle, the dark render on the lower-right,
 both visible at once. Implementation: two full-size cards stacked, the lower one a plain
 rectangle for the light half, the upper one identical but clipped to a lower-right triangle
@@ -553,18 +553,14 @@ no longer shares a base with the border knob. Both match this spec's
 earlier proposal.
 
 **`"match-card"` resolves to the literal, already-computed
-`card-background-color` for the current mode** — never a ramp lookup, never
-`mirrorSlot()`. Confirmed against the shipped code: `derive.ts:550-554`
-reads `surface.card` directly when `config.borderColor === "match-card"`,
-and falls through to a plain neutral-ramp lookup otherwise.
+`card-background-color` for the current mode** — never a ramp lookup. The
+engine reads `surface.card` directly when `config.borderColor === "match-card"`.
+Any other value places the border relative to the card (§2.5).
 
-**The default config shows that a ramp mirror gives the wrong answer.** The
-light card is `neutral-100`. `mirrorSlot(100)` is `neutral-00` — pure black,
-`#000000`. The dark card that `surfaces()` computes is `#141414`
-(`neutral-05`), because the dark card is a *joint* function of both surface
-knobs (below), not a mirror of the light card's own slot in isolation. A
-second case: page `neutral-90` with card `neutral-100` gives a dark card at
-`neutral-10` (`#202020`).
+**The dark card is a *joint* function of both surface knobs (below).** At
+the default config the light card is `neutral-100` and the dark card is
+`neutral-05` (`#141414`). Page `neutral-90` with card `neutral-100` gives a
+dark card at `neutral-10` (`#202020`).
 
 **`--shadow-color` always derives from `neutral-05`**, independent of the
 border knob's value and of mode — only the alpha changes (`29` light, `7a`

@@ -184,7 +184,7 @@ slot. This is what lets the border "disappear" into the card (the UI calls
 this option **Invisible**). It resolves to the literal per-mode card value
 `surfaces()` computes for `card-background-color` — never a ramp lookup, and
 never `mirrorSlot()`. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob)
-below for why a ramp-based mirror would give the wrong hex here.
+below for the border rule.
 
 That is exactly the `KNOB` set in `template.css`, minus the custom-preset
 options PLAN.md §3 decision 6 defers to M7.
@@ -247,11 +247,10 @@ reads from: `mirrorSlot(s) = 100 - s`, the same inversion HA's
 `darkSemanticColorStyles` performs (§2.2). `mirrorSlot` is generic over both
 slot domains this engine has, because both are symmetric about 50: the shared
 05..95 `RampSlot` scale (the scrollbar and the entity icon read this way) and
-the neutral ramp's own extended 00..100 `NeutralRampSlot` scale the border
-knob reads this way, since `borderColor` can itself be `neutral-00` or
-`neutral-100` (see [Neutral slots reach 00 and
-100](#neutral-slots-reach-00-and-100)). One formula covers 05↔95 and 00↔100
-alike. Exceptions, all deliberate:
+the neutral ramp's own extended 00..100 `NeutralRampSlot` scale (see
+[Neutral slots reach 00 and 100](#neutral-slots-reach-00-and-100)). One formula
+covers 05↔95 and 00↔100 alike. The border does not use `mirrorSlot`: it derives
+from the card. Exceptions, all deliberate:
 
 | Variable | Rule |
 |---|---|
@@ -322,6 +321,27 @@ slot.
 - Light mode: one position below the darker surface.
 - Dark mode: one position above the lighter surface. It differs from the page
   and the card for all 16 combinations of `SurfaceChoice`.
+
+**`borderColor` is a distance from white, scaled to the room around the
+card.** Let `k = 12 - position(slot)`: Hairline `neutral-80` has k = 3, Subtle
+`neutral-60` has 5, Medium `neutral-30` has 8 and Strong `neutral-05` has 11.
+The offset is `floor(room * k / 12 + 0.5)`.
+
+- Light mode: `room` = light card position. Border position = card position - offset.
+- Dark mode: `room` = `12 - dark card position`. Border position = card position + offset.
+- The offset never exceeds `room`, so the border position is between `0` and
+  `12`. The alpha is `1f`.
+
+`surfaces()` returns the card position of the mode, and the border code reuses
+it. The border never equals the card, and the four steps sit at four distinct
+positions, for all 16 combinations of `SurfaceChoice` in both modes.
+`outline-hover-color` uses the same base color at alpha `3d`. `shadow-color`
+does not depend on the border knob.
+
+| Default config, `ha` ramp | Hairline | Subtle | Medium | Strong |
+|---|---|---|---|---|
+| Light border base | `neutral-80` | `neutral-60` | `neutral-30` | `neutral-05` |
+| Dark border base | `neutral-30` | `neutral-50` | `neutral-70` | `neutral-95` |
 
 **`borderColor`'s `"match-card"` reads `surface.card` directly.** This is the
 per-mode card value that `surfaces()` computes. It is never a ramp lookup and
