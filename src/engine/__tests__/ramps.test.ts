@@ -12,15 +12,15 @@ const FAMILIES = [
   ["green", REFERENCE_RAMPS.green, KNOB_SLOT.green],
 ] as const;
 
-/** A spread of awkward seeds every family gets exercised with. */
+/** Edge-case seeds for every family. */
 const SEEDS: readonly string[] = [
   "#000000", // pure black
   "#ffffff", // pure white
-  "#ff0000", // fully saturated primary
+  "#ff0000", // fully saturated
   "#00ff00",
   "#0000ff",
   "#7a7a7a", // achromatic mid grey
-  "#7c5cff", // an ordinary brand purple
+  "#7c5cff", // ordinary purple
   "#123456",
   "#fefefe", // barely off white
   "#010101", // barely off black
@@ -39,8 +39,6 @@ describe("generateRamp — the seed survives", () => {
   });
 
   it("round-trips a seed through the generator unchanged, at every slot", () => {
-    // The property that matters most: whatever the user typed comes back out,
-    // not a re-quantised approximation of it.
     for (const slot of RAMP_SLOTS) {
       for (const seed of SEEDS) {
         const ramp = generateRamp({ seed, slot, reference: REFERENCE_RAMPS.primary });
@@ -141,8 +139,7 @@ describe("generateRamp — shape", () => {
     const seedHue = hexToOklch("#7c5cff").h;
     for (const slot of RAMP_SLOTS) {
       const { c, h } = hexToOklch(ramp[slot]);
-      if (c < 0.02) continue; // near-achromatic ends carry no meaningful hue
-      // Circular distance between the two hues, in degrees.
+      if (c < 0.02) continue; // Near-grey colours have no stable hue.
       const delta = Math.abs(((h - seedHue + 540) % 360) - 180);
       expect(delta, `slot ${slot} hue ${h} vs seed ${seedHue}`).toBeLessThan(25);
     }
@@ -181,7 +178,7 @@ describe("generateRamp — shape", () => {
       slot: 40,
       reference: REFERENCE_RAMPS.primary,
     });
-    // Tolerance is 8-bit quantisation of the output hex, not slack in the maths.
+    // The tolerance equals the 8-bit rounding of the output hex.
     expect(hexToOklch(ramp[5]).l).toBeCloseTo(hexToOklch(REFERENCE_RAMPS.primary[5]).l, 2);
     expect(hexToOklch(ramp[95]).l).toBeCloseTo(hexToOklch(REFERENCE_RAMPS.primary[95]).l, 2);
   });
@@ -198,7 +195,7 @@ describe("generateRamp — degenerate seeds", () => {
     for (const slot of [50, 60, 70, 80, 90, 95] as RampSlot[]) {
       expect(ramp[slot], `slot ${slot}`).toBe("#ffffff");
     }
-    // Below the seed the ramp still spreads out.
+    // The shades below the seed stay distinct.
     expect(new Set([5, 10, 20, 30].map((s) => ramp[s as RampSlot])).size).toBe(4);
   });
 

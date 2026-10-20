@@ -14,9 +14,9 @@ import { getExtendedPalette, getNeutralRamp, KNOB_SLOT } from "../presets/index.
 import { RAMP_SLOTS } from "../types.ts";
 import { parseTemplateCss, templateCssKeys } from "./template-css.ts";
 
-/** `#ccc` / `#0003` in template.css mean the same thing as their long forms. */
+/** Expands the short hex literals of `template.css`, such as `#ccc` and `#0003`. */
 function expand(value: string): string {
-  // Only hex literals are normalised — font stacks keep their casing.
+  // Font stacks keep their casing.
   return value.replace(/#([0-9a-fA-F]{3,8})\b/g, (_m, digits: string) => {
     const d = digits.toLowerCase();
     return `#${d.length === 3 || d.length === 4 ? [...d].map((c) => c + c).join("") : d}`;
@@ -24,13 +24,11 @@ function expand(value: string): string {
 }
 
 /**
- * Every variable where the engine's output differs from the literal value in
- * `template.css`, with the reason why. A test below asserts each entry still
- * differs, so an entry that stops applying fails the suite.
+ * Variables where the engine output differs from the value in `template.css`,
+ * with the reason. A test asserts that each entry still differs.
  */
 const DEVIATIONS: Record<string, string> = {
-  // NOTE: "Derive using --ha-color-neutral-05 as base" — template.css still
-  // shows the black-based values HA ships today.
+  // The NOTE says to derive from neutral-05. `template.css` keeps black-based values.
   "ha-box-shadow-s": "neutral-05 base",
   "ha-box-shadow-m": "neutral-05 base",
   "ha-box-shadow-l": "neutral-05 base",
@@ -49,16 +47,15 @@ const DEVIATIONS: Record<string, string> = {
   "outline-hover-color": "follows divider-color",
   "shadow-color": "neutral-05 base, independent of the border knob",
 
-  // HA's own WCAG rule rather than template.css's alias — see README.
+  // HA's WCAG rule sets these values. See README "Deviations".
   "text-primary-color": "WCAG contrast against the primary colour",
   "text-light-primary-color": "WCAG contrast against light-primary-color",
 
-  // The knob is restricted to the neutral ramp, and #fafafa is not on it.
+  // The knob offers neutral slots only, and #fafafa is not a neutral slot.
   "primary-background-color": "nearest on-ramp value to HA's #fafafa",
   "secondary-background-color": "one ramp step below the page background",
 
-  // template.css's rgb-* literals were copied from HA's legacy colours and do
-  // not match template.css's own values. We derive them from ours instead.
+  // The `rgb-*` literals of `template.css` do not match its own colours.
   "rgb-primary-text-color": "stale literal in template.css",
   "rgb-secondary-text-color": "stale literal in template.css",
   "rgb-warning-color": "stale literal in template.css",
@@ -101,8 +98,7 @@ describe("the default config reproduces HA's current theme", () => {
   });
 
   it("adds only text-accent-color beyond template.css", () => {
-    // §5.3: text-accent-color must be set alongside accent-color, because HA
-    // never derives it for a YAML theme.
+    // HA does not derive `text-accent-color` for a YAML theme.
     const known = new Set(templateCssKeys());
     expect(Object.keys(light).filter((k) => !known.has(k))).toEqual(["text-accent-color"]);
   });
@@ -295,16 +291,13 @@ describe("derive — palette-referenced seed colours", () => {
   it("echoes the reference back in the resolved config, unresolved, for round-tripping", () => {
     const theme = derive({ colors: { accent: "palette:blue" } });
     expect(theme.config.colors.accent).toBe("palette:blue");
-    // JSON round-trip: the config the URL / storage layer persists.
     const roundTripped = JSON.parse(JSON.stringify(theme.config));
     expect(roundTripped.colors.accent).toBe("palette:blue");
     expect(derive(roundTripped).common["accent-color"]).toBe(theme.common["accent-color"]);
   });
 
   it("rejects a reference to a colour the palette does not have", () => {
-    // `SeedColor` is `Hex | PaletteRef`, and `Hex` is a plain `string` alias
-    // (like every other seed field), so this is not a compile-time error —
-    // same posture as `normalizeHex` throwing at runtime on a malformed hex.
+    // `Hex` is a `string` alias, so TypeScript accepts this value. Only the runtime check throws.
     expect(() => derive({ colors: { accent: "palette:nope" } })).toThrow(RangeError);
   });
 });
@@ -319,17 +312,14 @@ describe("derive — border colour: match-card", () => {
   });
 
   it("does not equal a naive mirrorSlot of the light card's own slot", () => {
-    // Default config: cardBackground "neutral-100". A per-slot mirror of that
-    // raw slot number (100 - 100 = 0, pure black) is nowhere near the actual
-    // dark card `surfaces()` computes — proof the resolution must reuse the
-    // real per-mode card value rather than mirroring the light choice.
+    // The default card is neutral-100. Its slot mirror is neutral-00 (#000000), not the dark card.
     const theme = derive({ borderColor: "match-card" });
     expect(theme.dark["card-background-color"]).not.toBe("#000000");
     expect(theme.dark["card-background-color"]).toBe(getNeutralRamp("ha").ramp[10]); // #202020
   });
 
   it("composites away to exactly the card colour (the Invisible step)", () => {
-    // α·C + (1-α)·C = C for any α — withAlpha's "1f" needs no special case.
+    // A colour over itself gives the same colour for any alpha.
     const theme = derive({ borderColor: "match-card" });
     for (const mode of ["light", "dark"] as const) {
       expect(theme[mode]["divider-color"].slice(0, 7)).toBe(theme[mode]["card-background-color"]);
@@ -383,7 +373,7 @@ describe("derive — light and dark", () => {
   const theme = derive();
 
   it("separates mode-independent variables from mode-specific ones", () => {
-    // Nothing may appear in both buckets, or the YAML would say it twice.
+    // A key in both buckets would appear twice in the YAML.
     for (const key of Object.keys(theme.light)) {
       expect(theme.common, key).not.toHaveProperty(key);
     }
@@ -391,8 +381,7 @@ describe("derive — light and dark", () => {
   });
 
   it("reproduces HA's own dark defaults closely", () => {
-    // HA ships #1c1c1c / #111111 / #282828 (analysis §2.3). We land on the
-    // nearest values the chosen neutral ramp can express.
+    // HA uses #1c1c1c, #111111 and #282828. The neutral ramp has no exact match.
     expect(theme.dark["card-background-color"]).toBe("#202020"); // ~#1c1c1c
     expect(theme.dark["primary-background-color"]).toBe("#141414"); // ~#111111
     expect(theme.dark["secondary-background-color"]).toBe("#363636"); // ~#282828
@@ -400,9 +389,7 @@ describe("derive — light and dark", () => {
   });
 
   it("preserves card-over-page elevation in dark mode for every knob combination", () => {
-    // Deriving the two surfaces independently used to invert this pairing:
-    // a neutral-95 card on a neutral-90 page came out with the dark card
-    // *below* the dark page.
+    // A neutral-95 card on a neutral-90 page must keep the dark card above the dark page.
     const options = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
     const value = (hex: string) => Number.parseInt(hex.slice(1), 16);
     for (const cardBackground of options) {
@@ -422,9 +409,7 @@ describe("derive — light and dark", () => {
   });
 
   it("never collapses two distinct light-mode choices onto the same dark slot", () => {
-    // The anchor-and-derive rule only ever *adds* index steps from the
-    // anchor, so a real gap in light mode should survive as a real gap in
-    // dark mode too, for every pair the current SurfaceChoice union allows.
+    // The other surface sits above the anchor, so a light-mode gap stays a dark-mode gap.
     const options = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
     for (const cardBackground of options) {
       for (const primaryBackground of options) {
@@ -439,24 +424,18 @@ describe("derive — light and dark", () => {
   });
 
   it("mirrors both surfaces to the same slot when the light-mode choice is equal", () => {
-    // Card and page on the same slot is a legal, if unusual, config. The gap
-    // is zero, so both surfaces mirror independently to the same anchor —
-    // "collapse" here is the deliberate equal-input case, not the boundary
-    // clamp (which today's four SurfaceChoice values never reach).
+    // Equal choices have a gap of zero, so both surfaces take the anchor.
     const t = derive({ cardBackground: "neutral-90", primaryBackground: "neutral-90" });
     expect(t.light["card-background-color"]).toBe(t.light["primary-background-color"]);
     expect(t.dark["card-background-color"]).toBe(t.dark["primary-background-color"]);
-    // neutral-90 is index 10 of 13; mirror is index (13 - 1 - 10) = 2 = neutral-10.
+    // neutral-90 is position 10 of 13. Its mirror is position 2, neutral-10.
     expect(t.dark["card-background-color"]).toBe(getNeutralRamp("ha").ramp[10]);
   });
 
   it("computes the widest gap the current SurfaceChoice union can produce", () => {
-    // neutral-80 (index 9) and neutral-100 (index 12): the widest gap (3)
-    // any pair of today's four choices can express. Hand-computed against
-    // the anchor-and-derive rule: darker mirrors to index (12 - 9) = 3
-    // (neutral-20), the other sits `gap` steps further, at index 6
-    // (neutral-50). Both land well inside the valid 0..12 index range, which
-    // is what "the clamp never fires for today's choices" means concretely.
+    // neutral-80 (position 9) and neutral-100 (position 12) give the widest gap, 3.
+    // The darker surface mirrors to position 3 (neutral-20).
+    // The other surface sits at position 6 (neutral-50).
     const ha = getNeutralRamp("ha").ramp;
     const cardDarker = derive({ cardBackground: "neutral-80", primaryBackground: "neutral-100" });
     expect(cardDarker.dark["card-background-color"]).toBe(ha[20]);
@@ -468,16 +447,13 @@ describe("derive — light and dark", () => {
   });
 
   it("clamps to the ramp's own ends instead of escaping it — the boundary itself", () => {
-    // `neutralRampAt` is the exact function `surfaces()` reads every dark-mode
-    // slot through. Today's four SurfaceChoice values never push an index
-    // past 0..12 (previous test), so this exercises the clamp directly,
-    // module-only (not part of the frozen public API — see its doc comment).
+    // The current `SurfaceChoice` values never reach the clamp, so the test calls `neutralRampAt` directly.
     const ha = getNeutralRamp("ha").ramp;
-    expect(neutralRampAt(ha, -1)).toBe(ha[0]); // one past the dark end
-    expect(neutralRampAt(ha, -50)).toBe(ha[0]); // arbitrarily far past it
-    expect(neutralRampAt(ha, 12)).toBe(ha[100]); // the light end itself
-    expect(neutralRampAt(ha, 13)).toBe(ha[100]); // one past the light end
-    expect(neutralRampAt(ha, 50)).toBe(ha[100]); // arbitrarily far past it
+    expect(neutralRampAt(ha, -1)).toBe(ha[0]);
+    expect(neutralRampAt(ha, -50)).toBe(ha[0]);
+    expect(neutralRampAt(ha, 12)).toBe(ha[100]);
+    expect(neutralRampAt(ha, 13)).toBe(ha[100]);
+    expect(neutralRampAt(ha, 50)).toBe(ha[100]);
   });
 
   it("keeps the secondary background distinct from the card and the page", () => {
@@ -501,7 +477,7 @@ describe("derive — light and dark", () => {
   });
 
   it("keeps shadows dark in dark mode, only raising their opacity", () => {
-    // A shadow is an absence of light; it must not invert with the divider.
+    // The shadow base stays dark. It does not follow the divider.
     const base = getNeutralRamp("ha").ramp[5].slice(1);
     expect(theme.dark["ha-box-shadow-s"]).toContain(base);
     expect(theme.dark["shadow-color"].startsWith(`#${base}`)).toBe(true);
@@ -577,9 +553,7 @@ describe("output shapes", () => {
   it("exposes the generated ramps for the preview", () => {
     const theme = derive({ colors: { primary: "#7c5cff" }, neutralRamp: "olive" });
     expect(theme.ramps.primary[KNOB_SLOT.primary]).toBe("#7c5cff");
-    // `ramps.neutral` stays the 11-shade `Ramp` the DerivedTheme type
-    // promises — the preset itself now ships 13 (see `NeutralRampSlot`), but
-    // 00/100 are neutral-only and not part of this shared output shape.
+    // `ramps.neutral` has the 11 shades of `Ramp`. The slots 00 and 100 are not part of it.
     const olive = getNeutralRamp("olive").ramp;
     expect(theme.ramps.neutral).toEqual(
       Object.fromEntries(RAMP_SLOTS.map((s) => [s, olive[s]])),

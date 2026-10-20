@@ -123,7 +123,7 @@ describe("luminosity / rgbContrast", () => {
   });
 
   it("puts #767676 on white right at the 4.5:1 AA boundary", () => {
-    // The canonical "smallest AA-passing grey on white" from the WCAG docs.
+    // #767676 is the lightest grey that passes AA on white.
     expect(contrastRatio("#767676", "#ffffff")).toBeCloseTo(4.54, 2);
     expect(contrastRatio("#777777", "#ffffff")).toBeLessThan(4.5);
   });
@@ -131,9 +131,8 @@ describe("luminosity / rgbContrast", () => {
 
 describe("contrastingText — HA's on-colour text rule", () => {
   it("uses a threshold of 6, not the 4.5 that §7.5 quotes in prose", () => {
-    // HA's default primary scores between the two thresholds, and HA ships
-    // #ffffff for --text-primary-color. Only the 6 produces that, which is what
-    // pins the constant down.
+    // The default primary scores between 4.5 and 6, and HA ships #ffffff for
+    // --text-primary-color. Only a threshold of 6 gives that result.
     const ratio = contrastRatio("#009ac7", "#212121");
     expect(ratio).toBeGreaterThan(4.5);
     expect(ratio).toBeLessThan(HA_CONTRAST_THRESHOLD);
@@ -158,8 +157,7 @@ describe("contrastingText — HA's on-colour text rule", () => {
   });
 
   it("switches exactly at the threshold", () => {
-    // Walk the greyscale and find the flip point, then assert it is where the
-    // 6:1 rule puts it rather than where a 4.5:1 rule would.
+    // Find the first grey that gets dark text. It must match the 6:1 rule.
     let flip = -1;
     for (let v = 0; v < 256; v++) {
       const hex = rgbToHex({ r: v, g: v, b: v });
