@@ -123,6 +123,8 @@ const SURFACE_INDEX: Record<SurfaceChoice, number> = {
 
 interface Surfaces {
   card: Hex;
+  /** Position of the card in {@link NEUTRAL_RAMP_SLOTS}. */
+  cardIndex: number;
   page: Hex;
   secondary: Hex;
 }
@@ -148,6 +150,7 @@ function surfaces(config: ThemeConfig, neutral: NeutralRamp, mode: ThemeMode): S
   if (mode === "light") {
     return {
       card: at(cardIndex),
+      cardIndex,
       page: at(pageIndex),
       // One position below the darker surface.
       secondary: at(Math.min(cardIndex, pageIndex) - 1),
@@ -159,12 +162,34 @@ function surfaces(config: ThemeConfig, neutral: NeutralRamp, mode: ThemeMode): S
   const darkerIndex = LAST_NEUTRAL_INDEX - hi;
   const lighterIndex = LAST_NEUTRAL_INDEX - lo;
 
+  const darkCardIndex = cardIndex < pageIndex ? darkerIndex : lighterIndex;
+
   return {
-    card: at(cardIndex < pageIndex ? darkerIndex : lighterIndex),
+    card: at(darkCardIndex),
+    cardIndex: darkCardIndex,
     page: at(pageIndex < cardIndex ? darkerIndex : lighterIndex),
     // One position above the lighter surface.
     secondary: at(lighterIndex + 1),
   };
+}
+
+/**
+ * Border base colour for a border step, placed relative to the card.
+ *
+ * The step's slot gives its distance from white, `k = 12 - position`. The
+ * border sits `k / 12` of the room between the card and the end of the ramp
+ * (position 0 in light mode, position 12 in dark mode), rounded half up.
+ */
+function borderAt(
+  neutral: NeutralRamp,
+  step: NeutralSlotId,
+  cardIndex: number,
+  dark: boolean,
+): Hex {
+  const k = LAST_NEUTRAL_INDEX - NEUTRAL_RAMP_SLOTS.indexOf(slotOf(step));
+  const room = dark ? LAST_NEUTRAL_INDEX - cardIndex : cardIndex;
+  const offset = Math.floor((room * k) / LAST_NEUTRAL_INDEX + 0.5);
+  return neutral[NEUTRAL_RAMP_SLOTS[dark ? cardIndex + offset : cardIndex - offset]];
 }
 
 // ---------------------------------------------------------------------------
@@ -477,18 +502,14 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
     vars["secondary-background-color"] = surface.secondary;
     vars["clear-background-color"] = surface.card;
 
-    // Lines. `"match-card"` resolves to this mode's own, already-computed
-    // card colour — not a ramp lookup, and not `mirrorSlot()`. `surfaces()`
-    // derives the dark card from both surface knobs, so a per-slot mirror of
-    // the light card gives a different hex. Otherwise the knob picks a neutral slot and
-    // the `1f` alpha is preserved; outline-hover reuses that RGB at its own
-    // alpha.
+    // Lines. `"match-card"` is this mode's card colour. Any other knob value is
+    // a distance from white; the border sits that fraction of the room from
+    // the card, darker in light mode and lighter in dark mode. The `1f` alpha is
+    // preserved; outline-hover reuses the RGB at its own alpha.
     const borderBase: Hex =
       config.borderColor === "match-card"
         ? surface.card
-        : neutralExtended[
-            dark ? mirrorSlot(slotOf(config.borderColor)) : slotOf(config.borderColor)
-          ];
+        : borderAt(neutralExtended, config.borderColor, surface.cardIndex, dark);
     vars["divider-color"] = withAlpha(borderBase, "1f");
     vars["outline-color"] = vars["divider-color"];
     vars["outline-hover-color"] = withAlpha(borderBase, "3d");
