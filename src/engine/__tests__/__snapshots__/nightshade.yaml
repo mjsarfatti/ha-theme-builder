@@ -209,14 +209,14 @@ Nightshade:
       state-icon-color: "#bcb7ff"
 
       # Lines and shadows
-      divider-color: "#d1c9d11f"
-      outline-color: "#d1c9d11f"
-      outline-hover-color: "#d1c9d13d"
+      divider-color: "#e8e5e81f"
+      outline-color: "#e8e5e81f"
+      outline-hover-color: "#e8e5e83d"
       shadow-color: "#1712187a"
       scrollbar-thumb-color: "#524554"
 
       # Backgrounds
-      card-background-color: "#3d323e"
-      primary-background-color: "#251d26"
-      secondary-background-color: "#524554"
-      clear-background-color: "#3d323e"
+      card-background-color: "#251d26"
+      primary-background-color: "#171218"
+      secondary-background-color: "#3d323e"
+      clear-background-color: "#251d26"
