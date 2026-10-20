@@ -1,5 +1,5 @@
 import { AppBar } from "@/components/app-bar/AppBar"
-import { PreviewPlaceholder } from "@/components/PreviewPlaceholder"
+import { Preview } from "@/components/preview"
 import { Sidebar } from "@/components/sidebar/Sidebar"
 import { useRecentColors } from "@/components/sidebar/hooks/use-recent-colors"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -16,7 +16,7 @@ function AppShell() {
       <AppBar recentColors={recentColors} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar recentColors={recentColors} />
-        <PreviewPlaceholder theme={theme} />
+        <Preview theme={theme} />
       </div>
     </div>
   )

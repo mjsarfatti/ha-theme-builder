@@ -2,17 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { derive } from "@/engine"
 
-import { BORDER_STEPS, getBorderStepOptions, mirrorSlot } from "./border-steps"
-
-describe("mirrorSlot", () => {
-  it("is 100 - s, per README's dark-mode rule", () => {
-    expect(mirrorSlot(5)).toBe(95)
-    expect(mirrorSlot(95)).toBe(5)
-    expect(mirrorSlot(30)).toBe(70)
-    expect(mirrorSlot(70)).toBe(30)
-    expect(mirrorSlot(50)).toBe(50)
-  })
-})
+import { BORDER_STEPS, getBorderStepOptions } from "./border-steps"
 
 describe("getBorderStepOptions", () => {
   // Card background and shadow stay equal for every borderColor, so one theme serves all steps.
@@ -49,11 +39,32 @@ describe("getBorderStepOptions", () => {
     expect(invisible.dark.sourceHex).toBe(theme.dark["card-background-color"])
   })
 
-  it("Strong (neutral-05) reads the mirrored slot (neutral-95) in dark mode", () => {
+  it("Strong (neutral-05) reads neutral-05 in light mode and neutral-95 in dark mode at the default card", () => {
     const options = getBorderStepOptions(theme)
     const strong = options.find((o) => o.value === "neutral-05")!
     expect(strong.light.sourceHex).toBe(theme.ramps.neutral[5])
     expect(strong.dark.sourceHex).toBe(theme.ramps.neutral[95])
+  })
+
+  it("scales the steps to the card: Hairline is neutral-60 on a neutral-80 card", () => {
+    const options = getBorderStepOptions(derive({ cardBackground: "neutral-80" }))
+    const hairline = options.find((o) => o.value === "neutral-80")!
+    expect(hairline.light.sourceHex).toBe(derive({}).ramps.neutral[60])
+  })
+
+  it("no border step equals the card, for every surface choice and mode", () => {
+    const choices = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const
+    for (const card of choices) {
+      for (const page of choices) {
+        const options = getBorderStepOptions(
+          derive({ cardBackground: card, primaryBackground: page })
+        )
+        for (const option of options.filter((o) => o.value !== "match-card")) {
+          expect(option.light.sourceHex).not.toBe(option.light.cardHex)
+          expect(option.dark.sourceHex).not.toBe(option.dark.cardHex)
+        }
+      }
+    }
   })
 
   it("every step shares the same card and shadow per mode — only the border differs", () => {

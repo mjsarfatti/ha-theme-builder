@@ -1,14 +1,4 @@
-import { withAlpha, type DerivedTheme, type Hex, type RampSlot, type NeutralSlotId } from "@/engine"
-
-/**
- * Dark-mode counterpart of a neutral slot (`100 - slot`).
- *
- * @example
- * mirrorSlot(80) // 20
- */
-export function mirrorSlot(slot: RampSlot): RampSlot {
-  return (100 - slot) as RampSlot
-}
+import { derive, type DerivedTheme, type Hex, type RampSlot, type NeutralSlotId } from "@/engine"
 
 export interface BorderStepDefinition {
   readonly value: NeutralSlotId | "match-card"
@@ -43,36 +33,27 @@ export interface BorderStepOption extends BorderStepDefinition {
 /**
  * Build the light and dark render data for every Border color step.
  *
- * The engine derives only the selected border. This function derives all
- * five steps from the neutral ramp, the mirror rule and `withAlpha`.
+ * Each step runs through `derive()` with the current config, so the
+ * swatches show the border that the exported theme contains.
  *
  * Every option shares the card background and shadow of `theme`. Only the
  * border color differs.
- *
- * A test compares the result with the engine's `divider-color`, so a
- * drift between the two fails the test.
  */
 export function getBorderStepOptions(theme: DerivedTheme): readonly BorderStepOption[] {
-  const ramp = theme.ramps.neutral
-  const lightCard = theme.light["card-background-color"]
-  const darkCard = theme.dark["card-background-color"]
-  const lightShadow = theme.light["ha-box-shadow-s"]
-  const darkShadow = theme.dark["ha-box-shadow-s"]
-
-  const render = (slot: RampSlot | null, mode: "light" | "dark"): BorderStepRender => {
-    const cardHex = mode === "light" ? lightCard : darkCard
-    const boxShadow = mode === "light" ? lightShadow : darkShadow
-    if (slot === null) {
-      return { cardHex, sourceHex: cardHex, borderColor: withAlpha(cardHex, "1f"), boxShadow }
-    }
-    const resolvedSlot = mode === "dark" ? mirrorSlot(slot) : slot
-    const sourceHex = ramp[resolvedSlot]
-    return { cardHex, sourceHex, borderColor: withAlpha(sourceHex, "1f"), boxShadow }
-  }
-
   return BORDER_STEPS.map((step) => {
-    const light = render(step.slot, "light")
-    const dark = render(step.slot, "dark")
+    const stepTheme = derive({ ...theme.config, borderColor: step.value })
+    const render = (mode: "light" | "dark"): BorderStepRender => {
+      const vars = stepTheme[mode]
+      const borderColor = vars["divider-color"] as Hex
+      return {
+        cardHex: theme[mode]["card-background-color"] as Hex,
+        sourceHex: borderColor.slice(0, 7) as Hex,
+        borderColor,
+        boxShadow: theme[mode]["ha-box-shadow-s"],
+      }
+    }
+    const light = render("light")
+    const dark = render("dark")
     const accessibleName =
       step.value === "match-card"
         ? "Invisible: matches the card surface in both modes"
