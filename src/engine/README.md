@@ -63,7 +63,7 @@ disjoint: nothing appears in more than one. `ramps.neutral` stays the
 11-shade `Ramp` shape (`05..95`) this always was, even though the preset
 data behind it now carries 13 shades — see [Neutral slots reach 00 and
 100](#neutral-slots-reach-00-and-100). The two extra shades are neutral-only
-plumbing for `surfaces()` and `borderColor`, not swatch-row data.
+internal data for `surfaces()` and `borderColor`, not swatch-row data.
 
 ### `modeVars(theme, mode): CssVarMap`
 
@@ -89,7 +89,7 @@ interface ToYamlOptions {
 
 ### `resolveConfig(partial?): ThemeConfig` · `DEFAULT_CONFIG`
 
-Config plumbing, exported so the UI store can share one notion of "the default".
+Config helpers, exported so the UI store can share one notion of "the default".
 `derive()` with no arguments uses it, and that is exactly what the app shows on
 load — see below.
 
@@ -99,7 +99,7 @@ load — see below.
 redesign. About 40 variables per mode differ from stock, because a few values
 moved onto the ramps:
 
-- `neutral-95` for the page background, instead of the off-ramp `#fafafa`
+- `neutral-95` for the page background, instead of `#fafafa`, a value not on any ramp
 - primary-30, primary-20 and primary-50 for the legacy Material blues
 - `--ha-color-neutral-05` instead of black as the shadow base
 
@@ -170,8 +170,8 @@ A reference can only name one of the 18 static `PaletteColorName` entries
 to resolve to before the ramp exists. `PaletteRef`'s own type makes that
 reference impossible to construct; `resolveSeed()` in `derive.ts` only has to
 guard against a malformed string reaching it past a type assertion, and
-throws `RangeError` when it does (the same posture `getFont` /
-`getNeutralRamp` / `getExtendedPalette` take for an unknown id). Note that
+throws `RangeError` when it does (the same behavior `getFont` /
+`getNeutralRamp` / `getExtendedPalette` show for an unknown id). Note that
 `Hex` is a plain `string` alias like the rest of this codebase's colour
 types, so this is a runtime check, not a compile-time one — same as
 `normalizeHex` throwing on a malformed hex today.
@@ -205,14 +205,15 @@ of HA's own ramp for that family onto the seed, in **OKLCH**:
   muted ramp
 - **lightness** re-anchored piecewise — the shades below the seed remapped onto
   `[darkest, seedL]`, the shades above onto `[seedL, lightest]` — which keeps the
-  ramp monotonic and keeps 05 usable as ink and 95 as a wash.
+  ramp monotonic and keeps 05 dark enough to use as text and 95 light enough to
+  use as a background tint.
 
 Out-of-gamut results are mapped back into sRGB by reducing chroma at constant
 lightness and hue.
 
 Two guarantees, both tested:
 
-- **The seed survives verbatim** at its own slot. Round-tripping a seed through
+- **The seed stays exact** at its own slot. Round-tripping a seed through
   the generator returns the exact input hex, never a re-quantized approximation.
 - **A seed equal to the reference returns the reference ramp untouched**, so the
   default config reproduces HA's shipped ramps byte for byte.
@@ -292,8 +293,8 @@ that joint result. Both live in `surfaces()`.
 `100 - slot` inversion as everything else in dark mode — to get its dark-mode
 position. Then place the *other* surface the same number of ramp steps away
 from that anchor, moving toward the lighter end. The number of steps between
-card and page — the "gap" the user's two choices express — survives into dark
-mode unchanged; so does which one is on top. If the user picked the same
+card and page — the "gap" the user's two choices express — stays the same in dark
+mode; so does which one is on top. If the user picked the same
 slot for both, both mirror to that same anchor and the gap is zero.
 
 **Why anchor on the darker one, specifically.** Home Assistant's own theme
@@ -305,13 +306,13 @@ sits on top — the dark card sinks below the dark page for every ordinary
 choice, including the default. Anchoring on the darker surface and deriving
 the other by addition is also the clamp-safe direction: the derived value
 only ever moves further from the ramp's dark floor, never past it. Anchoring
-on the *lighter* surface instead can drive the other one off the bottom — a
+on the *lighter* surface instead can put the other value's index below zero — a
 `neutral-95` page under a `neutral-100` card would mirror the card to slot 0,
 and the page would then need to derive to slot −5, which doesn't exist.
 
 **Index space, not slot numbers.** The neutral ramp's 13 slots are unevenly
 spaced at both ends (`0, 5, 10, 20, … 90, 95, 100`), so subtracting *slot
-numbers* lands on values with no slot at all, like `neutral-15`. All of
+numbers* can produce a value with no matching slot, like `neutral-15`. All of
 `surfaces()`'s arithmetic — the mirror, the gap, the "same number of steps"
 — runs on each slot's *position* in that 13-element array instead (`0`
 through `12`), the same thing `mirrorSlot` does implicitly by relying on the
@@ -321,7 +322,7 @@ turns a position back into a hex, and it is where the clamp lives.
 **The clamp, and what happens at the edge.** `neutralRampAt()` clamps any
 position outside `0..12` to the nearest end, rather than throwing or reading
 past the array. That is a deliberate choice, not an incidental one: at that
-boundary, the derived surface can land on the exact same slot as its anchor
+boundary, the derived surface can equal the exact same slot as its anchor
 — the two backgrounds collapse onto one colour. This is not a new failure
 mode; it is the same thing that already happens on purpose when the user
 picks an equal slot for both choices in light mode (gap zero). Today's four
@@ -359,7 +360,7 @@ The default config reproduces `template.css` exactly, except in the places below
 variables match, and that this list is exhaustive and still accurate. If a change
 makes one of these match again, the suite fails and the entry has to go.
 
-These are deviations from the *spec file*. They come on top of the 40 per mode by
+These are deviations from the *spec file*. They come in addition to the 40 per mode by
 which `template.css` itself already departs from stock HA — see
 [Home Assistant Refined](#home-assistant-refined).
 
@@ -435,8 +436,8 @@ node scripts/extract-presets.mjs
 ```
 
 `presets.test.ts` re-parses those same pages independently and diffs every cell
-against the committed data, so a hand edit or a bad regeneration cannot slip
-through. It also asserts the Home Assistant column of each table matches
+against the committed data, so a hand edit or a bad regeneration cannot go
+undetected. It also asserts the Home Assistant column of each table matches
 `template.css`.
 
 `black-white-ramps.html`'s `black` and `white` rows feed `neutral-00` and

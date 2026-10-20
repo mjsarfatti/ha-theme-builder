@@ -1,6 +1,6 @@
 # HA Theme Builder — Product Plan
 
-> Status: **proposal for review (rev 2)** · Author: Claude (PM) · Last updated: 2026-08-09
+> Status: **proposal for review (rev 2)** · Author: Claude (PM) · Last updated: 2026-10-19
 
 ## 1. Product brief
 
@@ -9,8 +9,8 @@ number of "knobs" (fonts, a handful of seed colors, ramp presets) and instantly 
 live preview of design tokens and realistic HA cards — then copies or downloads a
 ready-to-paste YAML theme.
 
-**Why:** HA theming is powerful but hostile: hundreds of undocumented variables, a
-four-tier token cascade, derivation rules you have to know by heart (rgb companions,
+**Why:** HA theming is powerful but difficult: hundreds of undocumented variables, a
+four-tier token cascade, derivation rules you have to memorize (rgb companions,
 `text-primary-color` contrast, dark-mode `modes:` blocks). Nobody has shipped a builder
 that works at the *token* level (the new `--ha-color-*` ramps) rather than pasting hex
 codes into legacy vars.
@@ -74,7 +74,7 @@ Decided with the user (✅) or proposed by PM (→ flag disagreement on the PR).
 9. ✅ **The starting point is "Home Assistant Refined", not stock HA** (decided
    2026-08-11). `template.css` is a *redesign*. About 40 variables per mode differ
    from what HA ships, because a few values moved onto the ramps:
-   - `neutral-95` for the page background, instead of the off-ramp `#fafafa`
+   - `neutral-95` for the page background, instead of `#fafafa`, a value not on any ramp
    - primary-30, primary-20 and primary-50 for the legacy Material blues
    - `--ha-color-neutral-05` instead of black as the shadow base
 
@@ -177,6 +177,18 @@ with palette swatches.
 - ✅ Knobs start at `DEFAULT_CONFIG` and the preview shows exactly that —
   Home Assistant Refined (§3 decision 9). Every control's readout is true on load.
 
+### M4b — PR preview deploys *(after the M3 and M4 PRs merge)*
+Every pull request gets a live preview on GitHub Pages. The user opens it on a phone
+and reviews the PR without a local build.
+- Each PR deploys to its own subpath, for example `/ha-theme-builder/pr-<number>/`.
+  The `main` deploy stays at the root and is not overwritten.
+- The workflow posts the preview link as a PR comment and updates it on each push.
+- A closed or merged PR removes its preview.
+- Fork PRs get no preview. The workflow has no write access for them.
+- Build with the matching Vite `base` path for each preview.
+- ✅ A new draft PR shows a working preview link within the CI run time. The
+  preview matches the `pnpm build` output of that PR.
+
 ### M5 — Preview pane: Applied demo
 The artifact's "Applied demo" mock HA card section (and any additional mock HA
 elements the M2 spec calls for), light + dark side by side.
@@ -199,9 +211,9 @@ theme-name field, install instructions **including the font-loading snippet**
 - Theme import
 - State and energy color groups
 - **A "Home Assistant (stock)" starter preset.** This is the one place where the
-  40 off-ramp values from §3 decision 9 make sense.
+  40 values from §3 decision 9 that are not on any ramp make sense.
 
-**Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M5 → M6. The engine API freezes at the
+**Sequencing:** M0 → (M1 ∥ M2) → (M3 ∥ M4) → M4b → M5 → M6. The engine API freezes at the
 end of M1. The UX spec freezes at the end of M2. A later change to either one
 requires a PM decision.
 
