@@ -1,0 +1,295 @@
+import * as React from "react"
+import { HexColorPicker } from "react-colorful"
+import { RotateCcwIcon } from "lucide-react"
+
+import {
+  contrastingText,
+  contrastRatio,
+  getExtendedPalette,
+  PALETTE_COLOR_NAMES,
+  type ExtendedPaletteId,
+  type Hex,
+  type PaletteColorName,
+} from "@/engine"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { ColorSwatchGroup, type ColorSwatchItem } from "@/components/sidebar/ColorSwatchGroup"
+import { ContrastWarning } from "@/components/sidebar/ContrastWarning"
+import type { UseRecentColorsResult } from "@/components/sidebar/hooks/use-recent-colors"
+import { HEX_FIELD_ERROR_MESSAGE, parseHexFieldInput } from "@/components/sidebar/lib/hex-field"
+import { paletteColorLabel } from "@/components/sidebar/lib/preset-label"
+import { paletteRef, resolveSeedColor, type SeedColor } from "@/components/sidebar/lib/seed-color"
+
+/** Contrast ratio below which the picker warns (WCAG AA, body text). */
+const CONTRAST_WARNING_THRESHOLD = 4.5
+
+interface ColorPickerFieldProps {
+  readonly label: string
+  readonly value: SeedColor
+  readonly defaultValue: SeedColor
+  readonly paletteId: ExtendedPaletteId
+  readonly recentColors: UseRecentColorsResult
+  readonly onChange: (seed: SeedColor) => void
+}
+
+/**
+ * Popover color picker for one color knob.
+ *
+ * The popover holds a hex field with Reset, the palette swatches, the
+ * Recent swatches, a free picker and a contrast warning.
+ *
+ * @example
+ * <ColorPickerField label="Primary" value={seed} defaultValue={initial}
+ *   paletteId="ha" recentColors={recentColors} onChange={setSeed} />
+ */
+export function ColorPickerField({
+  label,
+  value,
+  defaultValue,
+  paletteId,
+  recentColors,
+  onChange,
+}: ColorPickerFieldProps) {
+  const [open, setOpen] = React.useState(false)
+  const resolvedHex = resolveSeedColor(value, paletteId)
+
+  const [draftHex, setDraftHex] = React.useState<Hex>(resolvedHex)
+  const [hexFieldValue, setHexFieldValue] = React.useState(resolvedHex)
+  const [hexFieldInvalid, setHexFieldInvalid] = React.useState(false)
+  const hexFieldFocused = React.useRef(false)
+  const hexInputRef = React.useRef<HTMLInputElement>(null)
+  const rafRef = React.useRef<number | null>(null)
+  // blur runs before React commits the pending text, so the handler reads this.
+  const hexFieldText = React.useRef(resolvedHex)
+
+  const setHexField = React.useCallback((text: string) => {
+    hexFieldText.current = text
+    setHexFieldValue(text)
+  }, [])
+
+  const revertHexField = React.useCallback(() => {
+    setHexField(resolvedHex)
+    setHexFieldInvalid(false)
+  }, [resolvedHex, setHexField])
+
+  // Sync from the store, except while the user types in the hex field.
+  React.useEffect(() => {
+    if (!hexFieldFocused.current) {
+      setDraftHex(resolvedHex)
+      setHexField(resolvedHex)
+      setHexFieldInvalid(false)
+    }
+  }, [resolvedHex, setHexField])
+
+  React.useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  // Commit once per animation frame while the saturation square drags.
+  const throttledCommit = React.useCallback(
+    (hex: Hex) => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(() => {
+        onChange(hex)
+      })
+    },
+    [onChange]
+  )
+
+  function commitHexField() {
+    const parsed = parseHexFieldInput(hexFieldText.current)
+    if (parsed === null) {
+      setHexFieldInvalid(true)
+      return
+    }
+    setHexFieldInvalid(false)
+    setDraftHex(parsed)
+    setHexField(parsed)
+    // An unchanged field commits nothing: a palette ref stays a ref (§2.3).
+    if (parsed === resolvedHex) return
+    onChange(parsed)
+    recentColors.commit(parsed)
+  }
+
+  const paletteColors = getExtendedPalette(paletteId).colors
+  const paletteItems: ColorSwatchItem[] = PALETTE_COLOR_NAMES.map((name) => ({
+    key: name,
+    hex: paletteColors[name],
+    name: paletteColorLabel(name),
+  }))
+  const recentItems: ColorSwatchItem[] = recentColors.entries.map((entry) => ({
+    key: entry.hex,
+    hex: entry.hex,
+    name: entry.hex,
+  }))
+
+  const textColor = contrastingText(resolvedHex)
+  const ratio = contrastRatio(resolvedHex, textColor)
+  const showContrastWarning = ratio < CONTRAST_WARNING_THRESHOLD
+
+  const isDefault = value === defaultValue
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next, details) => {
+        // A click on the preset list keeps the popover open, so its palette row updates live.
+        if (
+          !next &&
+          details.reason === "outside-press" &&
+          (details.event.target as HTMLElement | null)?.closest("[data-preset-list]")
+        ) {
+          details.cancel()
+          return
+        }
+        setOpen(next)
+        if (next) {
+          recentColors.refresh()
+        }
+      }}
+    >
+      <PopoverTrigger
+        aria-label={`${label}, currently ${resolvedHex}`}
+        className="flex w-full items-center gap-2.5 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <span
+          aria-hidden="true"
+          className="size-7 shrink-0 rounded-md ring-1 ring-inset ring-black/12"
+          style={{ backgroundColor: resolvedHex }}
+        />
+        <span className="flex-1 text-left">{label}</span>
+        <span className="font-mono text-xs text-muted-foreground">{resolvedHex}</span>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="right"
+        className="w-75 gap-3"
+        initialFocus={hexInputRef}
+      >
+        <PopoverHeader className="gap-2.5">
+          <PopoverTitle className="sr-only">{label}</PopoverTitle>
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="size-9 shrink-0 rounded-md ring-1 ring-inset ring-black/12"
+              style={{ backgroundColor: draftHex }}
+            />
+            <div className="flex flex-1 flex-col gap-1">
+              <Input
+                ref={hexInputRef}
+                value={hexFieldValue}
+                aria-label={`${label} hex value`}
+                aria-invalid={hexFieldInvalid}
+                className="font-mono"
+                onFocus={() => {
+                  hexFieldFocused.current = true
+                }}
+                onChange={(event) => {
+                  setHexField(event.target.value)
+                  if (hexFieldInvalid) setHexFieldInvalid(false)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    commitHexField()
+                  } else if (event.key === "Escape") {
+                    revertHexField()
+                    event.currentTarget.blur()
+                  }
+                }}
+                onBlur={() => {
+                  hexFieldFocused.current = false
+                  commitHexField()
+                }}
+              />
+              {hexFieldInvalid ? (
+                <p className="text-xs text-destructive">{HEX_FIELD_ERROR_MESSAGE}</p>
+              ) : null}
+            </div>
+            {isDefault ? null : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Reset ${label} to default`}
+                onClick={() => {
+                  onChange(defaultValue)
+                }}
+              >
+                <RotateCcwIcon />
+              </Button>
+            )}
+          </div>
+          <span aria-live="polite" className="sr-only">
+            {label} is {draftHex}
+          </span>
+        </PopoverHeader>
+
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            From your entity colors
+          </p>
+          <ColorSwatchGroup
+            ariaLabel="Entity colors"
+            items={paletteItems}
+            selectedHex={resolvedHex}
+            presetListMarker
+            onSelect={(item) => {
+              onChange(paletteRef(item.key as PaletteColorName))
+            }}
+          />
+        </div>
+
+        {recentItems.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Recent
+            </p>
+            <ColorSwatchGroup
+              ariaLabel="Recently used colors"
+              items={recentItems}
+              selectedHex={resolvedHex}
+              onSelect={(item) => {
+                onChange(item.hex)
+              }}
+            />
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-1.5 border-t pt-3">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Pick a color
+          </p>
+          <div role="group" aria-label="Pick a custom color" className="ha-color-picker">
+            <HexColorPicker
+              color={draftHex}
+              onChange={(hex) => {
+                setDraftHex(hex)
+                setHexField(hex)
+                throttledCommit(hex)
+              }}
+              onChangeEnd={(hex) => {
+                onChange(hex)
+                recentColors.commit(hex)
+              }}
+            />
+          </div>
+        </div>
+
+        {showContrastWarning ? (
+          <ContrastWarning>
+            {textColor === "#ffffff" ? "White" : "Dark"} text on this color is hard to read.
+          </ContrastWarning>
+        ) : null}
+      </PopoverContent>
+    </Popover>
+  )
+}

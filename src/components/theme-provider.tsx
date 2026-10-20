@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
-type Theme = "dark" | "light" | "system"
+/** Mode of the builder's own interface. The preview ignores it. */
+export type Theme = "dark" | "light" | "auto"
 type ResolvedTheme = "dark" | "light"
 
 type ThemeProviderProps = {
@@ -17,7 +18,7 @@ type ThemeProviderState = {
 }
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)"
-const THEME_VALUES: Theme[] = ["dark", "light", "system"]
+const THEME_VALUES: Theme[] = ["dark", "light", "auto"]
 
 const ThemeProviderContext = React.createContext<
   ThemeProviderState | undefined
@@ -80,8 +81,8 @@ function disableTransitionsTemporarily() {
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  storageKey = "theme",
+  defaultTheme = "auto",
+  storageKey = "ha-theme-builder:color-scheme",
   disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
@@ -106,7 +107,7 @@ export function ThemeProvider({
     (nextTheme: Theme) => {
       const root = document.documentElement
       const resolvedTheme =
-        nextTheme === "system" ? getSystemTheme() : nextTheme
+        nextTheme === "auto" ? getSystemTheme() : nextTheme
       const restoreTransitions = disableTransitionOnChange
         ? disableTransitionsTemporarily()
         : null
@@ -124,13 +125,13 @@ export function ThemeProvider({
   React.useEffect(() => {
     applyTheme(theme)
 
-    if (theme !== "system") {
+    if (theme !== "auto") {
       return undefined
     }
 
     const mediaQuery = window.matchMedia(COLOR_SCHEME_QUERY)
     const handleChange = () => {
-      applyTheme("system")
+      applyTheme("auto")
     }
 
     mediaQuery.addEventListener("change", handleChange)

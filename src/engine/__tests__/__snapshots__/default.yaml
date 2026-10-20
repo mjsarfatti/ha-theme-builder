@@ -212,7 +212,7 @@ My Theme:
       scrollbar-thumb-color: "#4a4a4a"
 
       # Backgrounds
-      card-background-color: "#202020"
-      primary-background-color: "#141414"
-      secondary-background-color: "#363636"
-      clear-background-color: "#202020"
+      card-background-color: "#141414"
+      primary-background-color: "#000000"
+      secondary-background-color: "#202020"
+      clear-background-color: "#141414"
