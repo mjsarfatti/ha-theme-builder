@@ -109,7 +109,7 @@ describe("OKLCH", () => {
   });
 
   it("round-trips a large random sample exactly", () => {
-    // Deterministic LCG so a failure is reproducible.
+    // A fixed LCG seed makes a failure repeatable.
     let seed = 0x2545f491;
     const next = () => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
@@ -133,7 +133,7 @@ describe("OKLCH", () => {
     const mapped = oklchToHex({ l: 0.6, c: 0.9, h: 150 });
     expect(isHex(mapped)).toBe(true);
     const back = hexToOklch(mapped);
-    // Lightness and hue are preserved; only chroma is given up.
+    // Lightness and hue stay. Chroma drops.
     expect(back.l).toBeCloseTo(0.6, 1);
     expect(back.c).toBeLessThan(0.9);
     expect(back.c).toBeGreaterThan(0.05);
