@@ -110,33 +110,10 @@ function mirrorSlot<S extends RampSlot | NeutralRampSlot>(slot: S): S {
 
 const SLOT_ORDER: readonly RampSlot[] = RAMP_SLOTS;
 
-/**
- * Neutral-ramp lookup by position along the full 00..100 slot order, clamped
- * at both ends. This is where `surfaces()`'s defensive clamp actually lives —
- * exported (module-only, not part of the `index.ts` barrel / the frozen
- * public API) purely so `derive.test.ts` can exercise the boundary directly,
- * since today's four `SurfaceChoice` values never drive an index past it.
- */
-export function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
-  const i = Math.min(NEUTRAL_RAMP_SLOTS.length - 1, Math.max(0, index));
-  return ramp[NEUTRAL_RAMP_SLOTS[i]];
-}
-
-/** The last valid index into {@link NEUTRAL_RAMP_SLOTS}. */
+/** The last position in {@link NEUTRAL_RAMP_SLOTS}. */
 const LAST_NEUTRAL_INDEX = NEUTRAL_RAMP_SLOTS.length - 1;
 
-/** An index's mirror in {@link NEUTRAL_RAMP_SLOTS}, unclamped (callers read through {@link neutralRampAt}, which clamps). */
-function mirrorNeutralIndex(index: number): number {
-  return LAST_NEUTRAL_INDEX - index;
-}
-
-/**
- * Where each background choice sits in the neutral ramp's own 13-position
- * index space ({@link NEUTRAL_RAMP_SLOTS}). Every `SurfaceChoice` is now a
- * real ramp slot — `neutral-100` is what used to be the special-cased
- * "white" — so this is a plain lookup, not a table with an off-ramp entry
- * tacked on the end.
- */
+/** Position of each background choice in {@link NEUTRAL_RAMP_SLOTS}. */
 const SURFACE_INDEX: Record<SurfaceChoice, number> = {
   "neutral-100": NEUTRAL_RAMP_SLOTS.indexOf(100),
   "neutral-95": NEUTRAL_RAMP_SLOTS.indexOf(95),
@@ -146,6 +123,8 @@ const SURFACE_INDEX: Record<SurfaceChoice, number> = {
 
 interface Surfaces {
   card: Hex;
+  /** Position of the card in {@link NEUTRAL_RAMP_SLOTS}. */
+  cardIndex: number;
   page: Hex;
   secondary: Hex;
 }
@@ -153,81 +132,64 @@ interface Surfaces {
 /**
  * Card, page and secondary backgrounds for one mode.
  *
- * **Dark mode keeps the light/dark relationship the user chose, not the raw
- * distance.** Home Assistant's own theme keeps the card *lighter* than the
- * page in both modes: light `#fafafa` page / `#ffffff` card, dark `#111111`
- * page / `#1c1c1c` card (`color.globals.ts:46-47`, `:342-343`). Mirroring
- * both surfaces independently preserves the gap between them but reverses
- * which one is on top, sinking the dark card below the dark page for every
- * ordinary configuration.
+ * The two dark surfaces are the mirror of the two light surfaces, and each
+ * surface keeps its rank: the lighter surface in light mode is the lighter
+ * surface in dark mode. The darker dark surface sits at position `12 - hi`
+ * and the lighter one at `12 - lo`, where `lo` and `hi` are the positions of
+ * the two light surfaces.
  *
- * So instead: identify whichever of the two is DARKER in light mode, mirror
- * *that one's own index* to get its dark-mode position, then place the other
- * surface the same number of index-steps away from that anchor, moving
- * toward the lighter end. The gap the user chose survives; which surface is
- * on top does too. If the two choices are equal, both mirror to the same
- * anchor and the gap is zero.
- *
- * This is also the clamp-safe direction: the anchor only ever gains index
- * steps to place the other surface, so the result can't fall below the ramp
- * floor the way mirroring the *lighter* surface first can (a `neutral-95`
- * page under a `neutral-100` card would mirror the card to index 0, then
- * need to derive the page at index −1).
- *
- * All arithmetic happens in **index space** along {@link NEUTRAL_RAMP_SLOTS},
- * not in slot numbers — the slots are unevenly spaced (`[0, 5, 10, 20, … 90,
- * 95, 100]`), so subtracting slot numbers would land on non-existent slots
- * like `neutral-15`. `neutralRampAt` clamps defensively at both ends, same as
- * `rampAt` always has; with today's four `SurfaceChoice` values the clamp
- * never actually fires (verified: across all sixteen combinations the
- * furthest an index travels is 6, comfortably inside the valid `0..12`
- * range), but a future, wider `SurfaceChoice` could reach it. At that
- * boundary the two surfaces are allowed to collapse onto the same slot —
- * the same thing already happens deliberately when the two choices are
- * equal — rather than the engine throwing or silently escaping the ramp.
- *
- * `--secondary-background-color` is "5% darker than primary" per
- * `template.css`: one ramp step below the darker of the two in light mode —
- * `#f3f3f3` → `#e6e6e6` is a 4% drop in OKLCH lightness and lands one unit
- * off HA's shipped `#e5e5e5` — and two steps *above* it in dark mode. The
- * asymmetry is HA's own: its light pair differs by 0.06 in OKLCH lightness,
- * its dark pair (`#111111`/`#282828`) by 0.17, because near-black surfaces
- * need a much larger step to read as distinct. One dark step would be
- * invisible and would collide with the card.
+ * Positions index {@link NEUTRAL_RAMP_SLOTS} because the slots are unevenly
+ * spaced. Subtracting slot numbers lands on slots that do not exist, such as
+ * neutral-15.
  */
 function surfaces(config: ThemeConfig, neutral: NeutralRamp, mode: ThemeMode): Surfaces {
   const cardIndex = SURFACE_INDEX[config.cardBackground];
   const pageIndex = SURFACE_INDEX[config.primaryBackground];
+  const at = (index: number): Hex => neutral[NEUTRAL_RAMP_SLOTS[index]];
 
   if (mode === "light") {
     return {
-      card: neutralRampAt(neutral, cardIndex),
-      page: neutralRampAt(neutral, pageIndex),
-      // One step below the darker of the two, and never level with either.
-      secondary: neutralRampAt(neutral, Math.min(cardIndex, pageIndex) - 1),
+      card: at(cardIndex),
+      cardIndex,
+      page: at(pageIndex),
+      // One position below the darker surface.
+      secondary: at(Math.min(cardIndex, pageIndex) - 1),
     };
   }
 
-  const darkerIndex = Math.min(cardIndex, pageIndex);
-  const lighterIndex = Math.max(cardIndex, pageIndex);
-  const gap = lighterIndex - darkerIndex;
-  const anchor = mirrorNeutralIndex(darkerIndex);
-  const other = anchor + gap;
+  const lo = Math.min(cardIndex, pageIndex);
+  const hi = Math.max(cardIndex, pageIndex);
+  const darkerIndex = LAST_NEUTRAL_INDEX - hi;
+  const lighterIndex = LAST_NEUTRAL_INDEX - lo;
 
-  // Whichever surface was darker in light mode keeps the anchor; the other
-  // is placed `gap` steps toward the lighter end from it. When the two
-  // choices are equal both comparisons pick `anchor`, so they mirror to the
-  // same slot together, per the doc comment above.
-  const darkCardIndex = cardIndex <= pageIndex ? anchor : other;
-  const darkPageIndex = pageIndex <= cardIndex ? anchor : other;
+  const darkCardIndex = cardIndex < pageIndex ? darkerIndex : lighterIndex;
 
   return {
-    card: neutralRampAt(neutral, darkCardIndex),
-    page: neutralRampAt(neutral, darkPageIndex),
-    // Two steps above the page, and never level with the card — HA's own dark
-    // ordering is page (#111111) < card (#1c1c1c) < secondary (#282828).
-    secondary: neutralRampAt(neutral, Math.max(darkPageIndex + 2, darkCardIndex + 1)),
+    card: at(darkCardIndex),
+    cardIndex: darkCardIndex,
+    page: at(pageIndex < cardIndex ? darkerIndex : lighterIndex),
+    // One position above the lighter surface.
+    secondary: at(lighterIndex + 1),
   };
+}
+
+/**
+ * Border base colour for a border step, placed relative to the card.
+ *
+ * The step's slot gives its distance from white, `k = 12 - position`. The
+ * border sits `k / 12` of the room between the card and the end of the ramp
+ * (position 0 in light mode, position 12 in dark mode), rounded half up.
+ */
+function borderAt(
+  neutral: NeutralRamp,
+  step: NeutralSlotId,
+  cardIndex: number,
+  dark: boolean,
+): Hex {
+  const k = LAST_NEUTRAL_INDEX - NEUTRAL_RAMP_SLOTS.indexOf(slotOf(step));
+  const room = dark ? LAST_NEUTRAL_INDEX - cardIndex : cardIndex;
+  const offset = Math.floor((room * k) / LAST_NEUTRAL_INDEX + 0.5);
+  return neutral[NEUTRAL_RAMP_SLOTS[dark ? cardIndex + offset : cardIndex - offset]];
 }
 
 // ---------------------------------------------------------------------------
@@ -540,19 +502,14 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
     vars["secondary-background-color"] = surface.secondary;
     vars["clear-background-color"] = surface.card;
 
-    // Lines. `"match-card"` resolves to this mode's own, already-computed
-    // card colour — not a ramp lookup, and not `mirrorSlot()`. `surfaces()`
-    // derives the dark card jointly from *both* surface knobs, so it is not
-    // the mirror of the light card's slot, and a per-slot mirror would give a
-    // different, wrong hex here. Otherwise the knob picks a neutral slot and
-    // the `1f` alpha is preserved; outline-hover reuses that RGB at its own
-    // alpha.
+    // Lines. `"match-card"` is this mode's card colour. Any other knob value is
+    // a distance from white; the border sits that fraction of the room from
+    // the card, darker in light mode and lighter in dark mode. The `1f` alpha is
+    // preserved; outline-hover reuses the RGB at its own alpha.
     const borderBase: Hex =
       config.borderColor === "match-card"
         ? surface.card
-        : neutralExtended[
-            dark ? mirrorSlot(slotOf(config.borderColor)) : slotOf(config.borderColor)
-          ];
+        : borderAt(neutralExtended, config.borderColor, surface.cardIndex, dark);
     vars["divider-color"] = withAlpha(borderBase, "1f");
     vars["outline-color"] = vars["divider-color"];
     vars["outline-hover-color"] = withAlpha(borderBase, "3d");
