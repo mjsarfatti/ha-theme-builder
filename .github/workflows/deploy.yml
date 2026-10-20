@@ -6,24 +6,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Do not cancel a running deployment. A production deployment must finish.
+# A newer main deploy replaces a waiting one. A running deploy always finishes.
 concurrency:
-  group: "pages"
+  group: deploy-main
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
+    name: Build and deploy main
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Setup pnpm and Node
-        uses: pnpm/setup@v2
+        uses: pnpm/setup@v3
         with:
           runtime: node@24
           cache: true
@@ -31,21 +30,16 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
+      - name: Disable Jekyll
+        run: touch dist/.nojekyll
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+      # force: false rebases onto the branch, so a parallel preview deploy is kept.
+      # clean-exclude keeps the preview directories of open pull requests.
+      - name: Deploy to the gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: "./dist"
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+          branch: gh-pages
+          folder: dist
+          force: false
+          clean-exclude: |
+            pr-preview/
