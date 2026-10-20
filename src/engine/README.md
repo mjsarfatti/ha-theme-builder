@@ -193,18 +193,13 @@ for an unknown id, and `normalizeHex` throws on a malformed hex.
 
 ### `borderColor`'s `"match-card"` sentinel
 
-`"match-card"` is not a colour — it is an instruction to read the *current
-mode's own, already-computed* `card-background-color` instead of a ramp
-slot. This is what lets the border "disappear" into the card (the UI calls
-this option **Invisible**). It resolves to the literal per-mode card value
-`surfaces()` computes for `card-background-color` — never a ramp lookup, and
-never `mirrorSlot()`. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob)
-below for the border rule.
+`"match-card"` is an instruction (the other values of `borderColor` are ramp slots). It tells
+the engine to read the *already computed* `card-background-color` of the current mode. The border
+then blends into the card. The UI calls this option **Invisible**.
 
-`"match-card"` resolves to the literal per-mode card value that `surfaces()` computes
-for `card-background-color`. It is never a ramp lookup and never `mirrorSlot()`. A
-ramp-based mirror gives the wrong hex (see
-[Backgrounds and the border knob](#backgrounds-and-the-border-knob)).
+`"match-card"` resolves to the literal per-mode card value that `surfaces()` computes for
+`card-background-color`. It is never a ramp lookup and never `mirrorSlot()`. See
+[Backgrounds and the border knob](#backgrounds-and-the-border-knob) for the border rule.
 
 ---
 
@@ -261,15 +256,14 @@ the scrollbar and the entity-icon color. This split matches the dark layer of HA
 overrides backgrounds, text, input colors and shadows, and keeps `--primary-color`
 (§3.2).
 
-The neutral ramp itself never inverts. What inverts is *which slot* each role
-reads from: `mirrorSlot(s) = 100 - s`, the same inversion HA's
-`darkSemanticColorStyles` performs (§2.2). `mirrorSlot` is generic over both
-slot domains this engine has, because both are symmetric about 50: the shared
-05..95 `RampSlot` scale (the scrollbar and the entity icon read this way) and
-the neutral ramp's own extended 00..100 `NeutralRampSlot` scale (see
-[Neutral slots reach 00 and 100](#neutral-slots-reach-00-and-100)). One formula
-covers 05↔95 and 00↔100 alike. The border does not use `mirrorSlot`: it derives
-from the card. Exceptions, all deliberate:
+The neutral ramp never inverts. The slot that each role reads from inverts:
+`mirrorSlot(s) = 100 - s`. HA's `darkSemanticColorStyles` performs the same inversion
+(§2.2). `mirrorSlot` works on both slot domains of this engine, because both are
+symmetric about 50: the shared 05..95 `RampSlot` scale (the scrollbar and the entity icon
+read this way) and the extended 00..100 `NeutralRampSlot` scale of the neutral ramp (see
+[Neutral slots reach 00 and 100](#neutral-slots-reach-00-and-100)). One formula covers
+05↔95 and 00↔100. The border does not use `mirrorSlot`. It derives from the card. These
+exceptions are deliberate:
 
 | Variable | Rule |
 |---|---|
@@ -277,7 +271,7 @@ from the card. Exceptions, all deliberate:
 | `secondary-text-color` | `neutral-80` in dark, per the documented override of HA |
 | `disabled-text-color` | `neutral-50`. It is lighter than a plain mirror, in the same direction as the two rows above. `mirrorSlot(60)` gives 2.1:1, and light mode gives 3.0:1 |
 | `shadow-color`, `ha-box-shadow-*` | fixed at `neutral-05` in **both** modes, independent of the border knob. A shadow is an absence of light, so it must not turn pale and must not take the tint of the border. Only the alpha rises, to the values that §2.6/§6 document for the HA dark theme. See [Backgrounds and the border knob](#backgrounds-and-the-border-knob) |
-| backgrounds, border | derived jointly, see below |
+| backgrounds, border | derived by `surfaces()` and the border rule, see below |
 
 ### Neutral slots reach 00 and 100
 
@@ -302,25 +296,21 @@ space. `"neutral-100"` is a real slot, and `"white"` is not a value.
 
 ### Backgrounds and the border knob
 
-`surfaces()` derives the card, page and secondary backgrounds together. The
-dark surfaces are the mirror of the light surfaces. Each surface keeps its
-rank. The border knob option `"match-card"` reads the card value from the same
-result.
+`surfaces()` derives the card, page and secondary backgrounds together. The dark surfaces mirror
+the light surfaces, and each surface keeps its rank. The `"match-card"` option of the border knob
+reads the card value from the same result.
 
-**The rule.** All arithmetic uses positions `0` to `12` in
-`NEUTRAL_RAMP_SLOTS`. Let `lo` and `hi` be the lower and the higher light-mode
-position of the page and the card.
+**The rule.** All arithmetic uses the positions `0` to `12` in `NEUTRAL_RAMP_SLOTS`. Let `lo` and
+`hi` be the lower and the higher light-mode position of the page and the card.
 
-- The darker dark surface sits at position `12 - hi`. This is the mirror of the
-  lighter light surface.
-- The lighter dark surface sits at position `12 - lo`. This equals
-  `12 - hi + (hi - lo)`.
+- The darker dark surface sits at position `12 - hi`. This position mirrors the lighter light
+  surface.
+- The lighter dark surface sits at position `12 - lo`. This position equals `12 - hi + (hi - lo)`.
 - The surface that is lighter in light mode is lighter in dark mode.
 - If the page and the card use the same slot, both sit at `12 - hi`.
 
-The position gap between the two surfaces is the same in both modes. Every dark
-position is the mirror of a valid light position, so it is always between `0`
-and `12`.
+The position gap between the two surfaces is the same in both modes. Every dark position mirrors a
+valid light position, so every dark position is between `0` and `12`. The engine needs no clamp.
 
 | Light page / card | Dark page / card |
 |---|---|
@@ -330,45 +320,47 @@ and `12`.
 | `neutral-80` / `neutral-100` | `neutral-00` / `neutral-20` |
 | `neutral-90` / `neutral-90` | `neutral-10` / `neutral-10` |
 
-**Positions, not slot numbers.** The 13 slots are unevenly spaced
-(`0, 5, 10, 20, … 90, 95, 100`). Subtraction of slot numbers can give a value
-with no matching slot, such as `neutral-15`. A position always maps to a real
-slot.
+**Positions.** The 13 slots have uneven spacing (`0, 5, 10, 20, … 90, 95, 100`). A subtraction of
+slot numbers can give a value with no matching slot, such as `neutral-15`. A position always maps
+to a real slot.
 
 **`secondary-background-color`.**
 
 - Light mode: one position below the darker surface.
-- Dark mode: one position above the lighter surface. It differs from the page
-  and the card for all 16 combinations of `SurfaceChoice`.
+- Dark mode: one position above the lighter surface. It differs from the page and from the card
+  for all 16 combinations of `SurfaceChoice`.
 
-**`borderColor` is a distance from white, scaled to the room around the
-card.** Let `k = 12 - position(slot)`: Hairline `neutral-80` has k = 3, Subtle
-`neutral-60` has 5, Medium `neutral-30` has 8 and Strong `neutral-05` has 11.
-The offset is `floor(room * k / 12 + 0.5)`.
+**`borderColor` is a distance from white, scaled to the room around the card.** Let
+`k = 12 - position(slot)`. Hairline `neutral-80` has k = 3, Subtle `neutral-60` has k = 5, Medium
+`neutral-30` has k = 8 and Strong `neutral-05` has k = 11. The offset is
+`floor(room * k / 12 + 0.5)`. The border sits `k / 12` of the room between the card and the end
+of the ramp (position 0 in light mode, position 12 in dark mode), rounded half up.
 
-- Light mode: `room` = light card position. Border position = card position - offset.
-- Dark mode: `room` = `12 - dark card position`. Border position = card position + offset.
-- The offset never exceeds `room`, so the border position is between `0` and
-  `12`. The alpha is `1f`.
+- Light mode: `room` is the light card position. The border position is the card position minus
+  the offset.
+- Dark mode: `room` is `12 - dark card position`. The border position is the card position plus
+  the offset.
+- The offset never exceeds `room`, so the border position is between `0` and `12`. The alpha is
+  `1f`.
 
-`surfaces()` returns the card position of the mode, and the border code reuses
-it. The border never equals the card, and the four steps sit at four distinct
-positions, for all 16 combinations of `SurfaceChoice` in both modes.
-`outline-hover-color` uses the same base color at alpha `3d`. `shadow-color`
-does not depend on the border knob.
+`surfaces()` returns the card position of the mode, and the border code reuses it. For all 16
+combinations of `SurfaceChoice` in both modes, the border never equals the card, and the four
+steps sit at four distinct positions. `outline-hover-color` uses the same base color at alpha
+`3d`. `shadow-color` is independent of the border knob.
 
 | Default config, `ha` ramp | Hairline | Subtle | Medium | Strong |
 |---|---|---|---|---|
 | Light border base | `neutral-80` | `neutral-60` | `neutral-30` | `neutral-05` |
 | Dark border base | `neutral-30` | `neutral-50` | `neutral-70` | `neutral-95` |
 
-**`borderColor`'s `"match-card"` reads `surface.card` directly.** This is the
-per-mode card value that `surfaces()` computes. It is never a ramp lookup and
-never `mirrorSlot()`. The dark card depends on both surface knobs, so a
-per-slot mirror of the light card gives a different hex. Example: with page
-`neutral-90` and card `neutral-100`, `mirrorSlot(100)` is `neutral-00`, but the
-dark card is `neutral-10` (`#202020`). `derive.ts` reuses the one computed card
-value and has no second way to compute a card color.
+**`borderColor`'s `"match-card"` reads `surface.card` directly.** This is the per-mode card value
+that `surfaces()` computes. It is never a ramp lookup and never `mirrorSlot()`. `mirrorSlot`
+serves the text, scrollbar and icon code and does not serve the border. The dark card depends on
+both surface knobs, so a per-slot mirror of the light card gives a different hex. Example: with
+page `neutral-90` and card `neutral-100`, `mirrorSlot(100)` is `neutral-00`, and the dark card is
+`neutral-10` (`#202020`). `derive.ts` reuses the one computed card value. It has no second way to
+compute a card color.
+
 
 ---
 
@@ -494,8 +486,8 @@ round-trips 2000 deterministic random colors to check this.
 | `color.test.ts` | hex parsing and normalization, alpha helpers, OKLCH round-trips (including a 2000-color sweep), gamut mapping, clamping |
 | `ha-math.test.ts` | Lab conversions against published CIE values, `Kn = 18` brighten/darken, WCAG luminance and contrast against known answers, the contrast threshold and where it flips |
 | `ramps.test.ts` | seed survival at every slot, identity, monotonicity, hue/chroma transfer, and the edge cases: pure black, pure white, fully saturated seeds, achromatic seeds, seeds already at a ramp endpoint, an achromatic reference |
-| `presets.test.ts` | preset data re-parsed from the reference pages and diffed cell by cell, including the `neutral-00`/`neutral-100` rows. Font shortlist. HA columns against `template.css` |
-| `derive.test.ts` | the `template.css` regression net, knob → variable wiring, light/dark rules, contrast floors, elevation across all 16 background combinations, palette-reference resolution (follows the preset; a literal hex does not), `match-card`, the `surfaces()` mirror rule over all 16 `SurfaceChoice` combinations (positions, gap, rank, range, secondary background) |
+| `presets.test.ts` | preset data parsed from the reference pages and compared cell by cell, including the `neutral-00`/`neutral-100` rows. Font shortlist. HA columns against `template.css` |
+| `derive.test.ts` | the `template.css` regression tests, knob → variable wiring, light/dark rules, contrast floors, elevation across all 16 background combinations, palette-reference resolution (follows the preset; a literal hex does not), `match-card`, the `surfaces()` mirror rule over all 16 `SurfaceChoice` combinations (positions, gap, rank, range, secondary background) |
 | `yaml.test.ts` | quoting rules through a real YAML parser, structure, the rgb-omission rule, and file snapshots of three complete themes |
 
 The snapshots are in `__tests__/__snapshots__/*.yaml`. They are readable as YAML, so a
