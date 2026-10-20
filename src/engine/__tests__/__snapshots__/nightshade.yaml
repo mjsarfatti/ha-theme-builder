@@ -216,7 +216,7 @@ Nightshade:
       scrollbar-thumb-color: "#524554"
 
       # Backgrounds
-      card-background-color: "#3d323e"
-      primary-background-color: "#251d26"
-      secondary-background-color: "#524554"
-      clear-background-color: "#3d323e"
+      card-background-color: "#251d26"
+      primary-background-color: "#171218"
+      secondary-background-color: "#3d323e"
+      clear-background-color: "#251d26"
