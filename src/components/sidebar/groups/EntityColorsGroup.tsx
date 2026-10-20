@@ -1,16 +1,12 @@
 import { EXTENDED_PALETTES, PALETTE_COLOR_NAMES, type ExtendedPaletteId } from "@/engine"
 import { FieldDescription } from "@/components/ui/field"
 import { SidebarField } from "@/components/sidebar/SidebarField"
+import { paletteColorLabel } from "@/components/sidebar/lib/preset-label"
 import {
   PresetStripList,
   type CompareAllColumn,
   type CompareAllRow,
 } from "@/components/sidebar/PresetStripList"
-
-function paletteColorRowLabel(name: string): string {
-  const spaced = name.replace(/-/g, " ")
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
-}
 
 const COMPARE_COLUMNS: readonly CompareAllColumn[] = EXTENDED_PALETTES.map((preset) => ({
   id: preset.id,
@@ -18,7 +14,7 @@ const COMPARE_COLUMNS: readonly CompareAllColumn[] = EXTENDED_PALETTES.map((pres
 }))
 
 const COMPARE_ROWS: readonly CompareAllRow[] = PALETTE_COLOR_NAMES.map((name) => ({
-  label: paletteColorRowLabel(name),
+  label: paletteColorLabel(name),
   cells: Object.fromEntries(EXTENDED_PALETTES.map((preset) => [preset.id, preset.colors[name]])),
 }))
 

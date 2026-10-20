@@ -11,7 +11,6 @@ import {
   type Hex,
   type PaletteColorName,
 } from "@/engine"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -25,15 +24,11 @@ import { ColorSwatchGroup, type ColorSwatchItem } from "@/components/sidebar/Col
 import { ContrastWarning } from "@/components/sidebar/ContrastWarning"
 import type { UseRecentColorsResult } from "@/components/sidebar/hooks/use-recent-colors"
 import { HEX_FIELD_ERROR_MESSAGE, parseHexFieldInput } from "@/components/sidebar/lib/hex-field"
+import { paletteColorLabel } from "@/components/sidebar/lib/preset-label"
 import { paletteRef, resolveSeedColor, type SeedColor } from "@/components/sidebar/lib/seed-color"
 
 /** Contrast ratio below which the picker warns (WCAG AA, body text). */
 const CONTRAST_WARNING_THRESHOLD = 4.5
-
-function paletteColorLabel(name: PaletteColorName): string {
-  const spaced = name.replace(/-/g, " ")
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
-}
 
 interface ColorPickerFieldProps {
   readonly label: string
@@ -71,15 +66,27 @@ export function ColorPickerField({
   const hexFieldFocused = React.useRef(false)
   const hexInputRef = React.useRef<HTMLInputElement>(null)
   const rafRef = React.useRef<number | null>(null)
+  // blur runs before React commits the pending text, so the handler reads this.
+  const hexFieldText = React.useRef(resolvedHex)
+
+  const setHexField = React.useCallback((text: string) => {
+    hexFieldText.current = text
+    setHexFieldValue(text)
+  }, [])
+
+  const revertHexField = React.useCallback(() => {
+    setHexField(resolvedHex)
+    setHexFieldInvalid(false)
+  }, [resolvedHex, setHexField])
 
   // Sync from the store, except while the user types in the hex field.
   React.useEffect(() => {
     if (!hexFieldFocused.current) {
       setDraftHex(resolvedHex)
-      setHexFieldValue(resolvedHex)
+      setHexField(resolvedHex)
       setHexFieldInvalid(false)
     }
-  }, [resolvedHex])
+  }, [resolvedHex, setHexField])
 
   React.useEffect(() => {
     return () => {
@@ -99,14 +106,16 @@ export function ColorPickerField({
   )
 
   function commitHexField() {
-    const parsed = parseHexFieldInput(hexFieldValue)
+    const parsed = parseHexFieldInput(hexFieldText.current)
     if (parsed === null) {
       setHexFieldInvalid(true)
       return
     }
     setHexFieldInvalid(false)
     setDraftHex(parsed)
-    setHexFieldValue(parsed)
+    setHexField(parsed)
+    // An unchanged field commits nothing: a palette ref stays a ref (§2.3).
+    if (parsed === resolvedHex) return
     onChange(parsed)
     recentColors.commit(parsed)
   }
@@ -185,15 +194,14 @@ export function ColorPickerField({
                   hexFieldFocused.current = true
                 }}
                 onChange={(event) => {
-                  setHexFieldValue(event.target.value)
+                  setHexField(event.target.value)
                   if (hexFieldInvalid) setHexFieldInvalid(false)
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     commitHexField()
                   } else if (event.key === "Escape") {
-                    setHexFieldValue(resolvedHex)
-                    setHexFieldInvalid(false)
+                    revertHexField()
                     event.currentTarget.blur()
                   }
                 }}
@@ -260,12 +268,12 @@ export function ColorPickerField({
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Pick a color
           </p>
-          <div role="group" aria-label="Pick a custom color" className={cn("ha-color-picker")}>
+          <div role="group" aria-label="Pick a custom color" className="ha-color-picker">
             <HexColorPicker
               color={draftHex}
               onChange={(hex) => {
                 setDraftHex(hex)
-                setHexFieldValue(hex)
+                setHexField(hex)
                 throttledCommit(hex)
               }}
               onChangeEnd={(hex) => {

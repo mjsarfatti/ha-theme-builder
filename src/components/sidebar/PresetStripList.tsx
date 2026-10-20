@@ -72,7 +72,7 @@ export function PresetStripList({
       <RadioGroup
         aria-label={ariaLabel}
         value={value}
-        onValueChange={(id) => onChange(id as string)}
+        onValueChange={onChange}
         className="flex flex-col gap-1"
       >
         {items.map((item) => (

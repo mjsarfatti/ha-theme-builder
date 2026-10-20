@@ -1,8 +1,11 @@
+import * as React from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ColorPickerField } from "./ColorPickerField"
 import { useRecentColors } from "./hooks/use-recent-colors"
+import { RECENT_COLORS_STORAGE_KEY } from "./lib/recent-colors"
+import type { SeedColor } from "./lib/seed-color"
 
 function Harness({
   onChange,
@@ -110,5 +113,57 @@ describe("ColorPickerField — hex field commit behavior (§2.4)", () => {
     fireEvent.click(screen.getByRole("button", { name: /reset primary color/i }))
 
     expect(onChange).toHaveBeenCalledWith("#009ac7")
+  })
+})
+
+describe("ColorPickerField — a field the user did not change commits nothing", () => {
+  function StatefulHarness({ initial }: { initial: SeedColor }) {
+    const [seed, setSeed] = React.useState<SeedColor>(initial)
+    const recentColors = useRecentColors()
+    return (
+      <>
+        <output data-testid="seed">{seed}</output>
+        <ColorPickerField
+          label="Primary color"
+          value={seed}
+          defaultValue="#009ac7"
+          paletteId="ha"
+          recentColors={recentColors}
+          onChange={setSeed}
+        />
+      </>
+    )
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+
+  it("keeps a palette reference when the popover opens and closes", () => {
+    render(<StatefulHarness initial="palette:amber" />)
+    fireEvent.blur(openPopoverAndGetHexField())
+
+    expect(screen.getByTestId("seed").textContent).toBe("palette:amber")
+  })
+
+  it("adds nothing to Recent colors when the popover opens and closes", () => {
+    render(<StatefulHarness initial="#009ac7" />)
+    fireEvent.blur(openPopoverAndGetHexField())
+
+    expect(window.localStorage.getItem(RECENT_COLORS_STORAGE_KEY)).toBeNull()
+  })
+
+  it("Escape reverts without committing, although it also blurs the field", () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    const input = openPopoverAndGetHexField()
+    input.focus()
+
+    fireEvent.change(input, { target: { value: "#ff0000" } })
+    fireEvent.keyDown(input, { key: "Escape" })
+    fireEvent.blur(input)
+
+    expect(input.value).toBe("#009ac7")
+    expect(onChange).not.toHaveBeenCalled()
   })
 })
