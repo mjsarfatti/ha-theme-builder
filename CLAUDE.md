@@ -16,6 +16,16 @@ with the user, and briefs you write for subagents.
 - **Plain English**, per Strunk & White.
 - **No hedging.**
 - **No idioms and no metaphors.**
+- **Not-negation over no-negation.** Write "X does not add anything", never "X adds
+  nothing". This covers the pronouns `nothing`, `nobody` and `none`. The determiner
+  `no` and the adverb `never` stand as they are: "takes no arguments" and "theme
+  variables never go on `:root`".
+- **State what is.** Drop the corrective half: "not X, but Y" and "Y, not X" both
+  become "Y". Keep "not X" only when "Y" leaves the reader free to assume "X", and
+  then name the source of that assumption: a spec, a platform default, a sibling
+  file, or the nearest term a reader reaches for. A contrast of two facts is not a
+  corrective and stands as it is. Never rewrite quoted material: specs, error
+  messages, test names, code.
 - **Short.** Assume the reader gives it only 30 seconds, but write complete grammar
   sentences and never skip information for the sake of brevity.
 
