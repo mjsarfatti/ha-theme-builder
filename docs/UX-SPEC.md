@@ -403,56 +403,56 @@ outcome, not the ingredient.**
 | Medium | `"neutral-30"` | |
 | Strong | `"neutral-05"` — the default, unchanged from this spec's earlier draft | The darkest of the four. |
 
-Hairline through Strong run progressively **darker** than the card surface, in that order. This
-part needs no engine change. `borderColor` stays a plain `NeutralSlotId` for these four values —
-it is a UI restriction in addition to the existing eleven-value union, the same kind of restriction the
-font dropdown already applies to `FONTS`. It does not touch the engine's own list.
+**The border is derived from the card.** A `borderColor` slot is a distance from white:
+`k = 12 - position`, where the position is the slot's index in the 13-slot neutral ramp. Hairline
+has k = 3, Subtle 5, Medium 8 and Strong 11. The border sits `k / 12` of the room between the card
+and the end of the ramp, rounded half up. In light mode the room is the card position (down to
+position 0) and the border is darker than the card. In dark mode the room is `12 - card position`
+(up to position 12) and the border is lighter than the card. Hairline through Strong run
+progressively farther from the card, in that order. `borderColor` stays a
+plain `NeutralSlotId` for these four values — it is a UI restriction in addition to the existing
+eleven-value union, the same kind of restriction the font dropdown already applies to `FONTS`. It
+does not touch the engine's own list.
 
-**Why these four slots, and not four others.** I did not pick these from memory. I rendered all
-eleven slots — the KNOB's own light-mode semantics, with the engine's real `mirrorSlot` applied
-for the dark-mode render — at `1f` alpha over every `SurfaceChoice`, in both modes, on the default
-`ha` ramp and on a tinted ramp (`mauve`, to check that a tint keeps the four steps in the same
-order). The numbers
-below are the composited result against the default card (`neutral-100`), on the `ha` ramp:
+**Why these four slots, and not four others.** I rendered all eleven slots at `1f` alpha over every
+`SurfaceChoice`, in both modes, on the default `ha` ramp and on a tinted ramp (`mauve`, to check
+that a tint keeps the four steps in the same order). The numbers
+below are the composited result against the default card (`neutral-100`; dark card `neutral-05`),
+on the `ha` ramp:
 
-| Slot | Light, composited over `#ffffff` | Dark, composited over `#202020` |
+| Slot | Light, composited over `#ffffff` | Dark, composited over `#141414` |
 |---|---|---|
-| neutral-05 (**Strong**) | `#e2e2e2` | `#3a3a3a` |
-| neutral-10 | `#e4e4e4` | `#383838` |
-| neutral-20 | `#e7e7e7` | `#353535` |
-| neutral-30 (**Medium**) | `#e9e9e9` | `#323232` |
-| neutral-40 | `#ebebeb` | `#2f2f2f` |
-| neutral-50 | `#efefef` | `#2b2b2b` |
-| neutral-60 (**Subtle**) | `#f2f2f2` | `#282828` |
-| neutral-70 | `#f6f6f6` | `#252525` |
-| neutral-80 (**Hairline**) | `#f9f9f9` | `#232323` |
-| neutral-90 | `#fcfcfc` | `#202020` |
-| neutral-95 | `#fefefe` | `#1f1f1f` |
+| neutral-05 (**Strong**) | `#e2e2e2` | `#2f2f2f` |
+| neutral-10 | `#e4e4e4` | `#2e2e2e` |
+| neutral-20 | `#e7e7e7` | `#2a2a2a` |
+| neutral-30 (**Medium**) | `#e9e9e9` | `#272727` |
+| neutral-40 | `#ebebeb` | `#242424` |
+| neutral-50 | `#efefef` | `#242424` |
+| neutral-60 (**Subtle**) | `#f2f2f2` | `#202020` |
+| neutral-70 | `#f6f6f6` | `#1d1d1d` |
+| neutral-80 (**Hairline**) | `#f9f9f9` | `#1b1b1b` |
+| neutral-90 | `#fcfcfc` | `#181818` |
+| neutral-95 | `#fefefe` | `#151515` |
 
 Two things follow from this table. First, the eleven raw slots really do cluster towards the light
-end — `neutral-80` through `neutral-95` composite within two or three points of each other and of
-the card. This confirms the flag. Four slots spread across the full range, rather than four
-adjacent ones, keep each step visually distinct. Second, **`neutral-90` is disqualified, not just
-skipped.** At the default card (`neutral-100`) in dark mode, `neutral-90`'s mirrored render slot is
-`neutral-10`, which composites to `#202020` — the *exact* hex of the dark card background. That
-is an accidental full match, not the deliberate Invisible step, and it happens on the single most
-common configuration a user sees (`DEFAULT_CONFIG.cardBackground` is `"neutral-100"`). No other slot in
-the four I picked produces an exact collision on any of the four `SurfaceChoice` values, in either
-mode, on either ramp I checked.
+end in light mode — `neutral-80` through `neutral-95` composite within two or three points of each
+other and of the card. Four slots spread across the full range, rather than four adjacent ones,
+keep each step visually distinct. Second, **the border never equals the card, in both modes, for
+every surface choice and each of the four steps, and the four steps stay at four distinct
+positions.** A test checks all 16 surface combinations, the four steps and both modes. The offset
+never exceeds the room, so the border position stays between 0 and 12.
 
-The four steps stay in the same order under both checks the owner asked for: they stay monotonic
-in dark mode, where the render slot mirrors (`neutral-05` always renders as the *lightest* dark-mode
-slot and still reads as the strongest step, because a light border on a dark card and a dark
-border on a light card carry the same *strength*), and they stay monotonic on a tinted ramp
-(`mauve`'s four picks composite to `#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#3e373f /
-#372f38 / #2d242e / #282029` in dark — same spread, same order, tinted instead of grey).
+The four steps keep their order in both modes: Strong is the most visible step and Hairline the
+least. They keep the same order on a tinted ramp (`mauve`'s four picks composite to
+`#e3e2e3 / #eae8ea / #f3f2f3 / #f9f8f9` in light, `#322d33 / #2a252b / #241e25 / #1e181f` in dark — same spread, same order,
+tinted instead of grey).
 
 **The mini-card.** Each of the five options renders as a small card, not a color chip: that
 option's real card background, a real `1px` border at the step's alpha, and a real shadow under
 it. This is possible without any precomputed blend — a CSS border with an alpha color, painted
 over a background of the actual card color, is composited by the browser itself, so what renders
 already **is** the on-card result. The sidebar is mode-agnostic everywhere else, but this knob
-reads in opposite directions per mode (`derive.ts:445` mirrors the slot in dark), so each mini-card
+reads in opposite directions per mode (the border is darker than the card in light and lighter in dark), so each mini-card
 splits diagonally: the light render on the upper-left triangle, the dark render on the lower-right,
 both visible at once. Implementation: two full-size cards stacked, the lower one a plain
 rectangle for the light half, the upper one identical but clipped to a lower-right triangle
@@ -553,28 +553,14 @@ no longer shares a base with the border knob. Both match this spec's
 earlier proposal.
 
 **`"match-card"` resolves to the literal, already-computed
-`card-background-color` for the current mode** — never a ramp lookup, never
-`mirrorSlot()`. Confirmed against the shipped code: `derive.ts:550-554`
-reads `surface.card` directly when `config.borderColor === "match-card"`,
-and falls through to a plain neutral-ramp lookup otherwise.
+`card-background-color` for the current mode** — never a ramp lookup. The
+engine reads `surface.card` directly when `config.borderColor === "match-card"`.
+Any other value places the border relative to the card (§2.5).
 
-**The worked example that proved a ramp mirror gives the wrong answer needs
-a new pair of numbers.** An earlier draft of this spec used `cardBackground:
-"neutral-90"` against `primaryBackground: "neutral-95"`, and the *old*
-`surfaces()` computed a dark card at `neutral-05` for that pair. The
-shipped `surfaces()` computes a different answer for the same pair —
-`neutral-10`, not `neutral-05` — so that example no longer demonstrates
-anything about the shipped code. The proof still holds. Only the numbers
-need to come from a config that does not depend on which version of
-`surfaces()` a reader has open. The **default config** makes the same case
-and stays correct the next time the math changes: the light card is
-`neutral-100`. `mirrorSlot(100)` is `neutral-00` — pure black, `#000000`.
-The real dark card `surfaces()` computes is `#202020` (`neutral-10`),
-because the dark card is a *joint* function of both surface knobs (below),
-not a mirror of the light card's own slot in isolation. I checked this
-against the shipped `derive.ts` directly. I traced `surfaces()` by hand for
-`derive({})`'s default config, and did not copy the numbers from any brief
-on trust.
+**The dark card is a *joint* function of both surface knobs (below).** At
+the default config the light card is `neutral-100` and the dark card is
+`neutral-05` (`#141414`). Page `neutral-90` with card `neutral-100` gives a
+dark card at `neutral-10` (`#202020`).
 
 **`--shadow-color` always derives from `neutral-05`**, independent of the
 border knob's value and of mode — only the alpha changes (`29` light, `7a`
@@ -586,45 +572,34 @@ the full resolution of that conflict inside the reference file.
 
 #### How `surfaces()` derives the dark pair
 
-Card, page and secondary backgrounds are derived together, not one at a
-time, and `"match-card"` reads directly out of the joint result
-(`derive.ts:198-230`). In this spec's own terms, not the engine's:
+The dark surfaces are the mirror of the light surfaces, and each surface keeps
+its rank. Card, page and secondary backgrounds are derived together, and
+`"match-card"` reads directly out of the joint result. In this spec's own
+terms, not the engine's:
 
-1. **Find whichever of the card and the page is darker in light mode.**
-2. **Mirror that one's own ramp position** — the same `100 - slot` inversion
-   as everywhere else in dark mode — to place it in dark mode.
-3. **Place the other surface the same number of steps away from that
-   anchor, toward the lighter end.** The gap the user's two choices express
-   stays the same in dark mode. So does which surface sits on top. Equal
-   choices mirror to the same anchor, and the gap is zero.
+1. **Find the positions of the card and the page in the 13-slot neutral
+   ramp.** Call the lower position `lo` and the higher position `hi`.
+2. **Place the darker dark surface at position `12 - hi`.** This is the mirror
+   of the lighter light surface.
+3. **Place the lighter dark surface at position `12 - lo`.** The gap between
+   the two surfaces is the same in both modes. The surface that is lighter in
+   light mode is lighter in dark mode. Equal choices sit at the same position
+   (`12 - hi`), and the gap is zero.
 
-The darker surface is the anchor for a second reason: it is also the
-clamp-safe direction. The derived value only ever gains steps away from the
-ramp's dark floor, never past it. The lighter surface as the anchor can
-push the other value's index below zero instead.
+Every dark position is the mirror of a valid light position, so it is always
+between `0` and `12`. The default config (page `neutral-95`, card
+`neutral-100`) gives a dark page at `neutral-00` (`#000000`) and a dark card at
+`neutral-05` (`#141414`).
 
-**All the arithmetic runs in index space, not slot numbers.** The neutral
+**All the arithmetic runs in positions, not slot numbers.** The neutral
 ramp's 13 slots are unevenly spaced (`0, 5, 10, 20, … 90, 95, 100`). A
 subtraction of slot numbers can produce a value with no matching slot, like
 `neutral-15`. `surfaces()` works on each slot's position in that 13-element
 array instead (`0` through `12`).
 
-**The clamp, and where it does not reach.** A position outside `0..12`
-clamps to the nearest end. It does not read past the array, and it does
-not throw. At that boundary, the derived surface is allowed to equal the same slot
-as its anchor — the two backgrounds collapse onto one color. That is not a
-new failure mode. It is the same thing that already happens on purpose when
-a user picks an equal slot for both choices, gap zero. **Today's four
-`SurfaceChoice` values never reach it** — checked across all sixteen
-ordered pairs, the widest gap any two of them express is 3 index-steps, and
-the derived surface never lands further than position 6 of the 0..12 range.
-The clamp exists for a future, wider `SurfaceChoice`, not for anything a
-user can pick today.
-
-`--secondary-background-color` keeps the rule this spec already documents —
-one step below the darker surface in light mode, two steps above the page
-in dark mode, never level with the card — unchanged in shape, only moved
-into the same index space as the rest of this section.
+`--secondary-background-color` sits one position below the darker surface in
+light mode. In dark mode it sits one position above the lighter surface, so it
+differs from the page and the card.
 
 #### The surface rename: `"white"` is `"neutral-100"`
 
@@ -969,16 +944,37 @@ rendered on it in `--text-primary-color`. The single most important derived valu
 "is text on the primary color legible", and rendering it makes the answer visible instead of
 reported. Hex sits below the chip in muted mono.
 
-A small warning glyph appears on any chip whose label fails **4.5:1** contrast, with a `Tooltip`
+**Every chip's label takes `--text-primary-color`, not a color-specific computation.** Home
+Assistant computes an on-color for the primary color only. Every other chip reuses that same
+value. Checked against the source: `ha-sidebar.ts`'s notification badge sets `color:
+var(--text-accent-color, var(--text-primary-color))`, and `--text-accent-color` has no
+definition anywhere in `color.globals.ts`, so the fallback always applies.
+`color.globals.ts:288` sets `--mdc-theme-on-secondary: var(--text-primary-color)`, and
+secondary is the accent color. A real screenshot
+(`home-assistant.io`, `source/images/integrations/repairs/number-of-repairs.png`) shows a white
+numeral on the orange accent badge — `--text-primary-color`'s own default
+(`color.globals.ts:10`), not a computed on-accent color. The newer `--ha-color-*` layer agrees:
+`semantic.globals.ts` sets every `--ha-color-on-*-loud` value to `var(--white-color)`, in light
+and dark mode, except `--ha-color-on-disabled-loud`.
+
+A small warning glyph appears on any chip whose label fails **3:1** contrast, with a `Tooltip`
 naming the ratio. Compute it with the engine's own `contrastRatio` — do not write your own.
 Non-blocking (§5.3).
 
-**There are two thresholds. Do not confuse them.** The engine picks *which* text color goes on a
-brand color with `contrastingText()`. That threshold is **6**, because 6 is what HA uses. See
-`derive.ts` and the engine README. The analysis doc §7.5 says 4.5 and is wrong. Our *warning* to
-the user is a separate thing, and it uses the WCAG AA threshold of **4.5**. The warning appears
-when even the best choice of the engine is still hard to read. So 6 selects the text color, and
-4.5 raises the warning. A chip can pass selection and still raise the warning.
+**There are two thresholds. Do not confuse them.** The engine picks *which* text color goes on
+the primary color with `contrastingText()`. That threshold is **6**, because 6 is what HA uses.
+See `derive.ts` and the engine README. The analysis doc §7.5 says 4.5 and is wrong. Our
+*warning* to the user is a separate thing, and it uses **3**, the WCAG AA level for large text —
+the owner's decision, because each chip's label renders at a large size. The warning appears
+when even Home Assistant's own choice of text color is still hard to read. So 6 selects the text
+color, and 3 raises the warning. A chip can pass selection and still raise the warning.
+
+Because Home Assistant reuses one on-color for every chip, a color that would pick its own
+on-color under a color-specific computation can still fail 3:1 against the shared one. Under
+`DEFAULT_CONFIG`, `--text-primary-color` is `#ffffff`. Against it, Accent scores 2.16:1 and
+Warning scores 2.21:1 — both fail 3:1. Primary (3.26:1), Error (4.59:1), Success (3.00:1) and
+Info (3.08:1) clear it. This is not a defect in the builder. It is Home Assistant's own theme,
+rendered honestly.
 
 *Alternative considered:* keep the numeric "vs list row: 3.2" contrast readout of the artifact.
 Rejected. A HA user has no calibration for a ratio. The illegible text carries the same
@@ -1095,7 +1091,7 @@ The rule: **warn, never block.** It is the user's theme.
 
 | Situation | Behavior |
 |---|---|
-| Text on a brand/status color falls below 4.5:1 | Warning glyph on that chip in the preview (§4.3) **and** a warning row at the bottom of that knob's popover. Both name the problem in plain words: *"White text on this color is hard to read."* |
+| Text on a brand/status color falls below 3:1 | Warning glyph on that chip in the preview (§4.3) **and** a warning row at the bottom of that knob's popover. Both name the problem in plain words and name Home Assistant as the source of the low contrast, not a choice this builder made. |
 | A brand color is so light or dark that its generated ramp clips at one end | No special UI. The engine clamps. The ramp preview renders the flattening honestly. |
 | Secondary text falls below 4.5:1 on the card background in either mode | One warning row under the **Base tone** group: *"Secondary text is low contrast in dark mode with this base tone."* |
 | Card background = Primary background (both Neutral 100, or both Neutral 95) | Allowed. The Surfaces preview renders the two tiles as identical. That is the honest feedback. No warning. |
@@ -1484,6 +1480,21 @@ their missing preview surface. What that changed, and what stayed:
 **Headings, Longform and Code are deferred, not dropped.** They come back in a later version. The
 engine already carries their fields with no migration needed to bring them back — §7.3 and §6.2
 item 10 both say so for an implementer who reaches this document later.
+
+### 2026-08-14 — Brand & status: one on-color, not six, and a corrected threshold
+
+M3 review caught a defect in the built preview, traced back to a gap this spec left open: §4.3
+never said how the five non-primary chips get their label color, and the M3 build computed one
+with `contrastingText()` for each. Home Assistant does not do this. What changed:
+
+| Was | Now | Where |
+|---|---|---|
+| Implied a computed on-color per chip | **Every chip's label takes `--text-primary-color`.** Home Assistant computes an on-color for the primary color only. `ha-sidebar.ts`'s notification badge, `color.globals.ts:288`'s `--mdc-theme-on-secondary`, a real screenshot of the orange accent badge, and `semantic.globals.ts`'s `--ha-color-on-*-loud` set (all `var(--white-color)` except disabled) agree. | §4.3 |
+| Warning threshold **4.5:1** (WCAG AA, normal text) | **3:1** (WCAG AA, large text) — the owner's decision, because each chip's label renders at a large size | §4.3, §5.3 |
+| No worked example | Under `DEFAULT_CONFIG`, `--text-primary-color` is `#ffffff`. Accent (2.16:1) and Warning (2.21:1) fail 3:1. Primary (3.26:1), Error (4.59:1), Success (3.00:1) and Info (3.08:1) clear it. | §4.3 |
+
+The 6:1 threshold that selects `--text-primary-color` itself did not move — it is engine
+behavior (`derive.ts:471`, `contrastingText()`), and Home Assistant's own rule.
 
 ---
 

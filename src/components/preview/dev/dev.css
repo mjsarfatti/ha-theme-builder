@@ -1,0 +1,4 @@
+@import "../../../index.css";
+
+/* The Vite root is dev/, so Tailwind source detection misses the rest of src/. */
+@source "../../../";

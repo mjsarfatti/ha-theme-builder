@@ -5,13 +5,12 @@ import {
   DEFAULT_CONFIG,
   derive,
   modeVars,
-  neutralRampAt,
   resolveConfig,
   toCssProperties,
 } from "../derive.ts";
 import { contrastingText } from "../ha-math.ts";
 import { getExtendedPalette, getNeutralRamp, KNOB_SLOT } from "../presets/index.ts";
-import { RAMP_SLOTS } from "../types.ts";
+import { NEUTRAL_RAMP_SLOTS, RAMP_SLOTS, type NeutralRampSlot } from "../types.ts";
 import { parseTemplateCss, templateCssKeys } from "./template-css.ts";
 
 /** Expands the short hex literals of `template.css`, such as `#ccc` and `#0003`. */
@@ -222,7 +221,7 @@ describe("derive — knobs reach their variables", () => {
     expect(theme.light["divider-color"]).toBe(`${ramp[40]}1f`);
     expect(theme.light["outline-color"]).toBe(`${ramp[40]}1f`);
     expect(theme.light["outline-hover-color"]).toBe(`${ramp[40]}3d`);
-    // Dark mirrors the slot: 40 -> 60.
+    // k = 7 and room 11 give offset 6: position 7 = neutral-60.
     expect(theme.dark["divider-color"]).toBe(`${ramp[60]}1f`);
   });
 
@@ -302,6 +301,136 @@ describe("derive — palette-referenced seed colours", () => {
   });
 });
 
+describe("derive — border colour: scaled distance from the card", () => {
+  const surfaceChoices = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
+  const steps = ["neutral-80", "neutral-60", "neutral-30", "neutral-05"] as const;
+  const last = NEUTRAL_RAMP_SLOTS.length - 1;
+  const ha = getNeutralRamp("ha").ramp;
+  const positionOf = (hex: string) => NEUTRAL_RAMP_SLOTS.findIndex((slot) => ha[slot] === hex);
+  const slotPosition = (id: string) =>
+    NEUTRAL_RAMP_SLOTS.indexOf(Number(id.slice(8)) as NeutralRampSlot);
+
+  /** Every surface combination, step and mode with the border position the engine produced. */
+  const cases = surfaceChoices.flatMap((primaryBackground) =>
+    surfaceChoices.flatMap((cardBackground) => {
+      const surfaces = derive({ primaryBackground, cardBackground });
+      return steps.flatMap((borderColor) => {
+        const t = derive({ primaryBackground, cardBackground, borderColor });
+        return (["light", "dark"] as const).map((mode) => ({
+          label: `${mode}: page ${primaryBackground} / card ${cardBackground} / ${borderColor}`,
+          mode,
+          borderColor,
+          primaryBackground,
+          cardBackground,
+          t,
+          cardIdx: positionOf(surfaces[mode]["card-background-color"]),
+          borderIdx: positionOf(t[mode]["divider-color"].slice(0, 7)),
+        }));
+      });
+    }),
+  );
+
+  it("covers 16 surface combinations x 4 steps x 2 modes", () => {
+    expect(cases).toHaveLength(128);
+  });
+
+  it("places the border k/12 of the room away from the card, rounded half up", () => {
+    for (const c of cases) {
+      const k = last - slotPosition(c.borderColor);
+      const room = c.mode === "light" ? c.cardIdx : last - c.cardIdx;
+      const offset = Math.floor((room * k) / last + 0.5);
+      const expected = c.mode === "light" ? c.cardIdx - offset : c.cardIdx + offset;
+      expect(c.borderIdx, c.label).toBe(expected);
+      expect(expected, c.label).toBeGreaterThanOrEqual(0);
+      expect(expected, c.label).toBeLessThanOrEqual(last);
+    }
+  });
+
+  it("derives outline-hover-color from the same base as divider-color", () => {
+    for (const c of cases) {
+      expect(c.t[c.mode]["outline-hover-color"].slice(0, 7), c.label).toBe(
+        c.t[c.mode]["divider-color"].slice(0, 7),
+      );
+    }
+  });
+
+  it("never gives the border the card colour", () => {
+    for (const c of cases) {
+      expect(c.t[c.mode]["divider-color"].slice(0, 7), c.label).not.toBe(
+        c.t[c.mode]["card-background-color"],
+      );
+    }
+  });
+
+  it("keeps the four steps at distinct positions, in order", () => {
+    for (const primaryBackground of surfaceChoices) {
+      for (const cardBackground of surfaceChoices) {
+        for (const mode of ["light", "dark"] as const) {
+          const positions = cases
+            .filter(
+              (c) =>
+                c.mode === mode &&
+                c.primaryBackground === primaryBackground &&
+                c.cardBackground === cardBackground,
+            )
+            .map((c) => c.borderIdx);
+          const label = `${mode}: page ${primaryBackground} / card ${cardBackground}`;
+          expect(new Set(positions).size, label).toBe(4);
+          const sorted = [...positions].sort((a, b) => (mode === "light" ? b - a : a - b));
+          expect(positions, label).toEqual(sorted);
+        }
+      }
+    }
+  });
+
+  it("gives the light border values per card", () => {
+    const expected = {
+      "neutral-100": [80, 60, 30, 5],
+      "neutral-95": [70, 50, 30, 5],
+      "neutral-90": [60, 50, 20, 5],
+      "neutral-80": [60, 40, 20, 5],
+    } as const;
+    for (const cardBackground of surfaceChoices) {
+      steps.forEach((borderColor, i) => {
+        const t = derive({ cardBackground, borderColor });
+        expect(t.light["divider-color"], `${cardBackground} ${borderColor}`).toBe(
+          `${ha[expected[cardBackground][i]]}1f`,
+        );
+      });
+    }
+  });
+
+  it("keeps the light border values at the default card", () => {
+    for (const [borderColor, slot] of [
+      ["neutral-80", 80],
+      ["neutral-60", 60],
+      ["neutral-30", 30],
+      ["neutral-05", 5],
+    ] as const) {
+      expect(derive({ borderColor }).light["divider-color"]).toBe(`${ha[slot]}1f`);
+    }
+  });
+
+  it("gives the dark border values per light page choice", () => {
+    const expected = {
+      "neutral-95": { card: 5, border: [30, 50, 70, 95] },
+      "neutral-100": { card: 0, border: [20, 40, 70, 95] },
+      "neutral-90": { card: 10, border: [40, 50, 80, 95] },
+      "neutral-80": { card: 20, border: [40, 60, 80, 95] },
+    } as const;
+    for (const primaryBackground of surfaceChoices) {
+      const { card, border } = expected[primaryBackground];
+      expect(derive({ primaryBackground }).dark["card-background-color"]).toBe(ha[card]);
+      steps.forEach((borderColor, i) => {
+        const t = derive({ primaryBackground, borderColor });
+        expect(t.dark["divider-color"], `${primaryBackground} ${borderColor}`).toBe(
+          `${ha[border[i]]}1f`,
+        );
+      });
+    }
+  });
+});
+
 describe("derive — border colour: match-card", () => {
   it("resolves to the current mode's own card colour, not a ramp lookup", () => {
     const theme = derive({ borderColor: "match-card" });
@@ -311,11 +440,17 @@ describe("derive — border colour: match-card", () => {
     expect(theme.dark["outline-hover-color"]).toBe(`${theme.dark["card-background-color"]}3d`);
   });
 
-  it("does not equal a naive mirrorSlot of the light card's own slot", () => {
-    // The default card is neutral-100. Its mirror neutral-00 (#000000) differs from the dark card.
-    const theme = derive({ borderColor: "match-card" });
-    expect(theme.dark["card-background-color"]).not.toBe("#000000");
-    expect(theme.dark["card-background-color"]).toBe(getNeutralRamp("ha").ramp[10]); // #202020
+  it("uses the dark card of the surface rule, not a mirror of the light card's slot", () => {
+    // Page neutral-90 and card neutral-100 give a dark card at neutral-10.
+    // A mirror of the card's own slot (100 - 100) would give neutral-00.
+    const ramp = getNeutralRamp("ha").ramp;
+    const theme = derive({
+      borderColor: "match-card",
+      primaryBackground: "neutral-90",
+      cardBackground: "neutral-100",
+    });
+    expect(theme.dark["card-background-color"]).toBe(ramp[10]);
+    expect(theme.dark["divider-color"]).toBe(`${ramp[10]}1f`);
   });
 
   it("composites away to exactly the card colour (the Invisible step)", () => {
@@ -360,12 +495,14 @@ describe("derive — shadow colour is decoupled from the border knob", () => {
     );
   });
 
-  it("survives the match-card border without vanishing (card-on-card)", () => {
-    const theme = derive({ borderColor: "match-card" });
-    expect(theme.light["shadow-color"].slice(0, 7)).not.toBe(
-      theme.light["card-background-color"],
+  it("is the same with the match-card border as with the default border", () => {
+    const matched = derive({ borderColor: "match-card" });
+    const fallback = derive();
+    expect(matched.light["shadow-color"]).toBe(fallback.light["shadow-color"]);
+    expect(matched.dark["shadow-color"]).toBe(fallback.dark["shadow-color"]);
+    expect(matched.light["shadow-color"].slice(0, 7)).not.toBe(
+      matched.light["card-background-color"],
     );
-    expect(theme.dark["shadow-color"].slice(0, 7)).not.toBe(theme.dark["card-background-color"]);
   });
 });
 
@@ -380,16 +517,143 @@ describe("derive — light and dark", () => {
     expect(Object.keys(theme.light).sort()).toEqual(Object.keys(theme.dark).sort());
   });
 
-  it("reproduces HA's own dark defaults closely", () => {
-    // HA uses #1c1c1c, #111111 and #282828. The nearest neutral ramp values replace them.
-    expect(theme.dark["card-background-color"]).toBe("#202020"); // ~#1c1c1c
-    expect(theme.dark["primary-background-color"]).toBe("#141414"); // ~#111111
-    expect(theme.dark["secondary-background-color"]).toBe("#363636"); // ~#282828
+  it("derives the default dark surfaces from the lighter light surface", () => {
+    // Default config: page neutral-95, card neutral-100.
+    expect(theme.dark["primary-background-color"]).toBe("#000000"); // neutral-00
+    expect(theme.dark["card-background-color"]).toBe("#141414"); // neutral-05
+    expect(theme.dark["secondary-background-color"]).toBe("#202020"); // neutral-10
     expect(theme.dark["primary-text-color"]).toBe("#ffffff");
   });
 
+  it("puts page neutral-90 and card neutral-100 on dark page neutral-00 and card neutral-10", () => {
+    const ha = getNeutralRamp("ha").ramp;
+    const t = derive({ primaryBackground: "neutral-90", cardBackground: "neutral-100" });
+    expect(t.dark["primary-background-color"]).toBe(ha[0]);
+    expect(t.dark["primary-background-color"]).toBe("#000000");
+    expect(t.dark["card-background-color"]).toBe(ha[10]);
+    expect(t.dark["card-background-color"]).toBe("#202020");
+  });
+
+  describe("surface positions over all 16 SurfaceChoice combinations", () => {
+    const choices = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
+    const position = (choice: (typeof choices)[number]) =>
+      NEUTRAL_RAMP_SLOTS.indexOf(Number(choice.slice(8)) as NeutralRampSlot);
+    const last = NEUTRAL_RAMP_SLOTS.length - 1;
+    const ha = getNeutralRamp("ha").ramp;
+    const positionOf = (hex: string) =>
+      NEUTRAL_RAMP_SLOTS.findIndex((slot) => ha[slot] === hex);
+
+    const cases = choices.flatMap((primaryBackground) =>
+      choices.map((cardBackground) => {
+        const pageIdx = position(primaryBackground);
+        const cardIdx = position(cardBackground);
+        const lo = Math.min(pageIdx, cardIdx);
+        const hi = Math.max(pageIdx, cardIdx);
+        const t = derive({ primaryBackground, cardBackground });
+        return {
+          label: `page ${primaryBackground} / card ${cardBackground}`,
+          pageIdx,
+          cardIdx,
+          lo,
+          hi,
+          t,
+          darkPage: positionOf(t.dark["primary-background-color"]),
+          darkCard: positionOf(t.dark["card-background-color"]),
+          darkSecondary: positionOf(t.dark["secondary-background-color"]),
+        };
+      }),
+    );
+
+    it("covers 16 combinations", () => {
+      expect(cases).toHaveLength(16);
+    });
+
+    it("places the darker dark surface at 12 - hi and the lighter one at 12 - lo", () => {
+      for (const c of cases) {
+        const darker = last - c.hi;
+        const lighter = last - c.lo;
+        const expectedPage = c.pageIdx < c.cardIdx ? darker : lighter;
+        const expectedCard = c.cardIdx < c.pageIdx ? darker : lighter;
+        expect(c.darkPage, c.label).toBe(expectedPage);
+        expect(c.darkCard, c.label).toBe(expectedCard);
+      }
+    });
+
+    it("keeps the position gap between the surfaces the same in both modes", () => {
+      for (const c of cases) {
+        expect(Math.abs(c.darkPage - c.darkCard), c.label).toBe(c.hi - c.lo);
+      }
+    });
+
+    it("keeps the rank: the lighter light surface is the lighter dark surface", () => {
+      for (const c of cases) {
+        expect(Math.sign(c.darkCard - c.darkPage), c.label).toBe(Math.sign(c.cardIdx - c.pageIdx));
+      }
+    });
+
+    it("puts both surfaces at 12 - hi when the two choices are equal", () => {
+      for (const c of cases.filter((x) => x.pageIdx === x.cardIdx)) {
+        expect(c.darkPage, c.label).toBe(last - c.hi);
+        expect(c.darkCard, c.label).toBe(last - c.hi);
+      }
+    });
+
+    it("keeps every dark position between 0 and 12", () => {
+      for (const c of cases) {
+        for (const position of [c.darkPage, c.darkCard, c.darkSecondary]) {
+          expect(position, c.label).toBeGreaterThanOrEqual(0);
+          expect(position, c.label).toBeLessThanOrEqual(last);
+        }
+      }
+    });
+
+    it("puts the dark secondary one position above the lighter dark surface", () => {
+      for (const c of cases) {
+        expect(c.darkSecondary, c.label).toBe(Math.max(c.darkPage, c.darkCard) + 1);
+        expect(c.darkSecondary, c.label).not.toBe(c.darkPage);
+        expect(c.darkSecondary, c.label).not.toBe(c.darkCard);
+      }
+    });
+
+    it("puts the light secondary one position below the darker light surface", () => {
+      for (const c of cases) {
+        const light = c.t.light["secondary-background-color"];
+        expect(light, c.label).toBe(ha[NEUTRAL_RAMP_SLOTS[c.lo - 1]]);
+      }
+    });
+
+    it("matches the owner's slot table", () => {
+      const table: Record<string, [number, number]> = {
+        "100/100": [0, 0],
+        "95/100": [0, 5],
+        "90/100": [0, 10],
+        "80/100": [0, 20],
+        "100/95": [5, 0],
+        "95/95": [5, 5],
+        "90/95": [5, 10],
+        "80/95": [5, 20],
+        "100/90": [10, 0],
+        "95/90": [10, 5],
+        "90/90": [10, 10],
+        "80/90": [10, 20],
+        "100/80": [20, 0],
+        "95/80": [20, 5],
+        "90/80": [20, 10],
+        "80/80": [20, 20],
+      };
+      for (const [key, [page, card]] of Object.entries(table)) {
+        const [lightPage, lightCard] = key.split("/");
+        const t = derive({
+          primaryBackground: `neutral-${lightPage}` as (typeof choices)[number],
+          cardBackground: `neutral-${lightCard}` as (typeof choices)[number],
+        });
+        expect(t.dark["primary-background-color"], key).toBe(ha[page as NeutralRampSlot]);
+        expect(t.dark["card-background-color"], key).toBe(ha[card as NeutralRampSlot]);
+      }
+    });
+  });
+
   it("preserves card-over-page elevation in dark mode for every knob combination", () => {
-    // A neutral-95 card on a neutral-90 page must keep the dark card above the dark page.
     const options = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
     const value = (hex: string) => Number.parseInt(hex.slice(1), 16);
     for (const cardBackground of options) {
@@ -409,7 +673,6 @@ describe("derive — light and dark", () => {
   });
 
   it("never collapses two distinct light-mode choices onto the same dark slot", () => {
-    // The other surface sits above the anchor, so a light-mode gap stays a dark-mode gap.
     const options = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
     for (const cardBackground of options) {
       for (const primaryBackground of options) {
@@ -424,36 +687,11 @@ describe("derive — light and dark", () => {
   });
 
   it("mirrors both surfaces to the same slot when the light-mode choice is equal", () => {
-    // Equal choices have a gap of zero, so both surfaces take the anchor.
     const t = derive({ cardBackground: "neutral-90", primaryBackground: "neutral-90" });
     expect(t.light["card-background-color"]).toBe(t.light["primary-background-color"]);
     expect(t.dark["card-background-color"]).toBe(t.dark["primary-background-color"]);
-    // neutral-90 is position 10 of 13. Its mirror is position 2, neutral-10.
+    // neutral-90 is position 10 of 0..12, so the mirror is position 2 = neutral-10.
     expect(t.dark["card-background-color"]).toBe(getNeutralRamp("ha").ramp[10]);
-  });
-
-  it("computes the widest gap the current SurfaceChoice union can produce", () => {
-    // neutral-80 (position 9) and neutral-100 (position 12) give the widest gap, 3.
-    // The darker surface mirrors to position 3 (neutral-20).
-    // The other surface sits at position 6 (neutral-50).
-    const ha = getNeutralRamp("ha").ramp;
-    const cardDarker = derive({ cardBackground: "neutral-80", primaryBackground: "neutral-100" });
-    expect(cardDarker.dark["card-background-color"]).toBe(ha[20]);
-    expect(cardDarker.dark["primary-background-color"]).toBe(ha[50]);
-
-    const pageDarker = derive({ cardBackground: "neutral-100", primaryBackground: "neutral-80" });
-    expect(pageDarker.dark["primary-background-color"]).toBe(ha[20]);
-    expect(pageDarker.dark["card-background-color"]).toBe(ha[50]);
-  });
-
-  it("clamps to the ramp's own ends instead of escaping it — the boundary itself", () => {
-    // Call `neutralRampAt` directly: the current `SurfaceChoice` values stay inside the range.
-    const ha = getNeutralRamp("ha").ramp;
-    expect(neutralRampAt(ha, -1)).toBe(ha[0]);
-    expect(neutralRampAt(ha, -50)).toBe(ha[0]);
-    expect(neutralRampAt(ha, 12)).toBe(ha[100]);
-    expect(neutralRampAt(ha, 13)).toBe(ha[100]);
-    expect(neutralRampAt(ha, 50)).toBe(ha[100]);
   });
 
   it("keeps the secondary background distinct from the card and the page", () => {
@@ -546,7 +784,7 @@ describe("output shapes", () => {
   it("prefixes CSS custom properties for the preview containers", () => {
     const props = toCssProperties(derive(), "dark");
     expect(props["--primary-color"]).toBe("#009ac7");
-    expect(props["--card-background-color"]).toBe("#202020");
+    expect(props["--card-background-color"]).toBe("#141414");
     for (const key of Object.keys(props)) expect(key.startsWith("--")).toBe(true);
   });
 

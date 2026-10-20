@@ -93,7 +93,7 @@ describe("toYaml — structure", () => {
     const wrapped = toYaml(theme, { wrapper: "frontend" });
     const doc = parse(wrapped) as { frontend: { themes: Record<string, ParsedTheme> } };
     expect(doc.frontend.themes["My Theme"]["primary-color"]).toBe("#009ac7");
-    expect(doc.frontend.themes["My Theme"].modes.dark["card-background-color"]).toBe("#202020");
+    expect(doc.frontend.themes["My Theme"].modes.dark["card-background-color"]).toBe("#141414");
   });
 
   it("can drop the header and the section comments", () => {
