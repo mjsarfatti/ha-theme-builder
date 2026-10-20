@@ -3,7 +3,7 @@
 > Last updated: 2026-08-14
 > Wireframe: [`docs/wireframe/index.html`](./wireframe/index.html). Open the file directly in a
 > browser (no server, no build step). The wireframe has deliberately low fidelity. It is a
-> communication device, not a base for production code. **Real data:** all ten neutral ramps and all
+> communication device. Production code starts from this spec. **Real data:** all ten neutral ramps and all
 > eight extended palettes carry their real hex values from `.references/colors/`. The wireframe
 > exists to test the comparison of these presets. Everything else is a gray box. The wireframe has
 > no connection to the theme engine: the preview panels do not recolor, and the wireframe has no
@@ -42,7 +42,7 @@ Three decisions follow from this sentence:
 2. **The applied HA dashboard comes first.** The artifact places it at position 6. For a user
    who has never thought about design tokens, the dashboard *is* the answer to "does this look
    good". The token sections are the detail below it.
-3. **Export is always one click away.** Export is not a section at the bottom of a long scroll.
+3. **Export is always one click away.** Export is a button in the app bar.
 
 ---
 
@@ -170,12 +170,12 @@ it. The sheet contains:
     The Install tab also contains the `extra_module_url` font-loading snippet. It is **present
     only when Body is a non-system, non-Roboto font** (PLAN §3). v1 has one font knob (§3.2,
     §7.3), so `theme.webfonts` holds at most one entry and the export contains at most one
-    snippet. When Body is a system font or Roboto, the block is absent, not empty.
+    snippet. When Body is a system font or Roboto, the block is absent.
 
 The sheet is 560px wide. Esc and the backdrop dismiss it. It MUST carry a `SheetTitle` (shadcn
 requires one for accessibility, and `sr-only` hides it visually). Copy fires a toast. This is a
 **Base UI** project, so use the shadcn `toast` component (`toast.add({ title: "Copied to
-clipboard" })`) and not Sonner.
+clipboard" })`). The shadcn registry also contains `sonner`, which this project does not use (§6.3).
 
 **The preview has no "Generated values" scroll section.** The export sheet is the one home for
 export. It is always reachable, and the user does not scroll to the bottom of a 4000px page to
@@ -186,7 +186,7 @@ The **Export theme** button is a plain button (§7, O-4).
 ### 1.5 Responsive
 
 The layout is desktop-first. Where noted, breakpoints refer to the **available preview width**
-and not to the viewport.
+and not to the window width (the first column below reads "Viewport").
 
 | Viewport | Behavior |
 |---|---|
@@ -200,8 +200,8 @@ The two-column preview MUST NOT produce a horizontal scrollbar at any width. Wid
 ramp strip, the palette grid) shrinks its swatches. Below 28px per swatch, the labels disappear
 per the compact rule above. The content never overflows.
 
-This is not a phone tool. The app MUST work below 768px, but the layout is not optimized for
-that width.
+This is a desktop tool. The app MUST work below 768px, and the layout is optimized for wider
+screens.
 
 ---
 
@@ -246,7 +246,7 @@ The swatch is a rounded square filled with the current value. A 1px inset ring k
 near-white visible. The whole row is the trigger.
 
 The `Popover` uses `align="start"` and `side="right"` on desktop, so it opens over the preview
-and not over the other knobs of the sidebar. Its width is 300px. The content, top to bottom:
+over the other knobs of the sidebar. Its width is 300px. The content, top to bottom:
 
 ```
 ┌── 300px ───────────────────────────────────┐
@@ -288,9 +288,8 @@ purple, deep-purple, indigo, blue, light-blue, cyan, teal, green, light-green, l
 amber, orange, deep-orange, brown, blue-grey. Tooltip: `Amber · #ffc107`.
 
 **This group MUST re-render when the entity-palette preset changes**, including while a popover
-is open. This mechanism makes the picker palette-aware. It is a functional requirement and not
-decoration. The base tone (neutral ramp) is not a swatch source in this popover (see §2.2). A
-change of the base tone therefore changes nothing inside an open popover, and only the
+is open. This mechanism makes the picker palette-aware. It is a functional requirement. The base tone (neutral ramp) is not a swatch source in this popover (see §2.2). A
+change of the base tone therefore does not change anything inside an open popover, and only the
 entity-palette group re-renders.
 
 *Recommended refinement:* keep the popover open when the user changes the entity-palette preset
@@ -329,8 +328,7 @@ that swatch gets a 2px ring plus a check glyph and `aria-checked="true"`.
 ### 2.4 Free picking, hex entry, keyboard
 
 **Free picker** — *recommended*: `react-colorful`'s **`<HexColorPicker color={hex} onChange={fn} />`**.
-That single component renders *both* the saturation/value square and the hue slider. It is not a
-set of primitives to compose. The package exports no saturation-only or hue-only component. Style
+That single component renders *both* the saturation/value square and the hue slider. The package exports no saturation-only or hue-only component. Style
 the picker with overrides of the `.react-colorful*` class names (the package ships its own
 CSS-in-JS). Set the size with `.react-colorful { width: 100%; height: 190px }`. §6.4 has the
 checked details.
@@ -382,11 +380,11 @@ default).
 
 **Border color.** Eleven raw ramp slots at 12% alpha composite to near-identical light greys on a
 light card, so a user cannot tell the steps apart. The border pick also drives two other
-variables, not only the divider line: `--outline-hover-color` at `3d` alpha and `--shadow-color`
+variables in addition to the divider line: `--outline-hover-color` at `3d` alpha and `--shadow-color`
 at `29` light / `7a` dark (`derive.ts:444-453`). A color chip cannot show these effects.
-**The control renders the outcome, not the ingredient.**
+**The control renders the outcome.**
 
-**Five named steps, not eleven raw slots:**
+**Five named steps:**
 
 | Step | Config value | What it resolves to |
 |---|---|---|
@@ -429,7 +427,7 @@ Two facts follow from this table:
    not.
 2. **`neutral-90` is not a step.** At the default card (`neutral-100`) in dark mode, the mirrored
    render slot of `neutral-90` is `neutral-10`. It composites to `#202020`, the *exact* hex of the
-   dark card background. This is an accidental full match and not the deliberate Invisible step.
+   dark card background. This is an accidental full match.
    It happens in the most common configuration (`DEFAULT_CONFIG.cardBackground` is
    `"neutral-100"`). None of the four chosen slots produces an exact collision on any of the four
    `SurfaceChoice` values, in either mode, on either ramp that was checked.
@@ -441,9 +439,9 @@ The four steps keep their order in both checks:
   dark card and a dark border on a light card have the same *strength*.
 - They stay monotonic on a tinted ramp. The four picks of `mauve` composite to `#e3e2e3 /
   #eae8ea / #f3f2f3 / #f9f8f9` in light and `#3e373f / #372f38 / #2d242e / #282029` in dark.
-  The spread and the order are the same, tinted instead of grey.
+  The spread and the order are the same, with the tint of the ramp.
 
-**The mini-card.** Each of the five options renders as a small card and not as a color chip. The
+**The mini-card.** Each of the five options renders as a small card. The
 card has the real card background of that option, a real `1px` border at the alpha of the step,
 and a real shadow below it. No precomputed blend is necessary: the browser composites a CSS
 border with an alpha color over a background of the actual card color, so the render already
@@ -486,7 +484,7 @@ drops a stale entry on read and does not clear the whole list at once.
   of the commit, in epoch milliseconds.
 - **Value:** a JSON array of entries, newest first, with a cap of 8. This is the same cap that
   §2.3 sets for the Recent row of the popover.
-- **Staleness is per entry, not per list.** The staleness period is 7 days
+- **Staleness applies to each entry.** The staleness period is 7 days
   (`7 * 24 * 60 * 60 * 1000` milliseconds). A read drops every entry with a `lastUsedAt` older
   than 7 days from the current time, and then writes the filtered list back to `localStorage`.
   A read happens at app load and at every popover open, so a stale entry is never present when
@@ -521,7 +519,7 @@ picked from an entity-palette swatch follows that preset when the preset changes
 free-picked color stores a literal hex and never moves. `resolveConfig()`/`derive()` resolve a
 `PaletteRef` against the `palette` field of the same config, on every call.
 `theme.config.colors.*` always returns the value that the caller passed in (a reference or a
-literal), not the resolved hex.
+literal). The resolved hex is not in the config.
 
 `NeutralSlotId` is not a member of `SeedColor`. The neutral ramp is not a swatch source in this
 popover (§2.2), so no `colors.*` value needs to reference a neutral slot. A reference can name
@@ -529,8 +527,7 @@ only one of the 18 entity-palette colors, never one of the four generated ramps 
 orange, green). The engine generates those four ramps *from* these seed fields, so a reference
 into one of them has no fixed point to resolve to before the ramp exists.
 
-Build the popover as §2.2–§2.4 specify. An entity-palette swatch pick writes a `PaletteRef` and
-not a literal hex.
+Build the popover as §2.2–§2.4 specify. An entity-palette swatch pick writes a `PaletteRef`.
 
 #### Change 2 — border color's Invisible step
 
@@ -545,7 +542,7 @@ neutral-ramp lookup otherwise.
 **Worked example.** The default config shows that a ramp mirror gives the wrong answer. The light
 card is `neutral-100`. `mirrorSlot(100)` is `neutral-00`, pure black, `#000000`. The dark card
 that `surfaces()` computes is `#202020` (`neutral-10`), because the dark card is a *joint*
-function of both surface knobs (below) and not a mirror of the light-card slot alone. This
+function of both surface knobs (below). A mirror of the light-card slot alone gives a different value. This
 example stays correct when the math changes, because it depends only on the default config. A
 hand trace of `surfaces()` for the default config of `derive({})` against the shipped
 `derive.ts` produced these numbers.
@@ -573,7 +570,7 @@ The darker surface is the anchor for a second reason: this is the clamp-safe dir
 derived value moves only away from the dark floor of the ramp, never past it. With the lighter
 surface as anchor, the other value can fall below index zero.
 
-**All arithmetic runs in index space, not in slot numbers.** The 13 slots of the neutral ramp
+**All arithmetic runs in index space.** The 13 slots of the neutral ramp
 have uneven spacing (`0, 5, 10, 20, … 90, 95, 100`). A subtraction of slot numbers can give a
 value with no matching slot, such as `neutral-15`. `surfaces()` works on the position of each
 slot in the 13-element array (`0` through `12`).
@@ -584,7 +581,7 @@ its anchor, and the two backgrounds become one color. This is the same result as
 case in which a user picks an equal slot for both choices (gap zero). **The four current
 `SurfaceChoice` values never reach the clamp.** Across all sixteen ordered pairs, the widest gap
 is 3 index-steps, and the derived surface never lands beyond position 6 of the range `0..12`.
-The clamp is for a future, wider `SurfaceChoice` and not for anything that a user can pick today.
+The clamp is for a future, wider `SurfaceChoice`.
 
 `--secondary-background-color` follows this rule: one step below the darker surface in light
 mode, and two steps above the page in dark mode, never level with the card. It works in the same
@@ -614,7 +611,7 @@ reference ramp at typecheck time. The exported CSS surface does not grow either.
 does not define them, and the engine emits only `05`…`95` for every ramp, neutral included. The
 two extra slots feed `cardBackground`, `primaryBackground` and `borderColor` only.
 
-**The "Neutral ramp" preview section (§4.4) shows eleven swatches, not thirteen.**
+**The "Neutral ramp" preview section (§4.4) shows eleven swatches.** The Compare all dialog (§3.3) shows thirteen.
 `DerivedTheme.ramps.neutral` has the 11-shade shape. The engine narrows it from the 13 shades of
 the preset, so that swatch-row consumers do not need a special case for the two extra ends.
 The line "no black or white endpoints" in §4.4 is accurate. The **Compare all base tones** dialog
@@ -733,8 +730,8 @@ Group helper text: *"Every background, border and text color comes from this ram
 `SurfaceChoice` is `"neutral-100" | "neutral-95" | "neutral-90" | "neutral-80"`. `NeutralSlotId`
 is `"neutral-00"` … `"neutral-100"` (§2.7). The border knob also accepts the `"match-card"`
 sentinel (§2.7). `SurfaceChoice` and `NeutralSlotId` come from `src/engine/types.ts`. The control
-options for Card background and Primary background are the union members and not a hand-written
-list. The five named steps of Border color are a UI-only subset of the same union plus one
+options for Card background and Primary background are the union members. Do not hand-write
+the list. The five named steps of Border color are a UI-only subset of the same union plus one
 sentinel value. §2.5 gives the four slots, and §2.7 gives the sentinel.
 
 The border default is the **darkest** of the four named slots. `--divider-color` is `neutral-05`
@@ -766,7 +763,7 @@ Group helper text: *"These color entity icons and badges — a light is amber, a
 
 ### 3.3 Comparing 10 ramps and 8 palettes
 
-A dropdown of names ("Zinc", "Stone", "Mauve") tells the user nothing. Both preset pickers use
+A dropdown of names ("Zinc", "Stone", "Mauve") does not tell the user anything. Both preset pickers use
 the same pattern:
 
 **A vertical list of named color strips, one row per preset, with radio semantics.**
@@ -800,8 +797,7 @@ hardcode names and do not reorder for aesthetics:
 | Entity colors | `EXTENDED_PALETTES` → `.colors`, keyed by `PALETTE_COLOR_NAMES` | `ha`, `tailwind-v3`, `tailwind-v4`, `material-accent`, `ant-design`, `chakra-ui`, `bulma`, `rounded` |
 
 `preset.label` of the eight Tailwind-derived ramps has a suffix, for example **"Stone
-(Tailwind)"**. **The sidebar list strips the suffix.** It renders "Stone" and not "Stone
-(Tailwind)", because a 300px row does not need the provenance eight times (§7, O-8). **The
+(Tailwind)"**. **The sidebar list strips the suffix.** It renders "Stone", because a 300px row does not need the provenance eight times (§7, O-8). **The
 compare-all dialog keeps the full `preset.label`**, suffix included, because that view is the
 place for provenance. Strip only the pattern `" (Tailwind)"` at the end of the label. Do not
 change `preset.label` itself, the ids, or the sort order. The transform is a display transform
@@ -818,11 +814,11 @@ and a filled radio dot. Base UI provides full keyboard support (`↑`/`↓` move
 needs a real `DialogTitle`, and `sr-only` hides it visually. It holds the reference-table view:
 rows are steps and columns are presets, exactly as in `.references/colors/*.html`. A click on a
 column header selects that preset and closes the dialog. The data is already available, so the
-dialog costs almost nothing. It serves the user who wants to read individual hexes instead of
-comparing strips visually.
+dialog costs little. It serves the user who wants to read individual hexes. The strips serve
+visual comparison.
 
-**The table of the Base tone dialog has thirteen rows, not eleven.** Read it from the raw preset
-(`getNeutralRamp(id).ramp`, the 13-shade `NeutralRamp`, §2.7) and not from
+**The table of the Base tone dialog has thirteen rows.** The sidebar strip and §4.4 show eleven. Read it from the raw preset
+(`getNeutralRamp(id).ramp`, the 13-shade `NeutralRamp`, §2.7). Do not read it from
 `theme.ramps.neutral`. The engine narrows that field to eleven shades on purpose (§6.1, item 8),
 so it does not carry the `00` and `100` rows that this dialog needs. The extra rows sit exactly
 as `black-white-ramps.html` shows them: `neutral-00` above `neutral-05` and `neutral-100` below
@@ -832,7 +828,7 @@ dialog is the one place in the spec that shows all thirteen shades. The sidebar 
 columns and no such row.
 
 The presets are raw color data. The comparison renders them on the neutral surface of the
-builder and not inside a themed preview surface.
+builder.
 
 ---
 
@@ -847,7 +843,7 @@ three kinds, and the preview omits all three:
   the YAML where HA derives them from hex (PLAN M1). Nobody copies this number, and nothing
   exports it. It is noise.
 - **CSS variable names under every swatch.** **Cut everywhere**, Surfaces and Text included
-  (§7.1). The preview renders the result and not the identifier. §4.1 and §4.2 name the variable
+  (§7.1). The preview renders the result. §4.1 and §4.2 name the variable
   of each tile once, in prose. The sections do not repeat it on every tile.
 
 ### 4.1 Surfaces & dividers — **keep, trimmed**
@@ -863,7 +859,7 @@ three kinds, and the preview omits all three:
 
 The four tiles are `--primary-background-color`, `--card-background-color`,
 `--secondary-background-color`, `--divider-color`. The divider tile MUST render as a *card with a
-hairline rule across it* and not as a solid fill. A solid block of a 12%-alpha value misleads
+hairline rule across it*. A solid block of a 12%-alpha value misleads
 the reader about the function of the knob.
 
 ### 4.2 Text → **rename "Text & type", keep + one addition**
@@ -974,7 +970,7 @@ This is the largest reduction in the audit: 114 elements become 36.
 The room card is the best part of the artifact, and it needs the least work. It has five entity
 tiles, a brightness slider, and a room header with temperature and humidity. It already renders
 in both modes. **Keep it essentially as it is.** Rename the section to `Living room`. It is a
-dashboard, so it takes the label of a dashboard and not the label of a design exhibit.
+dashboard, so it takes the label of a dashboard.
 
 The room card exercises: card background, primary background, divider, both text colors, primary,
 and the border radius. It does not exercise error / warning / success / info or the extended
@@ -994,7 +990,7 @@ M5 adds **one second card** below the room card, in the same two-panel grid:
 - one alert strip in each of error, warning, success, info. They prove those four knobs
 - one entity row in the disabled/unavailable text color
 
-That is one extra card and not a dashboard. Everything in both cards MUST be built from theme
+That is one extra card. Everything in both cards MUST be built from theme
 variables, with zero hardcoded colors (M5 acceptance criterion).
 
 ### 4.7 Generated values — **cut as a section**
@@ -1021,27 +1017,27 @@ The export `Sheet` (§1.4) holds the YAML. The preview has no live YAML panel an
 `DEFAULT_CONFIG`. Every knob has a value, every preview section renders, and the Export button
 is enabled.
 
-That default is **Home Assistant Refined** and is not the theme that HA ships today. PLAN §3
+That default is **Home Assistant Refined**, a redesign of the theme that HA ships today. PLAN §3
 decision 9 (✅ 2026-08-11) defines it. `template.css` is a redesign. 40 variables per mode differ
 from stock, and the product models only the refined theme. The UI MUST NOT call the load state
 "the Home Assistant default". It is the starting point. Stock HA is an M7 starter preset.
 
 Consequences for copy, all of them MUST:
 
-- The reset button reads **"Reset to defaults"** and not "Reset to Home Assistant defaults".
+- The reset button reads **"Reset to defaults"**.
 - The UI does not claim that the untouched export matches a stock HA install.
 - The theme name field starts at `DEFAULT_CONFIG.name` = **`My Theme`** (§1.4).
 
 The only first-load affordance is one line under the app title:
 *"Turn the knobs on the left. Everything updates live, in light and dark at once."*
-The line is not dismissible and not a modal. **Reset to defaults** is disabled until at least one
+The line stays visible and sits inline under the app title. **Reset to defaults** is disabled until at least one
 knob differs from `DEFAULT_CONFIG`.
 
 ### 5.2 Loading state
 
 The loading state does not exist. The engine is synchronous and runs on the client. The UI has
 no spinners, no skeletons and no "generating…". If a knob change takes long enough to need one,
-that is an engine bug and not a UX problem. Webfont loading is the one asynchronous process.
+that is an engine bug. Webfont loading is the one asynchronous process.
 `display=swap` handles it, and no UI acknowledges it.
 
 ### 5.3 Extreme color choices
@@ -1057,7 +1053,7 @@ The rule: **warn, never block.** It is the user's theme.
 | Invalid hex typed | §2.4 — the field shows an error and the value stays unchanged. |
 
 Warnings are `Alert variant="default"` with a `TriangleAlert` icon and muted styling. They are
-informational and not destructive. A warning is never a toast. Toasts report things that already
+informational. A warning is never a toast. Toasts report things that already
 happened.
 
 ### 5.4 Cross-knob interactions
@@ -1073,8 +1069,8 @@ happened.
   `ThemeConfig.colors.*` accepts both.
 - **A change of the extended palette** re-renders the palette swatch group in open popovers and
   the §4.5 section. It does not change any other knob.
-- **Reset to defaults** opens an **`AlertDialog`** and not a `Dialog`, because it is a
-  destructive confirmation. It also clears the Recent list from `localStorage` (§2.6) and not
+- **Reset to defaults** opens an **`AlertDialog`**, because it is a
+  destructive confirmation (the plain `Dialog` serves Compare all, §3.3). It also clears the Recent list from `localStorage` (§2.6) and not
   only from memory.
 
 ---
@@ -1142,11 +1138,11 @@ happened.
 3. Three distinct color controls: popover picker (×6), inline mini-card list for Border color
    (×1, five named steps, §2.5), inline 4-swatch row (×2). §2.1.
 4. The entity-palette swatch group of the popover reads from the *current* palette preset in the
-   store. It is derived state and not a prop frozen at mount. The popover has no base-tone swatch
-   group (§2.2), so a base-tone change behind an open popover changes nothing inside that
+   store. It is derived state that updates when the preset changes. The popover has no base-tone swatch
+   group (§2.2), so a base-tone change behind an open popover does not change anything inside that
    popover. To check the palette group, open a popover, change the entity-palette preset in the
    sidebar behind it, and check that the swatch group updates.
-5. Hex commits on Enter/blur and not per keystroke (§2.4).
+5. Hex commits on Enter and on blur (§2.4).
 6. Each Border color mini-card renders a real `1px solid ${rampHex}1f` border over the own card
    background of that half. It does not use a precomputed blend. The browser composites the
    result live (§2.5).
@@ -1164,8 +1160,7 @@ happened.
     `Collapsible`, a **More** trigger, or a fifth `ThemeConfig` field for this. `ThemeConfig.fonts`
     already has the four fields it needs.
 11. `ThemeConfig.colors.*` is `SeedColor` (§2.7, Change 1). Build the "picked color follows its
-    preset" behavior: a click on an entity-palette swatch writes a `PaletteRef` (`"palette:red"`,
-    not a resolved hex), and the engine resolves it again against the current palette on every
+    preset" behavior: a click on an entity-palette swatch writes a `PaletteRef` (`"palette:red"`), and the engine resolves it again against the current palette on every
     `derive()` call. A typed or free-picked color writes a literal hex and never moves. The
     picker code does not need to know which case applies. It commits the string that the swatch
     or the hex field produces, and `ThemeConfig` accepts both.
@@ -1180,13 +1175,13 @@ happened.
 
 ### 6.3 shadcn components expected
 
-**This is a Base UI project and not a Radix project.** `components.json` pins
+**This is a Base UI project.** `.claude/skills/shadcn/rules/base-vs-radix.md` lists the differences from Radix. `components.json` pins
 `"style": "base-nova"`, the components import from `@base-ui/react/*`, and `radix-ui` is not a
 dependency. Consequences:
 
-- Composition uses the Base UI `render` prop and not the Radix `asChild`.
+- Composition uses the Base UI `render` prop (the Radix equivalent is `asChild`; see `base-vs-radix.md`).
 - `onOpenChange(open, details)` with `details.cancel()` replaces `onInteractOutside`.
-- Toasts use `toast` and not Sonner.
+- Toasts use `toast` (the registry also contains `sonner`, which this project does not use).
 
 Read the `shadcn` skill before you write UI.
 
@@ -1209,7 +1204,7 @@ To add. Every component returned 200 from
 | `select` | Font dropdown (`SelectGroup` + `SelectLabel` required) |
 | `radio-group` | Ramp picker, palette picker, all swatch groups (`RadioGroup` + `RadioGroupItem`) |
 | `dialog` | "Compare all" tables — needs a `DialogTitle` |
-| `alert-dialog` | Reset confirmation (destructive → `AlertDialog`, not `Dialog`) |
+| `alert-dialog` | Reset confirmation (destructive → `AlertDialog`) |
 | `sheet` | Export panel. Sidebar below 1024px — needs a `SheetTitle` |
 | `tabs` | Export sheet (`TabsTrigger` inside `TabsList`) |
 | `tooltip` | Swatch hex on hover/focus |
@@ -1270,8 +1265,8 @@ O-1 to O-9 are decided. Later sections cite a decision as `(§7, O-n)`.
 | # | Question | Decision |
 |---|---|---|
 | **O-1** | Do the three constrained knobs (border, card background, primary background) use the same popover as the other six? | **Inline controls** (§2.1, §2.5). |
-| **O-2** | How does the sidebar label the extended palette knob? `template.css` uses **"Home Assistant colors"**. Inside a Home Assistant theme builder, that label reads as "the colors" and not as "the eighteen named entity colors". | **"Entity colors."** Every place in this spec that names the knob or its preview section reads "Entity colors" (§1.3, §2.3, §3.2, §3.3, §4.5). The string in `template.css` stays as it is. Only the UI label differs. |
-| **O-3** | Does a color picked *from* a palette strip follow the preset when the user changes the preset, or does it stay? | **It follows the preset.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue and not the resolved hex. The ramp is not a swatch source for this popover (§2.2), so this decision applies to the palette only. §2.7 Change 1 has the full specification. The engine implements it (PR #18). M3 and M4 build the real behavior. |
+| **O-2** | How does the sidebar label the extended palette knob? `template.css` uses **"Home Assistant colors"**. Inside a Home Assistant theme builder, that label reads as "the colors" in general, while the knob sets the eighteen named entity colors. | **"Entity colors."** Every place in this spec that names the knob or its preview section reads "Entity colors" (§1.3, §2.3, §3.2, §3.3, §4.5). The string in `template.css` stays as it is. Only the UI label differs. |
+| **O-3** | Does a color picked *from* a palette strip follow the preset when the user changes the preset, or does it stay? | **It follows the preset.** A color picked from a palette swatch follows that preset when the preset changes. The config stores the picked hue. The resolved hex is not in the config. The ramp is not a swatch source for this popover (§2.2), so this decision applies to the palette only. §2.7 Change 1 has the full specification. The engine implements it (PR #18). M3 and M4 build the real behavior. |
 | **O-4** | Does the preview keep a permanent live YAML section? | **No.** The export sheet holds the YAML. The **Export theme** button is a plain button and has no "12 variables changed" counter (§1.4). |
 | **O-5** | Is the applied demo the **first** preview section, above the token sections? | **Yes** (§1.3, §4.6). |
 | **O-6** | Is one dropdown of 19 items acceptable for the font shortlist (PLAN §3, ✅ 2026-08-09: 8 sans, 4 serif, 2 display serif, 2 mono and 3 system)? | **Yes.** One grouped `Select`, each item in its own typeface. O-9 limits v1 to one font knob, **Body font family**. |
@@ -1295,18 +1290,18 @@ not open questions.
 ### 7.2 Border color — 2026-08-14
 
 The 12%-alpha ramp strip reads as a row of near-identical light greys. It also hides that the
-pick drives `--outline-hover-color` and `--shadow-color` and not only the divider line.
+pick drives `--outline-hover-color` and `--shadow-color` in addition to the divider line.
 
 | Part | Decision |
 |---|---|
 | Render the outcome | Each option is a mini-card with a real card background, a real border and a real shadow. It splits diagonally: light half top-left, dark half bottom-right, both modes visible at once. §2.5 has the anatomy. |
-| Four named steps, not eleven slots | Hairline / Subtle / Medium / Strong. Each step is darker than the card and darker than the step before it. The steps are UI-only: `borderColor` stays `NeutralSlotId`, and the engine does not change. §2.5 has the slot picks and the rendered evidence. |
+| Four named steps | Hairline / Subtle / Medium / Strong. Each step is darker than the card and darker than the step before it. The steps are UI-only: `borderColor` stays `NeutralSlotId`, and the engine does not change. §2.5 has the slot picks and the rendered evidence. |
 | A fifth step, Invisible | It resolves to the chosen card surface, so the border disappears into the card. It needs an engine sentinel and a fix to `--shadow-color`, so that the shadow still renders when the border is Invisible. §2.7 (Change 2) specifies both. |
 
 **One work package, three engine changes (PR #18, `feat/engine-refs-and-surfaces`).** M3 and M4
 build all three:
 
-1. `ThemeConfig.colors.*` has the type `SeedColor` (`Hex | PaletteRef`) and not `Hex` (O-3,
+1. `ThemeConfig.colors.*` has the type `SeedColor` (`Hex | PaletteRef`) (O-3,
    palette-relative brand and status colors; §2.7, Change 1).
 2. `ThemeConfig["borderColor"]` has the type `NeutralSlotId | "match-card"` (the Invisible
    border step; §2.7, Change 2).
@@ -1318,7 +1313,7 @@ build all three:
 ### 7.3 Font knobs — 2026-08-14
 
 The Heading, Longform and Code knobs have no preview surface outside a dedicated specimen. The
-fix is fewer knobs and not more preview.
+fix is fewer knobs.
 
 | Part | Decision |
 |---|---|
