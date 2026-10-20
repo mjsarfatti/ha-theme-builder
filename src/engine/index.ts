@@ -14,14 +14,12 @@
  * const yaml = toYaml(theme);
  * ```
  *
- * See `README.md` in this directory for the full API and the derivation rules.
+ * `README.md` in this directory describes the API and the derivation rules.
  */
 
-// --- entry points ---------------------------------------------------------
 export { DEFAULT_CONFIG, derive, modeVars, resolveConfig, toCssProperties } from "./derive.ts";
 export { toYaml, quoteYamlScalar, type ToYamlOptions } from "./yaml.ts";
 
-// --- colour math ----------------------------------------------------------
 export { generateRamp, rampEntries, type GenerateRampOptions } from "./ramps.ts";
 export {
   alphaOf,
@@ -54,7 +52,6 @@ export {
   type Lab,
 } from "./ha-math.ts";
 
-// --- preset data ----------------------------------------------------------
 export {
   EXTENDED_PALETTES,
   FONT_CATEGORY_LABELS,
@@ -72,7 +69,6 @@ export {
   REFERENCE_RAMPS,
 } from "./presets/index.ts";
 
-// --- types ----------------------------------------------------------------
 export {
   RAMP_SLOTS,
   type CssVarMap,
