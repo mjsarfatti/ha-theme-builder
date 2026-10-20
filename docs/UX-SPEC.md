@@ -381,7 +381,7 @@ default).
 **Border color.** Eleven raw ramp slots at 12% alpha composite to near-identical light greys on a
 light card, so a user cannot tell the steps apart. The border pick also drives two other
 variables in addition to the divider line: `--outline-hover-color` at `3d` alpha and `--shadow-color`
-at `29` light / `7a` dark (`derive.ts:513-527`). A color chip cannot show these effects.
+at `29` light / `7a` dark (`forMode()` in `derive.ts`). A color chip cannot show these effects.
 **The control renders the outcome.**
 
 **Five named steps:**
@@ -550,7 +550,7 @@ light card is `neutral-100` and the dark card is `neutral-05` (`#141414`). Page 
 card `neutral-100` gives a dark card at `neutral-10` (`#202020`).
 
 **`--shadow-color` always derives from `neutral-05`**, independent of the value of the border
-knob and of the mode. Only the alpha changes (`29` light, `7a` dark). `derive.ts:527`:
+knob and of the mode. Only the alpha changes (`29` light, `7a` dark). `forMode()` in `derive.ts`:
 `vars["shadow-color"] = withAlpha(neutral[5], dark ? "7a" : "29")`. This line does not read
 `config.borderColor`. The engine follows the block NOTE at `template.css:144`. The per-line
 comment at line 148 names `--divider-color` instead. PR #18's body has the full resolution of
