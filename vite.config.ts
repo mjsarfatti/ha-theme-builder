@@ -7,8 +7,8 @@ import { configDefaults, defineConfig } from "vitest/config"
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  // GitHub Pages serves the site from the /ha-theme-builder/ sub-path.
-  base: "/ha-theme-builder/",
+  // GitHub Pages serves the site from a sub-path; PR previews override it with BASE_PATH.
+  base: process.env.BASE_PATH || "/ha-theme-builder/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
