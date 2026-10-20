@@ -969,16 +969,37 @@ rendered on it in `--text-primary-color`. The single most important derived valu
 "is text on the primary color legible", and rendering it makes the answer visible instead of
 reported. Hex sits below the chip in muted mono.
 
-A small warning glyph appears on any chip whose label fails **4.5:1** contrast, with a `Tooltip`
+**Every chip's label takes `--text-primary-color`, not a color-specific computation.** Home
+Assistant computes an on-color for the primary color only. Every other chip reuses that same
+value. Checked against the source: `ha-sidebar.ts`'s notification badge sets `color:
+var(--text-accent-color, var(--text-primary-color))`, and `--text-accent-color` has no
+definition anywhere in `color.globals.ts`, so the fallback always applies.
+`color.globals.ts:288` sets `--mdc-theme-on-secondary: var(--text-primary-color)`, and
+secondary is the accent color. A real screenshot
+(`home-assistant.io`, `source/images/integrations/repairs/number-of-repairs.png`) shows a white
+numeral on the orange accent badge — `--text-primary-color`'s own default
+(`color.globals.ts:10`), not a computed on-accent color. The newer `--ha-color-*` layer agrees:
+`semantic.globals.ts` sets every `--ha-color-on-*-loud` value to `var(--white-color)`, in light
+and dark mode, except `--ha-color-on-disabled-loud`.
+
+A small warning glyph appears on any chip whose label fails **3:1** contrast, with a `Tooltip`
 naming the ratio. Compute it with the engine's own `contrastRatio` — do not write your own.
 Non-blocking (§5.3).
 
-**There are two thresholds. Do not confuse them.** The engine picks *which* text color goes on a
-brand color with `contrastingText()`. That threshold is **6**, because 6 is what HA uses. See
-`derive.ts` and the engine README. The analysis doc §7.5 says 4.5 and is wrong. Our *warning* to
-the user is a separate thing, and it uses the WCAG AA threshold of **4.5**. The warning appears
-when even the best choice of the engine is still hard to read. So 6 selects the text color, and
-4.5 raises the warning. A chip can pass selection and still raise the warning.
+**There are two thresholds. Do not confuse them.** The engine picks *which* text color goes on
+the primary color with `contrastingText()`. That threshold is **6**, because 6 is what HA uses.
+See `derive.ts` and the engine README. The analysis doc §7.5 says 4.5 and is wrong. Our
+*warning* to the user is a separate thing, and it uses **3**, the WCAG AA level for large text —
+the owner's decision, because each chip's label renders at a large size. The warning appears
+when even Home Assistant's own choice of text color is still hard to read. So 6 selects the text
+color, and 3 raises the warning. A chip can pass selection and still raise the warning.
+
+Because Home Assistant reuses one on-color for every chip, a color that would pick its own
+on-color under a color-specific computation can still fail 3:1 against the shared one. Under
+`DEFAULT_CONFIG`, `--text-primary-color` is `#ffffff`. Against it, Accent scores 2.16:1 and
+Warning scores 2.21:1 — both fail 3:1. Primary (3.26:1), Error (4.59:1), Success (3.00:1) and
+Info (3.08:1) clear it. This is not a defect in the builder. It is Home Assistant's own theme,
+rendered honestly.
 
 *Alternative considered:* keep the numeric "vs list row: 3.2" contrast readout of the artifact.
 Rejected. A HA user has no calibration for a ratio. The illegible text carries the same
@@ -1095,7 +1116,7 @@ The rule: **warn, never block.** It is the user's theme.
 
 | Situation | Behavior |
 |---|---|
-| Text on a brand/status color falls below 4.5:1 | Warning glyph on that chip in the preview (§4.3) **and** a warning row at the bottom of that knob's popover. Both name the problem in plain words: *"White text on this color is hard to read."* |
+| Text on a brand/status color falls below 3:1 | Warning glyph on that chip in the preview (§4.3) **and** a warning row at the bottom of that knob's popover. Both name the problem in plain words and name Home Assistant as the source of the low contrast, not a choice this builder made. |
 | A brand color is so light or dark that its generated ramp clips at one end | No special UI. The engine clamps. The ramp preview renders the flattening honestly. |
 | Secondary text falls below 4.5:1 on the card background in either mode | One warning row under the **Base tone** group: *"Secondary text is low contrast in dark mode with this base tone."* |
 | Card background = Primary background (both Neutral 100, or both Neutral 95) | Allowed. The Surfaces preview renders the two tiles as identical. That is the honest feedback. No warning. |
@@ -1484,6 +1505,21 @@ their missing preview surface. What that changed, and what stayed:
 **Headings, Longform and Code are deferred, not dropped.** They come back in a later version. The
 engine already carries their fields with no migration needed to bring them back — §7.3 and §6.2
 item 10 both say so for an implementer who reaches this document later.
+
+### 2026-08-14 — Brand & status: one on-color, not six, and a corrected threshold
+
+M3 review caught a defect in the built preview, traced back to a gap this spec left open: §4.3
+never said how the five non-primary chips get their label color, and the M3 build computed one
+with `contrastingText()` for each. Home Assistant does not do this. What changed:
+
+| Was | Now | Where |
+|---|---|---|
+| Implied a computed on-color per chip | **Every chip's label takes `--text-primary-color`.** Home Assistant computes an on-color for the primary color only. `ha-sidebar.ts`'s notification badge, `color.globals.ts:288`'s `--mdc-theme-on-secondary`, a real screenshot of the orange accent badge, and `semantic.globals.ts`'s `--ha-color-on-*-loud` set (all `var(--white-color)` except disabled) agree. | §4.3 |
+| Warning threshold **4.5:1** (WCAG AA, normal text) | **3:1** (WCAG AA, large text) — the owner's decision, because each chip's label renders at a large size | §4.3, §5.3 |
+| No worked example | Under `DEFAULT_CONFIG`, `--text-primary-color` is `#ffffff`. Accent (2.16:1) and Warning (2.21:1) fail 3:1. Primary (3.26:1), Error (4.59:1), Success (3.00:1) and Info (3.08:1) clear it. | §4.3 |
+
+The 6:1 threshold that selects `--text-primary-color` itself did not move — it is engine
+behavior (`derive.ts:471`, `contrastingText()`), and Home Assistant's own rule.
 
 ---
 
