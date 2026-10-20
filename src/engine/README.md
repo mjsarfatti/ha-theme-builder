@@ -65,7 +65,7 @@ interface DerivedTheme {
 }
 ```
 
-`CssVarMap` keys are **bare** names (`primary-color`, not `--primary-color`), because
+`CssVarMap` keys are **bare** names (`primary-color`, without the prefix `--`), because
 HA's YAML uses that spelling. `common`, `light` and `dark` are disjoint: a variable
 appears in only one of them.
 
@@ -176,8 +176,8 @@ A knob that holds a reference tracks the palette preset. When `palette` changes 
 the same name in the new preset. The config does not need a new save.
 
 `derive()` resolves every reference before the ramp math runs. `theme.config.colors.*`
-always returns the value that the caller passed in (a reference or a literal), not the
-resolved hex.
+always returns the value that the caller passed in (a reference or a literal). The
+resolved hex is not in the config.
 
 A reference can name only one of the 18 static `PaletteColorName` entries (`"red"`,
 `"blue"`, …). A reference cannot name `primary`, `red`, `orange` or `green` as a
@@ -186,15 +186,15 @@ reference into one of them has no fixed point to resolve to before the ramp exis
 
 The `PaletteRef` type makes such a reference impossible to construct. `Hex` is a plain
 `string` alias, like the other color types in this codebase. For that reason, the
-guard in `resolveSeed()` in `derive.ts` is a runtime check, not a compile-time check.
+guard in `resolveSeed()` in `derive.ts` is a runtime check.
 `resolveSeed()` throws `RangeError` for a malformed string that reaches it past a type
 assertion. `getFont`, `getNeutralRamp` and `getExtendedPalette` throw the same error
 for an unknown id, and `normalizeHex` throws on a malformed hex.
 
 ### `borderColor`'s `"match-card"` sentinel
 
-`"match-card"` is an instruction, not a color. It tells the engine to read the
-*already computed* `card-background-color` of the current mode instead of a ramp slot.
+`"match-card"` is an instruction (the other values of `borderColor` are ramp slots). It tells
+the engine to read the *already computed* `card-background-color` of the current mode.
 The border then blends into the card. The UI calls this option **Invisible**.
 
 `"match-card"` resolves to the literal per-mode card value that `surfaces()` computes
@@ -227,7 +227,7 @@ lightness and hue.
 Two guarantees have tests:
 
 - **The seed stays exact** at its own slot. A seed that goes through the generator
-  returns the exact input hex, not a re-quantized approximation.
+  returns the exact input hex.
 - **A seed equal to the reference returns the reference ramp unchanged.** The default
   config therefore reproduces HA's shipped ramps byte for byte.
 
@@ -329,7 +329,7 @@ moves only away from the dark floor of the ramp, never past it. An anchor on the
 `neutral-100` card is an example. The card mirrors to slot 0, and the page needs slot
 −5, which does not exist.
 
-**Index space, not slot numbers.** The 13 slots of the neutral ramp have uneven
+**Index space.** The 13 slots of the neutral ramp have uneven
 spacing at both ends (`0, 5, 10, 20, … 90, 95, 100`). A subtraction of *slot numbers*
 can give a value with no slot, such as `neutral-15`. All arithmetic in `surfaces()`
 (the mirror, the gap, the "same number of steps") therefore runs on the *position* of
@@ -360,9 +360,8 @@ This matches the dark ordering of HA: `#111111` (page) `< #1c1c1c` (card) `< #28
 
 **`borderColor`'s `"match-card"` reads `surface.card` directly.** This is the exact
 per-mode value that this section describes. It is never a ramp lookup and never
-`mirrorSlot()`. The dark card is a *joint* function of both surface knobs. It is not a
-mirror of the light card slot alone, so a per-slot mirror gives a different and wrong
-hex. Example: the default config has the card at `neutral-100`. `mirrorSlot(100)` is
+`mirrorSlot()`. The dark card is a *joint* function of both surface knobs. A mirror of the
+light card slot alone gives a different and wrong hex. Example: the default config has the card at `neutral-100`. `mirrorSlot(100)` is
 `neutral-00`, pure black. The dark card that `surfaces()` computes is `#202020`
 (`neutral-10`). `derive.ts` reuses this one already-computed card value. It has no
 second way to compute a card color.
@@ -429,7 +428,7 @@ exports and tests the Lab functions for parity. `contrastingText` uses them.
 - **Keys are bare**, without the `--` prefix.
 - **The engine omits `rgb-*` companions wherever HA derives them itself.** That is
   wherever the base value starts with `#` (§4.1 step 5, the "hex only" rule of §5.5).
-  All variables of the current set qualify, so the engine emits none. The rule is
+  All variables of the current set qualify, so the engine does not emit any. The rule is
   generic: a test proves that a non-hex base gets its companion.
 - **The output is grouped and commented** like `template.css`. The user can read the two
   files side by side and understand what they paste.
