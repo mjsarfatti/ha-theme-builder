@@ -225,7 +225,7 @@ describe("derive — knobs reach their variables", () => {
     expect(theme.light["divider-color"]).toBe(`${ramp[40]}1f`);
     expect(theme.light["outline-color"]).toBe(`${ramp[40]}1f`);
     expect(theme.light["outline-hover-color"]).toBe(`${ramp[40]}3d`);
-    // Dark mirrors the slot: 40 -> 60.
+    // k = 7 and room 11 give offset 6: position 7 = neutral-60.
     expect(theme.dark["divider-color"]).toBe(`${ramp[60]}1f`);
   });
 
@@ -305,6 +305,136 @@ describe("derive — palette-referenced seed colours", () => {
     // (like every other seed field), so this is not a compile-time error —
     // same posture as `normalizeHex` throwing at runtime on a malformed hex.
     expect(() => derive({ colors: { accent: "palette:nope" } })).toThrow(RangeError);
+  });
+});
+
+describe("derive — border colour: scaled distance from the card", () => {
+  const surfaceChoices = ["neutral-100", "neutral-95", "neutral-90", "neutral-80"] as const;
+  const steps = ["neutral-80", "neutral-60", "neutral-30", "neutral-05"] as const;
+  const last = NEUTRAL_RAMP_SLOTS.length - 1;
+  const ha = getNeutralRamp("ha").ramp;
+  const positionOf = (hex: string) => NEUTRAL_RAMP_SLOTS.findIndex((slot) => ha[slot] === hex);
+  const slotPosition = (id: string) =>
+    NEUTRAL_RAMP_SLOTS.indexOf(Number(id.slice(8)) as NeutralRampSlot);
+
+  /** Every surface combination, step and mode with the border position the engine produced. */
+  const cases = surfaceChoices.flatMap((primaryBackground) =>
+    surfaceChoices.flatMap((cardBackground) => {
+      const surfaces = derive({ primaryBackground, cardBackground });
+      return steps.flatMap((borderColor) => {
+        const t = derive({ primaryBackground, cardBackground, borderColor });
+        return (["light", "dark"] as const).map((mode) => ({
+          label: `${mode}: page ${primaryBackground} / card ${cardBackground} / ${borderColor}`,
+          mode,
+          borderColor,
+          primaryBackground,
+          cardBackground,
+          t,
+          cardIdx: positionOf(surfaces[mode]["card-background-color"]),
+          borderIdx: positionOf(t[mode]["divider-color"].slice(0, 7)),
+        }));
+      });
+    }),
+  );
+
+  it("covers 16 surface combinations x 4 steps x 2 modes", () => {
+    expect(cases).toHaveLength(128);
+  });
+
+  it("places the border k/12 of the room away from the card, rounded half up", () => {
+    for (const c of cases) {
+      const k = last - slotPosition(c.borderColor);
+      const room = c.mode === "light" ? c.cardIdx : last - c.cardIdx;
+      const offset = Math.floor((room * k) / last + 0.5);
+      const expected = c.mode === "light" ? c.cardIdx - offset : c.cardIdx + offset;
+      expect(c.borderIdx, c.label).toBe(expected);
+      expect(expected, c.label).toBeGreaterThanOrEqual(0);
+      expect(expected, c.label).toBeLessThanOrEqual(last);
+    }
+  });
+
+  it("derives outline-hover-color from the same base as divider-color", () => {
+    for (const c of cases) {
+      expect(c.t[c.mode]["outline-hover-color"].slice(0, 7), c.label).toBe(
+        c.t[c.mode]["divider-color"].slice(0, 7),
+      );
+    }
+  });
+
+  it("never gives the border the card colour", () => {
+    for (const c of cases) {
+      expect(c.t[c.mode]["divider-color"].slice(0, 7), c.label).not.toBe(
+        c.t[c.mode]["card-background-color"],
+      );
+    }
+  });
+
+  it("keeps the four steps at distinct positions, in order", () => {
+    for (const primaryBackground of surfaceChoices) {
+      for (const cardBackground of surfaceChoices) {
+        for (const mode of ["light", "dark"] as const) {
+          const positions = cases
+            .filter(
+              (c) =>
+                c.mode === mode &&
+                c.primaryBackground === primaryBackground &&
+                c.cardBackground === cardBackground,
+            )
+            .map((c) => c.borderIdx);
+          const label = `${mode}: page ${primaryBackground} / card ${cardBackground}`;
+          expect(new Set(positions).size, label).toBe(4);
+          const sorted = [...positions].sort((a, b) => (mode === "light" ? b - a : a - b));
+          expect(positions, label).toEqual(sorted);
+        }
+      }
+    }
+  });
+
+  it("gives the light border values per card", () => {
+    const expected = {
+      "neutral-100": [80, 60, 30, 5],
+      "neutral-95": [70, 50, 30, 5],
+      "neutral-90": [60, 50, 20, 5],
+      "neutral-80": [60, 40, 20, 5],
+    } as const;
+    for (const cardBackground of surfaceChoices) {
+      steps.forEach((borderColor, i) => {
+        const t = derive({ cardBackground, borderColor });
+        expect(t.light["divider-color"], `${cardBackground} ${borderColor}`).toBe(
+          `${ha[expected[cardBackground][i]]}1f`,
+        );
+      });
+    }
+  });
+
+  it("keeps the light border values at the default card", () => {
+    for (const [borderColor, slot] of [
+      ["neutral-80", 80],
+      ["neutral-60", 60],
+      ["neutral-30", 30],
+      ["neutral-05", 5],
+    ] as const) {
+      expect(derive({ borderColor }).light["divider-color"]).toBe(`${ha[slot]}1f`);
+    }
+  });
+
+  it("gives the dark border values per light page choice", () => {
+    const expected = {
+      "neutral-95": { card: 5, border: [30, 50, 70, 95] },
+      "neutral-100": { card: 0, border: [20, 40, 70, 95] },
+      "neutral-90": { card: 10, border: [40, 50, 80, 95] },
+      "neutral-80": { card: 20, border: [40, 60, 80, 95] },
+    } as const;
+    for (const primaryBackground of surfaceChoices) {
+      const { card, border } = expected[primaryBackground];
+      expect(derive({ primaryBackground }).dark["card-background-color"]).toBe(ha[card]);
+      steps.forEach((borderColor, i) => {
+        const t = derive({ primaryBackground, borderColor });
+        expect(t.dark["divider-color"], `${primaryBackground} ${borderColor}`).toBe(
+          `${ha[border[i]]}1f`,
+        );
+      });
+    }
   });
 });
 

@@ -209,9 +209,9 @@ Nightshade:
       state-icon-color: "#bcb7ff"
 
       # Lines and shadows
-      divider-color: "#d1c9d11f"
-      outline-color: "#d1c9d11f"
-      outline-hover-color: "#d1c9d13d"
+      divider-color: "#e8e5e81f"
+      outline-color: "#e8e5e81f"
+      outline-hover-color: "#e8e5e83d"
       shadow-color: "#1712187a"
       scrollbar-thumb-color: "#524554"
 
