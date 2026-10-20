@@ -106,7 +106,7 @@ export interface OklchColor {
   l: number;
   /** Chroma, 0..~0.4 for sRGB. */
   c: number;
-  /** Hue in degrees, 0..360. */
+  /** Hue in degrees, 0..360. `NaN` for achromatic colors in culori. */
   h: number;
 }
 
