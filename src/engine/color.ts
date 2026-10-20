@@ -1,8 +1,8 @@
 /**
- * Hex, RGB and OKLCH colour helpers.
+ * Hex, RGB and OKLCH color helpers.
  *
- * Ramp generation uses OKLCH through `culori`. The HA-parity math in
- * `ha-math.ts` does not use `culori`.
+ * Ramp generation uses OKLCH through `culori`. `ha-math.ts` holds the
+ * HA-parity math with its own constants.
  */
 import { clampChroma, converter, formatHex, type Oklch } from "culori";
 
@@ -22,7 +22,7 @@ const HEX_RE = /^#?([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 /**
  * Converts a hex string to lowercase `#rrggbb`, or `#rrggbbaa` with alpha.
  *
- * Accepts 3, 4, 6 and 8 digits, with or without `#`. Throws a `TypeError`
+ * Accepts 3, 4, 6 and 8 digits and an optional `#`. Throws a `TypeError`
  * for any other input.
  *
  * @example
@@ -38,7 +38,7 @@ export function normalizeHex(input: string): Hex {
   return `#${digits}`;
 }
 
-/** Returns `true` when the string is a hex colour. */
+/** Returns `true` when the string is a hex color. */
 export function isHex(input: string): boolean {
   return HEX_RE.test(input.trim());
 }
@@ -48,7 +48,7 @@ export function opaqueHex(input: string): Hex {
   return normalizeHex(input).slice(0, 7);
 }
 
-/** Converts a hex colour to 0..255 RGB channels. */
+/** Converts a hex color to 0..255 RGB channels. */
 export function hexToRgb(input: string): Rgb255 {
   const hex = normalizeHex(input);
   return {
@@ -68,14 +68,14 @@ export function rgbToHex({ r, g, b }: Rgb255): Hex {
   return `#${channel(r)}${channel(g)}${channel(b)}`;
 }
 
-/** Formats a colour as `"0, 154, 199"`, the value form of HA `--rgb-*` variables. */
+/** Formats a color as `"0, 154, 199"`, the value form of HA `--rgb-*` variables. */
 export function rgbTriplet(input: string): string {
   const { r, g, b } = hexToRgb(input);
   return `${r}, ${g}, ${b}`;
 }
 
 /**
- * Appends a two-digit hex alpha to an opaque colour.
+ * Appends a two-digit hex alpha to an opaque color.
  *
  * `alpha` is a hex string or a number from 0 to 1. `template.css` writes
  * translucent values as 8-digit hex.
@@ -95,7 +95,7 @@ export function withAlpha(input: string, alpha: number | string): Hex {
   return `${base}${hex}`;
 }
 
-/** Returns the alpha of a hex colour as 0..1. Returns 1 without alpha. */
+/** Returns the alpha of a hex color as 0..1. Returns 1 for an opaque color. */
 export function alphaOf(input: string): number {
   const hex = normalizeHex(input);
   return hex.length === 9 ? Number.parseInt(hex.slice(7, 9), 16) / 255 : 1;
@@ -110,7 +110,7 @@ export interface OklchColor {
   h: number;
 }
 
-/** Converts a hex colour to OKLCH. Achromatic colours get hue 0. */
+/** Converts a hex color to OKLCH. Achromatic colors get hue 0. */
 export function hexToOklch(input: string): OklchColor {
   const parsed = toOklch(opaqueHex(input));
   if (!parsed) throw new TypeError(`Not a colour: ${JSON.stringify(input)}`);
@@ -121,11 +121,11 @@ export function hexToOklch(input: string): OklchColor {
 const CHANNEL_EPSILON = 0.5 / 255;
 
 /**
- * Converts OKLCH to hex and maps the colour into the sRGB gamut.
+ * Converts OKLCH to hex and maps the color into the sRGB gamut.
  *
  * Gamut mapping reduces chroma and keeps lightness and hue (CSS Color 4).
- * A colour inside the gamut skips `clampChroma`, because `clampChroma`
- * reduces the chroma of colours on the gamut edge: `#0000ff` becomes `#0031e5`.
+ * Skip `clampChroma` for in-gamut colors: it shifts edge colors
+ * (`#0000ff` becomes `#0031e5`).
  */
 export function oklchToHex({ l, c, h }: OklchColor): Hex {
   const color: Oklch = {

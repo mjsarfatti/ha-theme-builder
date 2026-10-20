@@ -1,5 +1,5 @@
 /**
- * Home Assistant's colour math, ported by hand.
+ * Home Assistant's color math, ported by hand.
  *
  * HA `src/common/color/lab.ts` uses the chroma.js D65 white point (Xn 0.95047,
  * Zn 1.08883). `culori` uses a white point that differs in the fourth
@@ -107,16 +107,16 @@ export function rgbContrast(
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-/** Contrast ratio between two hex colours. */
+/** Contrast ratio between two hex colors. */
 export function contrastRatio(a: string, b: string): number {
   const ca = hexToRgb(a);
   const cb = hexToRgb(b);
   return rgbContrast([ca.r, ca.g, ca.b], [cb.r, cb.g, cb.b]);
 }
 
-/** Dark text colour HA puts on light surfaces. */
+/** Dark text color HA puts on light surfaces. */
 export const HA_DARK_INK = "#212121";
-/** Light text colour HA puts on dark surfaces. */
+/** Light text color HA puts on dark surfaces. */
 export const HA_LIGHT_INK = "#ffffff";
 
 /**
@@ -129,7 +129,7 @@ export const HA_LIGHT_INK = "#ffffff";
 export const HA_CONTRAST_THRESHOLD = 6;
 
 /**
- * Picks the text colour for a surface, as HA does.
+ * Picks the text color for a surface, as HA does.
  *
  * Returns white when the contrast against `#212121` is below
  * {@link HA_CONTRAST_THRESHOLD}. Returns `#212121` otherwise.

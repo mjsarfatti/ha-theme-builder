@@ -95,10 +95,10 @@ function mirrorSlot<S extends RampSlot | NeutralRampSlot>(slot: S): S {
 const SLOT_ORDER: readonly RampSlot[] = RAMP_SLOTS;
 
 /**
- * Returns the neutral ramp colour at a position in `NEUTRAL_RAMP_SLOTS`.
+ * Returns the neutral ramp color at a position in `NEUTRAL_RAMP_SLOTS`.
  *
- * Positions outside the list clamp to the first or last slot. The export
- * serves `derive.test.ts`. It is not part of the public API.
+ * Positions outside the list clamp to the first or last slot. The module
+ * exports it for `derive.test.ts` only.
  */
 export function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
   const i = Math.min(NEUTRAL_RAMP_SLOTS.length - 1, Math.max(0, index));
@@ -108,7 +108,7 @@ export function neutralRampAt(ramp: NeutralRamp, index: number): Hex {
 /** The last valid index into {@link NEUTRAL_RAMP_SLOTS}. */
 const LAST_NEUTRAL_INDEX = NEUTRAL_RAMP_SLOTS.length - 1;
 
-/** Mirrors a position in {@link NEUTRAL_RAMP_SLOTS}. The result is not clamped. */
+/** Mirrors a position in {@link NEUTRAL_RAMP_SLOTS}. Callers clamp with {@link neutralRampAt}. */
 function mirrorNeutralIndex(index: number): number {
   return LAST_NEUTRAL_INDEX - index;
 }
@@ -130,18 +130,11 @@ interface Surfaces {
 /**
  * Returns the card, page and secondary backgrounds for one mode.
  *
- * Dark mode keeps the light-mode order and gap of card and page. HA keeps
- * the card lighter than the page in both modes (`color.globals.ts:46-47`,
- * `:342-343`). The darker surface mirrors its position and the other
- * surface sits `gap` positions above it.
+ * Dark mode keeps the light-mode order and gap of card and page, as HA
+ * does (`color.globals.ts:46-47`, `:342-343`).
  *
- * Positions index `NEUTRAL_RAMP_SLOTS`, because the slots are unevenly
- * spaced. Positions outside the list clamp, and then both surfaces can
- * share one slot. The current `SurfaceChoice` values never reach the clamp.
- *
- * `--secondary-background-color` sits one position below the darker surface
- * in light mode and two above the page in dark mode. HA's dark pair
- * (`#111111`, `#282828`) is further apart than its light pair.
+ * `--secondary-background-color` is one position below the darker surface
+ * in light mode and two above the page in dark mode.
  */
 function surfaces(config: ThemeConfig, neutral: NeutralRamp, mode: ThemeMode): Surfaces {
   const cardIndex = SURFACE_INDEX[config.cardBackground];
@@ -259,13 +252,13 @@ function isPaletteRef(seed: SeedColor): seed is `palette:${PaletteColorName}` {
 }
 
 /**
- * Resolves a seed colour to a literal hex.
+ * Resolves a seed color to a literal hex.
  *
- * A `palette:<name>` reference reads the colour of the current `palette`
+ * A `palette:<name>` reference reads the color of the current `palette`
  * preset, so the seed follows later preset changes. A malformed string
  * throws, as in `getFont` and `getNeutralRamp`.
  *
- * @throws {RangeError} when the palette has no colour with that name.
+ * @throws {RangeError} when the palette lacks that color name.
  */
 function resolveSeed(seed: SeedColor, palette: Record<PaletteColorName, Hex>): Hex {
   if (!isPaletteRef(seed)) return seed;
@@ -278,7 +271,7 @@ function resolveSeed(seed: SeedColor, palette: Record<PaletteColorName, Hex>): H
 /**
  * Maps a knob config to the full set of Home Assistant theme variables.
  *
- * @throws {TypeError} on a malformed seed colour
+ * @throws {TypeError} on a malformed seed color
  * @throws {RangeError} on an unknown font / ramp / palette id
  */
 export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedTheme {
@@ -369,7 +362,7 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
   common["light-primary-color"] = primary[50];
 
   // HA's contrast rule (`apply_themes_on_element.ts:91`) sets text on the
-  // primary and accent colours to `#ffffff` or `#212121`
+  // primary and accent colors to `#ffffff` or `#212121`
   // (`color.globals.ts:10-11`).
   common["text-primary-color"] = contrastingText(primary[KNOB_SLOT.primary]);
   common["text-light-primary-color"] = contrastingText(primary[50]);
@@ -426,14 +419,14 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
     vars["disabled-text-color"] = neutral[slots.disabled];
     vars["disabled-color"] = vars["disabled-text-color"];
 
-    // Before the border: a `"match-card"` border reads this card colour.
+    // Before the border: a `"match-card"` border reads this card color.
     const surface = surfaces(config, neutralExtended, mode);
     vars["card-background-color"] = surface.card;
     vars["primary-background-color"] = surface.page;
     vars["secondary-background-color"] = surface.secondary;
     vars["clear-background-color"] = surface.card;
 
-    // `"match-card"` uses this mode's card colour. A mirrored light slot is
+    // `"match-card"` uses this mode's card color. A mirrored light slot is
     // wrong here, because `surfaces()` derives the dark card from both
     // surface knobs.
     const borderBase: Hex =
@@ -445,9 +438,9 @@ export function derive(input: PartialThemeConfig | ThemeConfig = {}): DerivedThe
     vars["divider-color"] = withAlpha(borderBase, "1f");
     vars["outline-color"] = vars["divider-color"];
     vars["outline-hover-color"] = withAlpha(borderBase, "3d");
-    // The Lines NOTE (`template.css:144`) sets the shadow on neutral-05. The border
-    // knob does not apply: a "match-card" border would hide the shadow.
-    // Dark alpha 7a is HA's `rgba(0, 0, 0, 0.48)`.
+    // The Lines NOTE (`template.css:144`) puts the shadow on neutral-05.
+    // The shadow ignores the border knob, because a "match-card" border
+    // would hide it. Dark alpha 7a is HA's `rgba(0, 0, 0, 0.48)`.
     vars["shadow-color"] = withAlpha(neutral[5], dark ? "7a" : "29");
 
     vars["scrollbar-thumb-color"] = neutral[dark ? mirrorSlot(70) : 70];

@@ -1,20 +1,12 @@
 /**
- * HA Theme Builder — theme engine.
+ * Theme engine: seed colors in, HA theme variables and YAML out.
  *
- * Pure TypeScript: no React, no DOM, no I/O. Seeds in, Home Assistant theme
- * variables and YAML out.
+ * Do not import React or DOM APIs in `src/engine/`. `README.md` in this
+ * directory describes the API.
  *
- * ```ts
- * import { derive, toYaml, toCssProperties } from "@/engine";
- *
- * const theme = derive({ colors: { primary: "#7c5cff" }, neutralRamp: "mauve" });
- * for (const [k, v] of Object.entries(toCssProperties(theme, "light"))) {
- *   lightPreviewEl.style.setProperty(k, v);
- * }
+ * @example
+ * const theme = derive({ colors: { primary: "#7c5cff" } });
  * const yaml = toYaml(theme);
- * ```
- *
- * `README.md` in this directory describes the API and the derivation rules.
  */
 
 export { DEFAULT_CONFIG, derive, modeVars, resolveConfig, toCssProperties } from "./derive.ts";

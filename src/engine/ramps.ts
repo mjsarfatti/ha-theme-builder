@@ -2,7 +2,7 @@ import { hexToOklch, normalizeHex, oklchToHex, opaqueHex } from "./color.ts";
 import { RAMP_SLOTS, type Hex, type Ramp, type RampSlot } from "./types.ts";
 
 export interface GenerateRampOptions {
-  /** The seed colour. The output holds it unchanged at `slot`. */
+  /** The seed color. The output holds it unchanged at `slot`. */
   seed: string;
   /** Which slot the seed occupies. */
   slot: RampSlot;
@@ -20,18 +20,13 @@ function remap(v: number, a0: number, a1: number, b0: number, b1: number): numbe
 }
 
 /**
- * Builds a full ramp (slots 05 to 95) from one seed colour.
+ * Builds a full ramp (slots 05 to 95) from one seed color.
  *
- * The ramp copies the shape of a reference ramp in OKLCH:
- * - Hue rotates by the seed's offset from the reference at the seed slot.
- * - Chroma scales by the seed-to-reference ratio at the seed slot.
- * - Lightness maps piecewise: slots below the seed map onto
- *   `[darkest, seedL]`, slots above onto `[seedL, lightest]`.
+ * The ramp copies the OKLCH shape of a reference ramp. Hue and chroma
+ * match the seed at `slot`. Lightness maps piecewise around the seed.
  *
- * The output has these properties:
- * - `result[slot]` equals `normalizeHex(seed)`.
- * - A seed equal to the reference at `slot` returns the reference ramp.
- * - Lightness does not decrease from slot 05 to slot 95.
+ * `result[slot]` equals `normalizeHex(seed)`. A seed equal to the reference
+ * at `slot` returns the reference ramp. Lightness is monotonic.
  *
  * @example
  * generateRamp({ seed: "#009ac7", slot: 40, reference: HA_PRIMARY_RAMP });
@@ -55,7 +50,7 @@ export function generateRamp({ seed, slot, reference }: GenerateRampOptions): Ra
   const anchor = ref[slot];
 
   const hueShift = seedLch.h - anchor.h;
-  // A near-grey anchor has no usable chroma ratio. Use an offset instead.
+  // A near-gray anchor gives an unstable chroma ratio. Use an offset.
   const chromaScale = anchor.c > 1e-4 ? seedLch.c / anchor.c : 0;
   const chromaOffset = anchor.c > 1e-4 ? 0 : seedLch.c - anchor.c;
 

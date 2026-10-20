@@ -5,13 +5,13 @@
  * persists and puts in URLs, so it must survive a JSON round trip.
  */
 
-/** A lowercase `#rrggbb` or `#rrggbbaa` colour. */
+/** A lowercase `#rrggbb` or `#rrggbbaa` color. */
 export type Hex = string;
 
-/** CSS custom properties keyed by bare name, without `--`. HA YAML uses the same keys. */
+/** CSS custom properties keyed by the name that follows `--`. HA YAML uses the same keys. */
 export type CssVarMap = Record<string, string>;
 
-/** The 11 shades every Home Assistant colour ramp is built from. */
+/** The 11 shades every Home Assistant color ramp is built from. */
 export const RAMP_SLOTS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as const;
 export type RampSlot = (typeof RAMP_SLOTS)[number];
 
@@ -57,8 +57,7 @@ export type NeutralRampId =
  * The 13 neutral ramp shades: the 11 {@link RampSlot} shades plus `0` and `100`.
  *
  * `.references/colors/black-white-ramps.html` has data for black (`0`) and
- * white (`100`). The generated ramps have no data at those slots, so they
- * keep the 11-shade {@link RampSlot} type.
+ * white (`100`). The four generated ramps use {@link RampSlot} (05 to 95).
  */
 export const NEUTRAL_RAMP_SLOTS = [0, ...RAMP_SLOTS, 100] as const;
 export type NeutralRampSlot = (typeof NEUTRAL_RAMP_SLOTS)[number];
@@ -83,7 +82,7 @@ export type ExtendedPaletteId =
   | "bulma"
   | "rounded";
 
-/** The 18 HA named colours (`--red-color` … `--blue-grey-color`). */
+/** The 18 HA named colors (`--red-color` … `--blue-grey-color`). */
 export type PaletteColorName =
   | "red"
   | "pink"
@@ -119,7 +118,7 @@ export interface FontOption {
   readonly category: FontCategory;
   /** The complete CSS `font-family` value to emit. */
   readonly stack: string;
-  /** `true` when HA does not ship the font. The export needs an `extra_module_url` snippet. */
+  /** `true` when the font needs an `extra_module_url` snippet, because HA bundles Roboto only. */
   readonly needsWebfont: boolean;
   /** Google Fonts family name. Set when {@link needsWebfont} is `true`. */
   readonly googleFontsFamily?: string;
@@ -130,15 +129,15 @@ export interface FontOption {
 export type FontId = string;
 
 /**
- * A reference to a named palette colour, for example `"palette:red"`.
+ * A reference to a named palette color, for example `"palette:red"`.
  *
- * The reference resolves against the config `palette` field. It cannot name
- * a generated ramp (primary, red, orange, green), because those ramps
- * grow from the seed fields that hold the reference.
+ * The reference resolves against the config `palette` field. It names a
+ * static palette entry. A generated ramp (primary, red, orange, green)
+ * grows from the seed fields, so a reference to it would be circular.
  */
 export type PaletteRef = `palette:${PaletteColorName}`;
 
-/** A literal colour, or a reference that follows the palette preset. */
+/** A literal color, or a reference that follows the palette preset. */
 export type SeedColor = Hex | PaletteRef;
 
 /** The user-facing knobs: the `KNOB` annotations in `.references/template.css`. */
@@ -166,9 +165,9 @@ export interface ThemeConfig {
     readonly warning: SeedColor;
     /** Seed for `--ha-color-green-60` (→ `--success-color`). */
     readonly success: SeedColor;
-    /** `--accent-color`, standalone (no ramp in HA). */
+    /** `--accent-color`, a single color. */
     readonly accent: SeedColor;
-    /** `--info-color`, standalone (no ramp in HA). */
+    /** `--info-color`, a single color. */
     readonly info: SeedColor;
   };
 
@@ -176,10 +175,10 @@ export interface ThemeConfig {
   readonly palette: ExtendedPaletteId;
 
   /**
-   * Neutral slot for the border and divider colour. The alpha is `1f`.
+   * Neutral slot for the border and divider color. The alpha is `1f`.
    *
-   * `"match-card"` is not a colour. It selects the `card-background-color`
-   * of each mode (see `surfaces()` and `forMode()` in `derive.ts`).
+   * `"match-card"` selects the `card-background-color` of each mode in place
+   * of a slot (see `surfaces()` and `forMode()` in `derive.ts`).
    */
   readonly borderColor: NeutralSlotId | "match-card";
   readonly cardBackground: SurfaceChoice;

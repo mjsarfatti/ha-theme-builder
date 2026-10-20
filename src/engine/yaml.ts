@@ -15,7 +15,7 @@ export interface ToYamlOptions {
   comments?: boolean;
 }
 
-/** Section headings and their keys, in output order. Same grouping as `.references/template.css`. */
+/** Section headings and their keys, in output order, grouped as in `template.css`. */
 const GROUPS: readonly { title: string; keys: readonly string[] }[] = [
   {
     title: "Typography",
@@ -151,8 +151,8 @@ function ramp(name: string): string[] {
 /**
  * Quotes a scalar so YAML reads it back as the same string.
  *
- * Uses double quotes. Uses single quotes when the value contains double
- * quotes and no single quotes, as in font stacks such as `"DM Sans", Roboto`.
+ * Uses double quotes. Wraps a value in single quotes when it holds only
+ * double quotes inside, as in font stacks such as `"DM Sans", Roboto`.
  *
  * @example
  * quoteYamlScalar("#009ac7"); // '"#009ac7"'
@@ -167,7 +167,11 @@ export function quoteYamlScalar(value: string): string {
   return `"${value.replace(/\\/g, "\\\\")}"`;
 }
 
-/** Returns `true` when HA generates this `rgb-*` key itself. `processTheme()` does it for values that start with `#`. */
+/**
+ * Returns `true` when HA derives this `rgb-*` key itself.
+ *
+ * `processTheme()` derives it when the base value starts with `#`.
+ */
 function haDerivesRgb(key: string, resolved: CssVarMap): boolean {
   if (!key.startsWith("rgb-")) return false;
   const base = resolved[key.slice("rgb-".length)];
@@ -231,15 +235,14 @@ const MODE_NOTE: Record<ThemeMode, string> = {
 };
 
 /**
- * Serialises a derived theme to a paste-ready HA YAML theme.
+ * Serializes a derived theme to a paste-ready HA YAML theme.
  *
  * Common variables become top-level keys. Mode variables go under
  * `modes.light` and `modes.dark`, so the user can switch modes in the profile.
  *
- * The serialiser does not use a YAML library, for these reasons:
- * - Every value is quoted, because `#` opens a YAML comment.
- * - `rgb-*` keys of hex values are omitted, because HA generates them.
- * - The output has the groups and comments of `template.css`.
+ * The function writes the YAML by hand. It quotes every value, because
+ * `#` opens a YAML comment. It omits `rgb-*` keys of hex values, which
+ * HA generates, and groups keys as `template.css` does.
  *
  * @example
  * toYaml(derive(), { wrapper: "frontend" });

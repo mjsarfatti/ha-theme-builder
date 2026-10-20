@@ -17,7 +17,7 @@ const google = (
   id,
   label,
   category,
-  // Quotes are required: an unquoted "Source Serif 4" is invalid CSS.
+  // CSS rejects an unquoted "Source Serif 4".
   stack: `"${label}", ${fallback}`,
   needsWebfont: true,
   googleFontsFamily: label,
@@ -27,9 +27,9 @@ const google = (
 /**
  * The v1 font list.
  *
- * HA bundles Roboto only, so every other family has `needsWebfont` set. A
- * theme can name a font but cannot load it. Stacks fall back to Roboto or a
- * system font, so the theme renders without the loader snippet.
+ * HA bundles Roboto only, so every other family has `needsWebfont` set and
+ * needs an `extra_module_url` loader. Stacks fall back to Roboto or a
+ * system font until the font loads.
  */
 export const FONTS: readonly FontOption[] = [
   {
