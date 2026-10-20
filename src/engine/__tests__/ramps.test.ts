@@ -19,7 +19,7 @@ const SEEDS: readonly string[] = [
   "#ff0000", // fully saturated
   "#00ff00",
   "#0000ff",
-  "#7a7a7a", // achromatic mid grey
+  "#7a7a7a", // achromatic mid gray
   "#7c5cff", // ordinary purple
   "#123456",
   "#fefefe", // barely off white
@@ -139,7 +139,7 @@ describe("generateRamp — shape", () => {
     const seedHue = hexToOklch("#7c5cff").h;
     for (const slot of RAMP_SLOTS) {
       const { c, h } = hexToOklch(ramp[slot]);
-      if (c < 0.02) continue; // Near-grey colours have no stable hue.
+      if (c < 0.02) continue; // Near-gray colors have no stable hue.
       const delta = Math.abs(((h - seedHue + 540) % 360) - 180);
       expect(delta, `slot ${slot} hue ${h} vs seed ${seedHue}`).toBeLessThan(25);
     }

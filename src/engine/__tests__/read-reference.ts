@@ -8,7 +8,7 @@ const REFERENCES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
  * Reads `.references/<relativePath>` as UTF-8 text.
  *
  * Throws on empty content. An empty fixture would let the regression tests
- * pass without an assertion.
+ * pass with an empty assertion set.
  */
 export function readReference(relativePath: string): string {
   const source = readFileSync(path.join(REFERENCES, relativePath), "utf8");

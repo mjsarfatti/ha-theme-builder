@@ -51,11 +51,11 @@ const DEVIATIONS: Record<string, string> = {
   "text-primary-color": "WCAG contrast against the primary colour",
   "text-light-primary-color": "WCAG contrast against light-primary-color",
 
-  // The knob offers neutral slots only, and #fafafa is not a neutral slot.
+  // The knob offers neutral slots, so the nearest on-ramp value replaces #fafafa.
   "primary-background-color": "nearest on-ramp value to HA's #fafafa",
   "secondary-background-color": "one ramp step below the page background",
 
-  // The `rgb-*` literals of `template.css` do not match its own colours.
+  // The `rgb-*` literals of `template.css` come from the legacy HA colors.
   "rgb-primary-text-color": "stale literal in template.css",
   "rgb-secondary-text-color": "stale literal in template.css",
   "rgb-warning-color": "stale literal in template.css",
@@ -98,7 +98,7 @@ describe("the default config reproduces HA's current theme", () => {
   });
 
   it("adds only text-accent-color beyond template.css", () => {
-    // HA does not derive `text-accent-color` for a YAML theme.
+    // A YAML theme must set `text-accent-color` itself.
     const known = new Set(templateCssKeys());
     expect(Object.keys(light).filter((k) => !known.has(k))).toEqual(["text-accent-color"]);
   });
@@ -171,7 +171,7 @@ describe("derive — knobs reach their variables", () => {
     expect(theme.common["ha-color-orange-70"]).toBe("#e0a100");
     expect(theme.common["ha-color-green-60"]).toBe("#2e7d32");
 
-    // ...and the legacy aliases follow the slots.
+    // The legacy aliases follow the slots.
     expect(theme.common["primary-color"]).toBe("#7c5cff");
     expect(theme.common["error-color"]).toBe("#b00020");
     expect(theme.common["warning-color"]).toBe("#e0a100");
@@ -201,7 +201,7 @@ describe("derive — knobs reach their variables", () => {
     for (const slot of RAMP_SLOTS) {
       expect(theme.common[`ha-color-neutral-${String(slot).padStart(2, "0")}`]).toBe(mauve[slot]);
     }
-    // The ramp reaches everything derived from it, not just the raw tokens.
+    // The ramp reaches all derived variables.
     expect(theme.light["primary-text-color"]).toBe(mauve[5]);
     expect(theme.light["divider-color"]).toBe(`${mauve[5]}1f`);
     expect(theme.light["input-fill-color"]).toBe(mauve[95]);
@@ -212,7 +212,7 @@ describe("derive — knobs reach their variables", () => {
     const theme = derive({ palette: "tailwind-v4" });
     expect(theme.common["red-color"]).toBe("#fb2c36");
     expect(theme.common["blue-grey-color"]).toBe("#62748e");
-    // The greys stay on the neutral ramp — they are not palette colours.
+    // Greys come from the neutral ramp.
     expect(theme.common["grey-color"]).toBe(getNeutralRamp("ha").ramp[60]);
   });
 
@@ -312,14 +312,14 @@ describe("derive — border colour: match-card", () => {
   });
 
   it("does not equal a naive mirrorSlot of the light card's own slot", () => {
-    // The default card is neutral-100. Its slot mirror is neutral-00 (#000000), not the dark card.
+    // The default card is neutral-100. Its mirror neutral-00 (#000000) differs from the dark card.
     const theme = derive({ borderColor: "match-card" });
     expect(theme.dark["card-background-color"]).not.toBe("#000000");
     expect(theme.dark["card-background-color"]).toBe(getNeutralRamp("ha").ramp[10]); // #202020
   });
 
   it("composites away to exactly the card colour (the Invisible step)", () => {
-    // A colour over itself gives the same colour for any alpha.
+    // A color over itself gives the same color for any alpha.
     const theme = derive({ borderColor: "match-card" });
     for (const mode of ["light", "dark"] as const) {
       expect(theme[mode]["divider-color"].slice(0, 7)).toBe(theme[mode]["card-background-color"]);
@@ -381,7 +381,7 @@ describe("derive — light and dark", () => {
   });
 
   it("reproduces HA's own dark defaults closely", () => {
-    // HA uses #1c1c1c, #111111 and #282828. The neutral ramp has no exact match.
+    // HA uses #1c1c1c, #111111 and #282828. The nearest neutral ramp values replace them.
     expect(theme.dark["card-background-color"]).toBe("#202020"); // ~#1c1c1c
     expect(theme.dark["primary-background-color"]).toBe("#141414"); // ~#111111
     expect(theme.dark["secondary-background-color"]).toBe("#363636"); // ~#282828
@@ -447,7 +447,7 @@ describe("derive — light and dark", () => {
   });
 
   it("clamps to the ramp's own ends instead of escaping it — the boundary itself", () => {
-    // The current `SurfaceChoice` values never reach the clamp, so the test calls `neutralRampAt` directly.
+    // Call `neutralRampAt` directly: the current `SurfaceChoice` values stay inside the range.
     const ha = getNeutralRamp("ha").ramp;
     expect(neutralRampAt(ha, -1)).toBe(ha[0]);
     expect(neutralRampAt(ha, -50)).toBe(ha[0]);
@@ -477,7 +477,7 @@ describe("derive — light and dark", () => {
   });
 
   it("keeps shadows dark in dark mode, only raising their opacity", () => {
-    // The shadow base stays dark. It does not follow the divider.
+    // The shadow base stays dark and ignores the divider.
     const base = getNeutralRamp("ha").ramp[5].slice(1);
     expect(theme.dark["ha-box-shadow-s"]).toContain(base);
     expect(theme.dark["shadow-color"].startsWith(`#${base}`)).toBe(true);
@@ -553,7 +553,7 @@ describe("output shapes", () => {
   it("exposes the generated ramps for the preview", () => {
     const theme = derive({ colors: { primary: "#7c5cff" }, neutralRamp: "olive" });
     expect(theme.ramps.primary[KNOB_SLOT.primary]).toBe("#7c5cff");
-    // `ramps.neutral` has the 11 shades of `Ramp`. The slots 00 and 100 are not part of it.
+    // `ramps.neutral` has the 11 shades of `Ramp`. Slots 00 and 100 belong to the preset only.
     const olive = getNeutralRamp("olive").ramp;
     expect(theme.ramps.neutral).toEqual(
       Object.fromEntries(RAMP_SLOTS.map((s) => [s, olive[s]])),

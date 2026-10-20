@@ -123,7 +123,7 @@ describe("luminosity / rgbContrast", () => {
   });
 
   it("puts #767676 on white right at the 4.5:1 AA boundary", () => {
-    // #767676 is the lightest grey that passes AA on white.
+    // #767676 is the lightest gray that passes AA on white.
     expect(contrastRatio("#767676", "#ffffff")).toBeCloseTo(4.54, 2);
     expect(contrastRatio("#777777", "#ffffff")).toBeLessThan(4.5);
   });
@@ -157,7 +157,7 @@ describe("contrastingText — HA's on-colour text rule", () => {
   });
 
   it("switches exactly at the threshold", () => {
-    // Find the first grey that gets dark text. It must match the 6:1 rule.
+    // Find the first gray that gets dark text. It must match the 6:1 rule.
     let flip = -1;
     for (let v = 0; v < 256; v++) {
       const hex = rgbToHex({ r: v, g: v, b: v });
