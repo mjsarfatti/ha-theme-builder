@@ -1,0 +1,47 @@
+name: Pull request preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+# A fork pull request has a read-only token. The job `if` below skips it.
+permissions:
+  contents: write
+  pull-requests: write
+
+# A new push, or the close event, cancels an older run of the same pull request.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  UMBRELLA_DIR: pr-preview
+
+jobs:
+  preview:
+    name: Deploy or remove the preview
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm and Node
+        if: github.event.action != 'closed'
+        uses: pnpm/setup@v3
+        with:
+          runtime: node@24
+          cache: true
+
+      - name: Build
+        if: github.event.action != 'closed'
+        run: pnpm build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/${{ env.UMBRELLA_DIR }}/pr-${{ github.event.number }}/
+
+      - name: Deploy or remove the preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist
+          preview-branch: gh-pages
+          umbrella-dir: ${{ env.UMBRELLA_DIR }}
