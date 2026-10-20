@@ -71,6 +71,7 @@ const slotRows = neutralRows.filter(
 );
 const slotOf = (name) => (name === "black" ? 0 : name === "white" ? 100 : Number(name.slice("neutral-".length)));
 const slots = slotRows.map(([name]) => slotOf(name));
+const commentFor = (slot) => `neutral-${String(slot).padStart(2, "0")}`;
 
 let out = banner("black-white-ramps.html");
 out += `import type { NeutralRampPreset } from "../types.ts";\n\n`;
@@ -80,7 +81,7 @@ for (const { col, label } of neutralHeader) {
   if (!id) throw new Error(`no id mapping for neutral ramp "${label}"`);
   out += `  {\n    id: "${id}",\n    label: ${JSON.stringify(label)},\n    ramp: {\n`;
   slotRows.forEach(([, cols], i) => {
-    out += `      ${slots[i]}: "${cols[col]}",\n`;
+    out += `      ${slots[i]}: "${cols[col]}", // ${commentFor(slots[i])}\n`;
   });
   out += `    },\n  },\n`;
 }
