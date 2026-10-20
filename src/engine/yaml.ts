@@ -1,41 +1,21 @@
-/**
- * Variable maps → a paste-ready Home Assistant YAML theme.
- *
- * Hand-built rather than `js-yaml`, for three reasons the analysis doc makes
- * unavoidable (`ha_theme_analysis.md` §4, §5.5):
- *
- * 1. **Every value must be quoted.** `primary-color: #009ac7` is not "a hex
- *    value" to a YAML parser — the `#` opens a comment and the key ends up
- *    empty. A generic serializer quotes only when it must; we always quote.
- * 2. **`rgb-*` companions must be omitted where HA derives them itself.**
- *    `processTheme()` auto-generates `--rgb-{key}` for any value starting with
- *    `#`, so emitting them is noise that can drift out of sync.
- * 3. **The output is meant to be read.** It is grouped and commented the way
- *    `template.css` is, because a user is going to paste it into their config
- *    and want to understand what they pasted.
- */
 import type { CssVarMap, DerivedTheme, ThemeMode } from "./types.ts";
 
 export interface ToYamlOptions {
-  /** Theme name (the YAML key). Defaults to the config's `name`. */
+  /** Theme name, used as the YAML key. Defaults to the config `name`. */
   name?: string;
   /**
    * `"none"` (default) emits `<name>:` at the top level, for a `themes.yaml`
-   * pulled in with `frontend: themes: !include themes.yaml`.
-   * `"frontend"` wraps it in `frontend: themes:` for pasting straight into
+   * file. `"frontend"` wraps it in `frontend: themes:`, for
    * `configuration.yaml`.
    */
   wrapper?: "none" | "frontend";
-  /** Prepend the provenance header comment. Default `true`. */
+  /** Adds the header comment. Default `true`. */
   header?: boolean;
-  /** Emit the section comments. Default `true`. */
+  /** Adds the section comments. Default `true`. */
   comments?: boolean;
 }
 
-/**
- * Section headings and their keys, in emission order. Mirrors the grouping in
- * `.references/template.css` so the two can be read side by side.
- */
+/** Section headings and their keys, in output order, grouped as in `template.css`. */
 const GROUPS: readonly { title: string; keys: readonly string[] }[] = [
   {
     title: "Typography",
@@ -159,8 +139,7 @@ const GROUPS: readonly { title: string; keys: readonly string[] }[] = [
       "energy-water-color",
     ],
   },
-  // No `rgb-*` group: every value we emit is a hex, so HA derives every
-  // companion itself and `haDerivesRgb` drops all of them.
+  // No `rgb-*` group: HA derives the companions of hex values.
 ];
 
 function ramp(name: string): string[] {
@@ -170,11 +149,13 @@ function ramp(name: string): string[] {
 }
 
 /**
- * Quotes a scalar so YAML reads it back as the literal string.
+ * Quotes a scalar so YAML reads it back as the same string.
  *
- * Double quotes by default; single quotes when the value already contains
- * double quotes (font stacks such as `"DM Sans", Roboto, …`), which keeps the
- * output readable instead of a thicket of backslashes.
+ * Uses double quotes. Wraps a value in single quotes when it holds only
+ * double quotes inside, as in font stacks such as `"DM Sans", Roboto`.
+ *
+ * @example
+ * quoteYamlScalar("#009ac7"); // '"#009ac7"'
  */
 export function quoteYamlScalar(value: string): string {
   if (value.includes('"') && !value.includes("'")) {
@@ -187,9 +168,9 @@ export function quoteYamlScalar(value: string): string {
 }
 
 /**
- * `true` when Home Assistant will generate `--rgb-<base>` itself, so we must
- * not emit it. `processTheme()` does this for any value starting with `#`
- * (§4.1 step 5) — the "hex only" rule of §5.5.
+ * Returns `true` when HA derives this `rgb-*` key itself.
+ *
+ * `processTheme()` derives it when the base value starts with `#`.
  */
 function haDerivesRgb(key: string, resolved: CssVarMap): boolean {
   if (!key.startsWith("rgb-")) return false;
@@ -239,8 +220,7 @@ function groupedLines(
     for (const key of present) lines.push({ key, value: vars[key] });
   }
 
-  // Anything the grouping does not know about still gets emitted, so a new
-  // variable can never silently vanish from the export.
+  // Variables outside the groups still export.
   const leftovers = [...remaining].filter((k) => !haDerivesRgb(k, resolved)).sort();
   if (leftovers.length > 0) {
     lines.push({ comment: "Other" });
@@ -255,11 +235,17 @@ const MODE_NOTE: Record<ThemeMode, string> = {
 };
 
 /**
- * Serialises a derived theme.
+ * Serializes a derived theme to a paste-ready HA YAML theme.
  *
- * Mode-independent variables become top-level keys; everything that differs by
- * mode goes under `modes.light` / `modes.dark`. Defining both modes is what
- * lets the user toggle in their profile (`ha_theme_analysis.md` §5.4).
+ * Common variables become top-level keys. Mode variables go under
+ * `modes.light` and `modes.dark`, so the user can switch modes in the profile.
+ *
+ * The function writes the YAML by hand. It quotes every value, because
+ * `#` opens a YAML comment. It omits `rgb-*` keys of hex values, which
+ * HA generates, and groups keys as `template.css` does.
+ *
+ * @example
+ * toYaml(derive(), { wrapper: "frontend" });
  */
 export function toYaml(theme: DerivedTheme, options: ToYamlOptions = {}): string {
   const {

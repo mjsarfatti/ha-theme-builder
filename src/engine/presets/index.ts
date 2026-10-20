@@ -1,4 +1,4 @@
-/** Barrel for the engine's static preset data. */
+/** Re-exports the static preset data of the engine. */
 import type {
   ExtendedPaletteId,
   ExtendedPalettePreset,
@@ -23,12 +23,14 @@ export {
 const RAMPS_BY_ID = new Map(NEUTRAL_RAMPS.map((r) => [r.id, r]));
 const PALETTES_BY_ID = new Map(EXTENDED_PALETTES.map((p) => [p.id, p]));
 
+/** Returns the neutral ramp preset. Throws a `RangeError` for an unknown id. */
 export function getNeutralRamp(id: NeutralRampId): NeutralRampPreset {
   const preset = RAMPS_BY_ID.get(id);
   if (!preset) throw new RangeError(`Unknown neutral ramp: ${JSON.stringify(id)}`);
   return preset;
 }
 
+/** Returns the extended palette preset. Throws a `RangeError` for an unknown id. */
 export function getExtendedPalette(id: ExtendedPaletteId): ExtendedPalettePreset {
   const preset = PALETTES_BY_ID.get(id);
   if (!preset) throw new RangeError(`Unknown palette: ${JSON.stringify(id)}`);

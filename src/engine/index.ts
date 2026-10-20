@@ -1,27 +1,17 @@
 /**
- * HA Theme Builder — theme engine.
+ * Theme engine: seed colors in, HA theme variables and YAML out.
  *
- * Pure TypeScript: no React, no DOM, no I/O. Seeds in, Home Assistant theme
- * variables and YAML out.
+ * Do not import React or DOM APIs in `src/engine/`. `README.md` in this
+ * directory describes the API.
  *
- * ```ts
- * import { derive, toYaml, toCssProperties } from "@/engine";
- *
- * const theme = derive({ colors: { primary: "#7c5cff" }, neutralRamp: "mauve" });
- * for (const [k, v] of Object.entries(toCssProperties(theme, "light"))) {
- *   lightPreviewEl.style.setProperty(k, v);
- * }
+ * @example
+ * const theme = derive({ colors: { primary: "#7c5cff" } });
  * const yaml = toYaml(theme);
- * ```
- *
- * See `README.md` in this directory for the full API and the derivation rules.
  */
 
-// --- entry points ---------------------------------------------------------
 export { DEFAULT_CONFIG, derive, modeVars, resolveConfig, toCssProperties } from "./derive.ts";
 export { toYaml, quoteYamlScalar, type ToYamlOptions } from "./yaml.ts";
 
-// --- colour math ----------------------------------------------------------
 export { generateRamp, rampEntries, type GenerateRampOptions } from "./ramps.ts";
 export {
   alphaOf,
@@ -54,7 +44,6 @@ export {
   type Lab,
 } from "./ha-math.ts";
 
-// --- preset data ----------------------------------------------------------
 export {
   EXTENDED_PALETTES,
   FONT_CATEGORY_LABELS,
@@ -72,7 +61,6 @@ export {
   REFERENCE_RAMPS,
 } from "./presets/index.ts";
 
-// --- types ----------------------------------------------------------------
 export {
   RAMP_SLOTS,
   type CssVarMap,

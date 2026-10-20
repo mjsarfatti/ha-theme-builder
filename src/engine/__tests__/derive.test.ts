@@ -13,9 +13,9 @@ import { getExtendedPalette, getNeutralRamp, KNOB_SLOT } from "../presets/index.
 import { NEUTRAL_RAMP_SLOTS, RAMP_SLOTS, type NeutralRampSlot } from "../types.ts";
 import { parseTemplateCss, templateCssKeys } from "./template-css.ts";
 
-/** `#ccc` / `#0003` in template.css mean the same thing as their long forms. */
+/** Expands the short hex literals of `template.css`, such as `#ccc` and `#0003`. */
 function expand(value: string): string {
-  // Only hex literals are normalised — font stacks keep their casing.
+  // Font stacks keep their casing.
   return value.replace(/#([0-9a-fA-F]{3,8})\b/g, (_m, digits: string) => {
     const d = digits.toLowerCase();
     return `#${d.length === 3 || d.length === 4 ? [...d].map((c) => c + c).join("") : d}`;
@@ -23,13 +23,11 @@ function expand(value: string): string {
 }
 
 /**
- * Every variable where the engine's output differs from the literal value in
- * `template.css`, with the reason why. A test below asserts each entry still
- * differs, so an entry that stops applying fails the suite.
+ * Variables where the engine output differs from the value in `template.css`,
+ * with the reason. A test asserts that each entry still differs.
  */
 const DEVIATIONS: Record<string, string> = {
-  // NOTE: "Derive using --ha-color-neutral-05 as base" — template.css still
-  // shows the black-based values HA ships today.
+  // The NOTE says to derive from neutral-05. `template.css` keeps black-based values.
   "ha-box-shadow-s": "neutral-05 base",
   "ha-box-shadow-m": "neutral-05 base",
   "ha-box-shadow-l": "neutral-05 base",
@@ -48,16 +46,15 @@ const DEVIATIONS: Record<string, string> = {
   "outline-hover-color": "follows divider-color",
   "shadow-color": "neutral-05 base, independent of the border knob",
 
-  // HA's own WCAG rule rather than template.css's alias — see README.
+  // HA's WCAG rule sets these values. See README "Deviations".
   "text-primary-color": "WCAG contrast against the primary colour",
   "text-light-primary-color": "WCAG contrast against light-primary-color",
 
-  // The knob is restricted to the neutral ramp, and #fafafa is not on it.
+  // The knob offers neutral slots, so the nearest on-ramp value replaces #fafafa.
   "primary-background-color": "nearest on-ramp value to HA's #fafafa",
   "secondary-background-color": "one ramp step below the page background",
 
-  // template.css's rgb-* literals were copied from HA's legacy colours and do
-  // not match template.css's own values. We derive them from ours instead.
+  // The `rgb-*` literals of `template.css` come from the legacy HA colors.
   "rgb-primary-text-color": "stale literal in template.css",
   "rgb-secondary-text-color": "stale literal in template.css",
   "rgb-warning-color": "stale literal in template.css",
@@ -100,8 +97,7 @@ describe("the default config reproduces HA's current theme", () => {
   });
 
   it("adds only text-accent-color beyond template.css", () => {
-    // §5.3: text-accent-color must be set alongside accent-color, because HA
-    // never derives it for a YAML theme.
+    // A YAML theme must set `text-accent-color` itself.
     const known = new Set(templateCssKeys());
     expect(Object.keys(light).filter((k) => !known.has(k))).toEqual(["text-accent-color"]);
   });
@@ -174,7 +170,7 @@ describe("derive — knobs reach their variables", () => {
     expect(theme.common["ha-color-orange-70"]).toBe("#e0a100");
     expect(theme.common["ha-color-green-60"]).toBe("#2e7d32");
 
-    // ...and the legacy aliases follow the slots.
+    // The legacy aliases follow the slots.
     expect(theme.common["primary-color"]).toBe("#7c5cff");
     expect(theme.common["error-color"]).toBe("#b00020");
     expect(theme.common["warning-color"]).toBe("#e0a100");
@@ -204,7 +200,7 @@ describe("derive — knobs reach their variables", () => {
     for (const slot of RAMP_SLOTS) {
       expect(theme.common[`ha-color-neutral-${String(slot).padStart(2, "0")}`]).toBe(mauve[slot]);
     }
-    // The ramp reaches everything derived from it, not just the raw tokens.
+    // The ramp reaches all derived variables.
     expect(theme.light["primary-text-color"]).toBe(mauve[5]);
     expect(theme.light["divider-color"]).toBe(`${mauve[5]}1f`);
     expect(theme.light["input-fill-color"]).toBe(mauve[95]);
@@ -215,7 +211,7 @@ describe("derive — knobs reach their variables", () => {
     const theme = derive({ palette: "tailwind-v4" });
     expect(theme.common["red-color"]).toBe("#fb2c36");
     expect(theme.common["blue-grey-color"]).toBe("#62748e");
-    // The greys stay on the neutral ramp — they are not palette colours.
+    // Greys come from the neutral ramp.
     expect(theme.common["grey-color"]).toBe(getNeutralRamp("ha").ramp[60]);
   });
 
@@ -294,16 +290,13 @@ describe("derive — palette-referenced seed colours", () => {
   it("echoes the reference back in the resolved config, unresolved, for round-tripping", () => {
     const theme = derive({ colors: { accent: "palette:blue" } });
     expect(theme.config.colors.accent).toBe("palette:blue");
-    // JSON round-trip: the config the URL / storage layer persists.
     const roundTripped = JSON.parse(JSON.stringify(theme.config));
     expect(roundTripped.colors.accent).toBe("palette:blue");
     expect(derive(roundTripped).common["accent-color"]).toBe(theme.common["accent-color"]);
   });
 
   it("rejects a reference to a colour the palette does not have", () => {
-    // `SeedColor` is `Hex | PaletteRef`, and `Hex` is a plain `string` alias
-    // (like every other seed field), so this is not a compile-time error —
-    // same posture as `normalizeHex` throwing at runtime on a malformed hex.
+    // `Hex` is a `string` alias, so TypeScript accepts this value. Only the runtime check throws.
     expect(() => derive({ colors: { accent: "palette:nope" } })).toThrow(RangeError);
   });
 });
@@ -461,7 +454,7 @@ describe("derive — border colour: match-card", () => {
   });
 
   it("composites away to exactly the card colour (the Invisible step)", () => {
-    // α·C + (1-α)·C = C for any α — withAlpha's "1f" needs no special case.
+    // A color over itself gives the same color for any alpha.
     const theme = derive({ borderColor: "match-card" });
     for (const mode of ["light", "dark"] as const) {
       expect(theme[mode]["divider-color"].slice(0, 7)).toBe(theme[mode]["card-background-color"]);
@@ -517,7 +510,7 @@ describe("derive — light and dark", () => {
   const theme = derive();
 
   it("separates mode-independent variables from mode-specific ones", () => {
-    // Nothing may appear in both buckets, or the YAML would say it twice.
+    // A key in both buckets would appear twice in the YAML.
     for (const key of Object.keys(theme.light)) {
       expect(theme.common, key).not.toHaveProperty(key);
     }
@@ -722,7 +715,7 @@ describe("derive — light and dark", () => {
   });
 
   it("keeps shadows dark in dark mode, only raising their opacity", () => {
-    // A shadow is an absence of light; it must not invert with the divider.
+    // The shadow base stays dark and ignores the divider.
     const base = getNeutralRamp("ha").ramp[5].slice(1);
     expect(theme.dark["ha-box-shadow-s"]).toContain(base);
     expect(theme.dark["shadow-color"].startsWith(`#${base}`)).toBe(true);
@@ -798,9 +791,7 @@ describe("output shapes", () => {
   it("exposes the generated ramps for the preview", () => {
     const theme = derive({ colors: { primary: "#7c5cff" }, neutralRamp: "olive" });
     expect(theme.ramps.primary[KNOB_SLOT.primary]).toBe("#7c5cff");
-    // `ramps.neutral` stays the 11-shade `Ramp` the DerivedTheme type
-    // promises — the preset itself now ships 13 (see `NeutralRampSlot`), but
-    // 00/100 are neutral-only and not part of this shared output shape.
+    // `ramps.neutral` has the 11 shades of `Ramp`. Slots 00 and 100 belong to the preset only.
     const olive = getNeutralRamp("olive").ramp;
     expect(theme.ramps.neutral).toEqual(
       Object.fromEntries(RAMP_SLOTS.map((s) => [s, olive[s]])),

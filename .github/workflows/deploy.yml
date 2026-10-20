@@ -5,15 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run
-# in-progress and latest queued. Do NOT cancel in-progress runs, so a
-# production deployment always finishes.
+# Do not cancel a running deployment. A production deployment must finish.
 concurrency:
   group: "pages"
   cancel-in-progress: false

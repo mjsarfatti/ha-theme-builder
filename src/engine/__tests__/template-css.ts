@@ -1,18 +1,6 @@
-/**
- * Test helper: reads `.references/template.css` — the knob spec — and resolves
- * it into a flat `name -> value` map.
- *
- * Parsing the real file rather than hand-copying its values is deliberate: it
- * makes the "default config reproduces HA's current theme" test a genuine
- * regression net. If the spec file changes, the test notices.
- */
 import { readReference } from "./read-reference.ts";
 
-/**
- * Variables `template.css` references but does not define — they live in HA's
- * semantic tier. Values taken from `ha_theme_analysis.md` §2.2 (text tokens)
- * and §2.4 (font weights).
- */
+/** Variables that `template.css` uses and that HA defines in its semantic tier. */
 const EXTERNALS: Record<string, string> = {
   "ha-font-weight-light": "300",
   "ha-font-weight-normal": "400",
@@ -26,8 +14,10 @@ const EXTERNALS: Record<string, string> = {
 let cache: Record<string, string> | undefined;
 
 /**
- * Returns every custom property declared in `template.css`, with `var()`
- * references resolved and whitespace normalised.
+ * Returns every custom property of `template.css`, with `var()` resolved.
+ *
+ * Tests parse the real file, so a change to the spec file fails the
+ * default-config regression test.
  */
 export function parseTemplateCss(): Record<string, string> {
   if (cache) return cache;
@@ -54,7 +44,7 @@ export function parseTemplateCss(): Record<string, string> {
   return cache;
 }
 
-/** Just the keys `template.css` itself declares (excludes {@link EXTERNALS}). */
+/** Returns the keys that `template.css` declares. Excludes {@link EXTERNALS}. */
 export function templateCssKeys(): string[] {
   return Object.keys(parseTemplateCss()).filter((k) => !(k in EXTERNALS));
 }

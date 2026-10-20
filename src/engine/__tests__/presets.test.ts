@@ -1,9 +1,8 @@
 /**
- * Verifies the committed preset data is a faithful transcription of the
- * read-only reference pages, by re-parsing those pages here and diffing.
+ * Checks the preset data against the reference pages.
  *
- * This is what stops a hand edit — or a bad re-run of
- * `scripts/extract-presets.mjs` — from silently changing a hex code.
+ * The tests parse the pages again and compare every value. A hand edit or a
+ * bad run of `scripts/extract-presets.mjs` fails them.
  */
 import { describe, expect, it } from "vitest";
 
@@ -27,7 +26,7 @@ import { NEUTRAL_RAMP_SLOTS, RAMP_SLOTS, type NeutralRampSlot } from "../types.t
 import { readReference } from "./read-reference.ts";
 import { parseTemplateCss } from "./template-css.ts";
 
-/** Same two structures `scripts/extract-presets.mjs` reads, parsed independently. */
+/** Parses the two structures that `scripts/extract-presets.mjs` reads. */
 function parseTable(html: string) {
   const rowsMatch = /const rows = (\[[\s\S]*?\n\]);/.exec(html);
   if (!rowsMatch) throw new Error("no rows literal");
@@ -53,7 +52,7 @@ describe("neutral ramp presets", () => {
     expect(NEUTRAL_RAMPS).toHaveLength(10);
   });
 
-  /** "black" and "white" are the ramp's own 0 and 100 rows, not a name filtered out. */
+  /** "black" and "white" are the rows for slots 0 and 100. */
   const slotOfRow = (name: string): NeutralRampSlot =>
     name === "black" ? 0 : name === "white" ? 100 : (Number(name.slice("neutral-".length)) as NeutralRampSlot);
 
@@ -94,8 +93,7 @@ describe("neutral ramp presets", () => {
   });
 
   it("anchors every preset at pure black (00) and pure white (100)", () => {
-    // The reference page ships #000000 / #ffffff untinted for all ten
-    // presets, even the tinted ones — the ramp's tint lives in 05..95 only.
+    // The reference page has untinted black and white for every preset.
     for (const preset of NEUTRAL_RAMPS) {
       expect(preset.ramp[0], preset.label).toBe("#000000");
       expect(preset.ramp[100], preset.label).toBe("#ffffff");

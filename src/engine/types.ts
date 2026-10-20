@@ -1,28 +1,24 @@
 /**
  * Public types for the theme engine.
  *
- * Everything here is plain data: the engine has no React, no DOM and no I/O.
- * The shape of {@link ThemeConfig} is frozen at the end of M1 — it is also the
- * shape the app persists / URL-serializes, so keep it JSON-round-trippable.
+ * All types describe plain data. {@link ThemeConfig} is the shape the app
+ * persists and puts in URLs, so it must survive a JSON round trip.
  */
 
-/** A `#rrggbb` or `#rrggbbaa` colour, always lowercase and fully expanded. */
+/** A lowercase `#rrggbb` or `#rrggbbaa` color. */
 export type Hex = string;
 
-/**
- * A map of CSS custom properties keyed by their **bare** name (no `--`
- * prefix) — the same spelling Home Assistant expects in YAML.
- */
+/** CSS custom properties keyed by the name that follows `--`. HA YAML uses the same keys. */
 export type CssVarMap = Record<string, string>;
 
-/** The 11 shades every Home Assistant colour ramp is built from. */
+/** The 11 shades every Home Assistant color ramp is built from. */
 export const RAMP_SLOTS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as const;
 export type RampSlot = (typeof RAMP_SLOTS)[number];
 
-/** A full 05..95 ramp. Keys are slot numbers, values are `#rrggbb`. */
+/** A full 05..95 ramp: slot number to `#rrggbb`. */
 export type Ramp = Record<RampSlot, Hex>;
 
-/** Named neutral slots, as referenced from the knob config. */
+/** Neutral ramp slot names used in the config. */
 export type NeutralSlotId =
   | "neutral-00"
   | "neutral-05"
@@ -39,16 +35,11 @@ export type NeutralSlotId =
   | "neutral-100";
 
 /**
- * Surfaces the user may pick for card / page backgrounds.
- * Per `template.css`: "user can choose from Neutral Ramp 80, 90, 95 + white" —
- * "white" is `neutral-100`, the ramp's own light extreme (see
- * {@link NeutralRampSlot}), not a value outside it.
+ * Neutral slots available as card and page backgrounds.
+ *
+ * `neutral-100` is white (see {@link NeutralRampSlot}).
  */
 export type SurfaceChoice = "neutral-100" | "neutral-95" | "neutral-90" | "neutral-80";
-
-// ---------------------------------------------------------------------------
-// Presets
-// ---------------------------------------------------------------------------
 
 export type NeutralRampId =
   | "ha"
@@ -63,25 +54,20 @@ export type NeutralRampId =
   | "taupe";
 
 /**
- * The 13 shades the neutral ramp ships, unlike the 11-shade {@link RampSlot}
- * that primary/red/orange/green share. `.references/colors/black-white-ramps.html`
- * carries real reference data at pure black (`0`) and pure white (`100`) for
- * every preset column — those two rows are what let a "white" or "black"
- * knob option be expressed as a ramp slot rather than a special case. This is
- * deliberately its own type, not an extension of {@link RampSlot}: the other
- * four ramps are generated (`generateRamp()`) and have no reference data at
- * those extremes, so sharing the type would force a `Record<RampSlot, Hex>`
- * like `HA_PRIMARY_RAMP` to also carry slots it cannot supply.
+ * The 13 neutral ramp shades: the 11 {@link RampSlot} shades plus `0` and `100`.
+ *
+ * `.references/colors/black-white-ramps.html` has data for black (`0`) and
+ * white (`100`). The four generated ramps use {@link RampSlot} (05 to 95).
  */
 export const NEUTRAL_RAMP_SLOTS = [0, ...RAMP_SLOTS, 100] as const;
 export type NeutralRampSlot = (typeof NEUTRAL_RAMP_SLOTS)[number];
 
-/** A full 00..100 neutral ramp. Keys are slot numbers, values are `#rrggbb`. */
+/** A full 00..100 neutral ramp: slot number to `#rrggbb`. */
 export type NeutralRamp = Record<NeutralRampSlot, Hex>;
 
 export interface NeutralRampPreset {
   readonly id: NeutralRampId;
-  /** Display label, verbatim from the reference page. */
+  /** Display label from the reference page. */
   readonly label: string;
   readonly ramp: NeutralRamp;
 }
@@ -96,7 +82,7 @@ export type ExtendedPaletteId =
   | "bulma"
   | "rounded";
 
-/** The 18 HA named colours (`--red-color` … `--blue-grey-color`). */
+/** The 18 HA named colors (`--red-color` … `--blue-grey-color`). */
 export type PaletteColorName =
   | "red"
   | "pink"
@@ -123,58 +109,38 @@ export interface ExtendedPalettePreset {
   readonly colors: Record<PaletteColorName, Hex>;
 }
 
-// ---------------------------------------------------------------------------
-// Fonts
-// ---------------------------------------------------------------------------
-
 export type FontCategory = "sans" | "serif" | "display-serif" | "mono" | "system";
 
 export interface FontOption {
   readonly id: string;
-  /** Human label for the dropdown, e.g. "DM Sans". */
+  /** Label for the font list, for example "DM Sans". */
   readonly label: string;
   readonly category: FontCategory;
   /** The complete CSS `font-family` value to emit. */
   readonly stack: string;
-  /**
-   * `true` when Home Assistant does not ship this face and the export step must
-   * emit an `extra_module_url` web-font loading snippet. HA bundles Roboto only.
-   */
+  /** `true` when the font needs an `extra_module_url` snippet, because HA bundles Roboto only. */
   readonly needsWebfont: boolean;
-  /** Google Fonts family name, present iff {@link needsWebfont}. */
+  /** Google Fonts family name. Set when {@link needsWebfont} is `true`. */
   readonly googleFontsFamily?: string;
-  /** Weights the theme actually uses (body/heading/action are 400/700/500). */
+  /** Weights the theme uses: body 400, heading 700, action 500. */
   readonly weights?: readonly number[];
 }
 
 export type FontId = string;
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
 /**
- * A reference to one of the 18 named entity-palette colours (`"palette:red"`),
- * resolved against the config's own `palette` field. Reuses
- * {@link PaletteColorName} rather than a new union.
+ * A reference to a named palette color, for example `"palette:red"`.
  *
- * Deliberately **not** a reference to a generated ramp (primary, red, orange,
- * green): those four ramps are generated *from* these same seed fields, so a
- * reference into one of them would have no fixed point to resolve to before
- * the ramp exists. `PaletteColorName` names only the static entity palette,
- * so this union cannot express that cycle — the constraint is structural, not
- * a runtime check.
+ * The reference resolves against the config `palette` field. It names a
+ * static palette entry. A generated ramp (primary, red, orange, green)
+ * grows from the seed fields, so a reference to it would be circular.
  */
 export type PaletteRef = `palette:${PaletteColorName}`;
 
-/** Either a literal colour, or a reference that follows a palette preset. */
+/** A literal color, or a reference that follows the palette preset. */
 export type SeedColor = Hex | PaletteRef;
 
-/**
- * The complete set of user-facing knobs — exactly the `KNOB` annotations in
- * `.references/template.css`, minus the "custom" preset options that PLAN.md
- * §3 decision 6 defers to M7.
- */
+/** The user-facing knobs: the `KNOB` annotations in `.references/template.css`. */
 export interface ThemeConfig {
   /** YAML key the theme is emitted under. */
   readonly name: string;
@@ -199,9 +165,9 @@ export interface ThemeConfig {
     readonly warning: SeedColor;
     /** Seed for `--ha-color-green-60` (→ `--success-color`). */
     readonly success: SeedColor;
-    /** `--accent-color`, standalone (no ramp in HA). */
+    /** `--accent-color`, a single color. */
     readonly accent: SeedColor;
-    /** `--info-color`, standalone (no ramp in HA). */
+    /** `--info-color`, a single color. */
     readonly info: SeedColor;
   };
 
@@ -209,43 +175,38 @@ export interface ThemeConfig {
   readonly palette: ExtendedPaletteId;
 
   /**
-   * Neutral slot the border/divider colour is taken from (alpha stays `1f`),
-   * or `"match-card"` — a sentinel, not a colour — to resolve to the current
-   * mode's own `card-background-color` instead. See `derive.ts`'s `surfaces()`
-   * and the border-base resolution in `forMode()`.
+   * Neutral slot for the border and divider color. The alpha is `1f`.
+   *
+   * `"match-card"` selects the `card-background-color` of each mode in place
+   * of a slot (see `surfaces()` and `forMode()` in `derive.ts`).
    */
   readonly borderColor: NeutralSlotId | "match-card";
   readonly cardBackground: SurfaceChoice;
   readonly primaryBackground: SurfaceChoice;
 }
 
-/** A config where every field is optional, for partial overrides. */
+/** A {@link ThemeConfig} with optional fields, for partial overrides. */
 export type PartialThemeConfig = {
   -readonly [K in keyof ThemeConfig]?: K extends "fonts" | "colors"
     ? Partial<ThemeConfig[K]>
     : ThemeConfig[K];
 };
 
-// ---------------------------------------------------------------------------
-// Output
-// ---------------------------------------------------------------------------
-
 export type ThemeMode = "light" | "dark";
 
 /**
- * The engine's output: three flat variable maps.
+ * The engine output: three flat variable maps.
  *
- * `common` holds the mode-independent variables (they become the top-level YAML
- * keys); `light` and `dark` hold only the variables that differ per mode and
- * become the `modes.light` / `modes.dark` blocks. Use {@link modeVars} to get a
- * single fully-resolved map for one mode.
+ * `common` holds the variables that are the same in both modes. They become
+ * the top-level YAML keys. `light` and `dark` hold the variables that differ
+ * per mode. They become `modes.light` and `modes.dark`.
  */
 export interface DerivedTheme {
   readonly config: ThemeConfig;
   readonly common: CssVarMap;
   readonly light: CssVarMap;
   readonly dark: CssVarMap;
-  /** The generated ramps, exposed so the preview can render swatch rows. */
+  /** The generated ramps, for swatch rows. */
   readonly ramps: {
     readonly primary: Ramp;
     readonly red: Ramp;
@@ -253,6 +214,6 @@ export interface DerivedTheme {
     readonly green: Ramp;
     readonly neutral: Ramp;
   };
-  /** Fonts that require an `extra_module_url` loading snippet (M6). */
+  /** Fonts that need an `extra_module_url` loading snippet. */
   readonly webfonts: readonly FontOption[];
 }

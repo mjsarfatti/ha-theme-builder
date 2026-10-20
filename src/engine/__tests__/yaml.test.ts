@@ -17,7 +17,7 @@ function parseTheme(yaml: string, name = "My Theme"): ParsedTheme {
   return theme;
 }
 
-/** Everything HA would end up with for one mode: top-level plus the mode block. */
+/** Returns the variables HA applies in one mode: top-level keys and the mode block. */
 function flatten(theme: ParsedTheme, mode: ThemeMode): Record<string, string> {
   const { modes, ...top } = theme;
   return { ...(top as Record<string, string>), ...modes[mode] };
@@ -100,7 +100,6 @@ describe("toYaml — structure", () => {
     const bare = toYaml(theme, { header: false, comments: false });
     expect(bare.startsWith("My Theme:")).toBe(true);
     expect(bare).not.toContain("# ");
-    // Still parses, and still carries every value.
     expect(parseTheme(bare)["primary-color"]).toBe("#009ac7");
   });
 
@@ -108,7 +107,7 @@ describe("toYaml — structure", () => {
     const withFont = toYaml(derive({ fonts: { body: "inter" } }));
     expect(withFont).toContain("Inter");
     expect(withFont).toContain("extra_module_url");
-    // Default config is Roboto + system faces, so there is nothing to load.
+    // The default config uses Roboto and system fonts, which need no loader.
     expect(toYaml(theme)).not.toContain("extra_module_url");
   });
 });
@@ -141,8 +140,7 @@ describe("toYaml — the round trip HA would perform", () => {
       const expected = modeVars(theme, mode);
       const actual = flatten(parsed, mode);
       const dropped = Object.keys(expected).filter((k) => !(k in actual));
-      // Every dropped key is an rgb-* whose base is a hex value, which is
-      // exactly what processTheme() auto-derives (analysis §4.1 step 5).
+      // `processTheme()` derives `rgb-*` keys of hex values, so only those are dropped.
       for (const key of dropped) {
         expect(key, key).toMatch(/^rgb-/);
         const base = expected[key.slice("rgb-".length)];
@@ -161,7 +159,7 @@ describe("toYaml — rgb companion rule", () => {
   });
 
   it("emits an rgb companion when HA could not derive it", () => {
-    // Simulate a non-hex base — HA only auto-derives for values starting "#".
+    // HA derives `rgb-*` keys only for values that start with "#".
     const base = derive();
     const theme: DerivedTheme = {
       ...base,

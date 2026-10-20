@@ -1,19 +1,14 @@
 /**
- * Home Assistant's *own* colour math, reproduced so our output matches what HA
- * itself would compute.
+ * Home Assistant's color math, ported by hand.
  *
- * This is deliberately a hand port rather than a call into `culori`: HA's
- * `src/common/color/lab.ts` is a chroma.js derivative pinned to the chroma.js
- * D65 white point (Xn 0.95047 / Zn 1.08883), which differs from culori's
- * CIE-derived one in the fourth decimal. Reproducing the constants exactly is
- * the whole point of this module, so it owns its conversions.
- *
- * See `.references/ha_theme_analysis.md` §4.1 step 4 and §7.3/§7.5.
+ * HA `src/common/color/lab.ts` uses the chroma.js D65 white point (Xn 0.95047,
+ * Zn 1.08883). `culori` uses a white point that differs in the fourth
+ * decimal, so this module owns its conversions.
  */
 import { hexToRgb, rgbToHex } from "./color.ts";
 import type { Hex } from "./types.ts";
 
-/** chroma.js / HA lab constants. `Kn` is one "brighten" step in L* units. */
+/** chroma.js and HA Lab constants. `Kn` is one brighten step in L* units. */
 const LAB = {
   Kn: 18,
   Xn: 0.95047,
@@ -93,10 +88,6 @@ export function darken(hex: string, amount = 1): Hex {
   return brighten(hex, -amount);
 }
 
-// ---------------------------------------------------------------------------
-// Contrast
-// ---------------------------------------------------------------------------
-
 /** WCAG relative luminance of an sRGB triplet. HA's `luminosity`. */
 export function luminosity(rgb: readonly [number, number, number]): number {
   const lum = rgb.map((v) => {
@@ -116,32 +107,32 @@ export function rgbContrast(
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-/** Contrast ratio between two hex colours. */
+/** Contrast ratio between two hex colors. */
 export function contrastRatio(a: string, b: string): number {
   const ca = hexToRgb(a);
   const cb = hexToRgb(b);
   return rgbContrast([ca.r, ca.g, ca.b], [cb.r, cb.g, cb.b]);
 }
 
-/** The dark ink HA falls back to when a surface is light enough to take it. */
+/** Dark text color HA puts on light surfaces. */
 export const HA_DARK_INK = "#212121";
+/** Light text color HA puts on dark surfaces. */
 export const HA_LIGHT_INK = "#ffffff";
 
 /**
- * HA's threshold for `text-primary-color` / `text-accent-color`.
+ * Contrast threshold HA uses for `text-primary-color` and `text-accent-color`.
  *
- * `apply_themes_on_element.ts` uses `rgbContrast(color, [33,33,33]) < 6`, *not*
- * the 4.5 WCAG AA figure that `ha_theme_analysis.md` §7.5 quotes in prose —
- * §7.3's pseudocode has it right. The 6 is load-bearing: HA's default primary
- * `#009ac7` scores 4.95 against `#212121`, and HA's shipped default for
- * `--text-primary-color` is `#ffffff`, which only follows from the 6 threshold.
+ * `apply_themes_on_element.ts:91` tests `rgbContrast(color, [33,33,33]) < 6`.
+ * HA's default primary `#009ac7` scores 4.95 against `#212121`, so it gets
+ * white text.
  */
 export const HA_CONTRAST_THRESHOLD = 6;
 
 /**
- * Picks the on-colour text for a surface exactly as HA does: white when the
- * surface does not clear {@link HA_CONTRAST_THRESHOLD} against `#212121`,
- * otherwise `#212121`.
+ * Picks the text color for a surface, as HA does.
+ *
+ * Returns white when the contrast against `#212121` is below
+ * {@link HA_CONTRAST_THRESHOLD}. Returns `#212121` otherwise.
  */
 export function contrastingText(surface: string): Hex {
   return contrastRatio(surface, HA_DARK_INK) < HA_CONTRAST_THRESHOLD

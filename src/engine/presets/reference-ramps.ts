@@ -1,15 +1,8 @@
 /**
- * Home Assistant's own hue ramps, transcribed verbatim from
- * `.references/template.css` (which mirrors HA's `color/core.globals.ts`).
+ * HA hue ramps, copied from `.references/template.css`.
  *
- * These serve two jobs:
- * 1. They are the *shape references* `generateRamp()` transfers onto a user
- *    seed — the lightness/chroma profile of each family.
- * 2. They are the fallback output when the user leaves a seed at its default,
- *    which is what makes the default config reproduce HA byte for byte.
- *
- * `KNOB_SLOT` records which shade of each family is the user-facing control,
- * per the `KNOB` annotations in `template.css`.
+ * `generateRamp()` copies their shape onto a seed. A default seed returns
+ * them unchanged.
  */
 import type { Ramp, RampSlot } from "../types.ts";
 
@@ -80,7 +73,7 @@ export const REFERENCE_RAMPS = {
   green: HA_GREEN_RAMP,
 } as const;
 
-/** The slot each family's knob controls, per `template.css`. */
+/** The slot of each family that the user controls (`KNOB` in `template.css`). */
 export const KNOB_SLOT = {
   primary: 40,
   orange: 70,
