@@ -1,13 +1,17 @@
 # Home Assistant / Theme Builder
 
-A tool for building and customizing themes for Home Assistant.
+A tool that builds and customizes themes for Home Assistant.
 
 ## Development
 
-**Prerequisites:** Node.js 24+ (the version in `.nvmrc`, which CI mirrors in the
-`runtime` input of its `pnpm/setup` step) and
-[pnpm](https://pnpm.io/) 11+ (`corepack enable` will pick up the pinned version from
-`packageManager` in `package.json`).
+**Prerequisites:**
+
+- Node.js 24 or later. The version is in `.nvmrc`. CI uses the same version in the
+  `runtime` input of its `pnpm/setup` step.
+- [pnpm](https://pnpm.io/) 11 or later. Run `corepack enable` to use the version in
+  `packageManager` in `package.json`.
+
+Install the dependencies and start the development server:
 
 ```bash
 pnpm install
@@ -25,4 +29,4 @@ pnpm test       # vitest run
 ```
 
 CI runs lint, typecheck, test, and build on every push and pull request.
-Pushes to `main` build and deploy the app to GitHub Pages.
+A push to `main` builds the app and deploys it to GitHub Pages.
