@@ -1,3 +1,4 @@
+import { rgbTriplet } from "@/engine"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface PresetSwatchProps {
@@ -7,10 +8,10 @@ interface PresetSwatchProps {
 }
 
 /**
- * Flat color tile with a label and a hex caption.
+ * Flat color tile with a label and hex and RGB captions.
  *
  * The tile fills with the raw preset hex, so a section can compare
- * presets directly. The caption shows when the preview is wide. The
+ * presets directly. The captions show when the preview is wide. The
  * tooltip always shows the hex.
  *
  * @example
@@ -36,6 +37,12 @@ export function PresetSwatch({ label, hex }: PresetSwatchProps) {
           style={{ color: "var(--secondary-text-color)" }}
         >
           {hex}
+        </span>
+        <span
+          className="hidden w-full truncate font-mono text-[10px] @3xl/preview:block"
+          style={{ color: "var(--secondary-text-color)" }}
+        >
+          {rgbTriplet(hex)}
         </span>
       </TooltipTrigger>
       <TooltipContent>
