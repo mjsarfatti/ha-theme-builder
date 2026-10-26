@@ -1006,16 +1006,9 @@ M5 adds **one second card** below the room card, in the same two-panel grid:
   `--primary-color`
 - one entity row in the disabled/unavailable text color
 
-Below the second card, M5 adds the two status cards that a HA dashboard shows. They prove the
-warning and error knobs:
-
-- a `hui-warning` card: *"Entity not available: light.porch"*
-  (`ui.panel.lovelace.warning.entity_not_found` in `en.json`)
-- a `hui-error-card`: *"Configuration error"* (`ui.errors.config.configuration_error`)
-
-Both copy `hui-error-card.ts`: the severity color at 0.12 opacity over the card background, and
-the icon in the severity color. A dashboard has no success or info card, so the Living room
-section does not show these two knobs. The Brand & status chips (§4.3) show them.
+The Living room section has no alert or status card. A dashboard shows these only when an entity
+or a card configuration is broken. The Brand & status chips (§4.3) show the error, warning,
+success and info knobs.
 
 Every icon is an MDI path from `@mdi/js`, the icon set of Home Assistant.
 
