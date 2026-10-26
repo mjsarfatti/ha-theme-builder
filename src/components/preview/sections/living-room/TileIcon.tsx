@@ -1,7 +1,8 @@
-import type { LucideIcon } from "lucide-react"
+import { MdiIcon } from "./MdiIcon"
 
 interface TileIconProps {
-  icon: LucideIcon
+  /** An SVG path from `@mdi/js`. */
+  path: string
   /** Theme variable name without the leading `--`, for example `"amber-color"`. */
   colorVar: string
 }
@@ -14,9 +15,9 @@ interface TileIconProps {
  * so the tint follows the theme variable with no color math.
  *
  * @example
- * <TileIcon icon={LampFloorIcon} colorVar="orange-color" />
+ * <TileIcon path={mdiFloorLamp} colorVar="orange-color" />
  */
-export function TileIcon({ icon: Icon, colorVar }: TileIconProps) {
+export function TileIcon({ path, colorVar }: TileIconProps) {
   return (
     <span
       className="relative flex size-9 shrink-0 items-center justify-center rounded-full"
@@ -27,7 +28,7 @@ export function TileIcon({ icon: Icon, colorVar }: TileIconProps) {
         className="absolute inset-0 rounded-full opacity-20"
         style={{ background: "currentColor" }}
       />
-      <Icon aria-hidden="true" className="relative size-5" />
+      <MdiIcon path={path} className="relative size-5" />
     </span>
   )
 }

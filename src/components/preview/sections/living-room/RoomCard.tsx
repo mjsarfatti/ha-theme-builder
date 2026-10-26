@@ -1,30 +1,30 @@
 import {
-  BlindsIcon,
-  DropletIcon,
-  LampCeilingIcon,
-  LampFloorIcon,
-  LightbulbIcon,
-  SofaIcon,
-  SpeakerIcon,
-  ThermometerIcon,
-  type LucideIcon,
-} from "lucide-react"
+  mdiBlindsHorizontalClosed,
+  mdiCeilingLight,
+  mdiFloorLamp,
+  mdiLightbulbOff,
+  mdiSofa,
+  mdiSpeaker,
+  mdiThermometer,
+  mdiWaterPercent,
+} from "@mdi/js"
 
+import { MdiIcon } from "./MdiIcon"
 import { TileIcon } from "./TileIcon"
 
 interface Tile {
   name: string
   state: string
-  icon: LucideIcon
+  icon: string
   /** Home Assistant colors an inactive tile with `--disabled-color` (`ha-tile-icon.ts`). */
   colorVar: string
 }
 
-const FLOOR_LAMP: Tile = { name: "Floor lamp", state: "70%", icon: LampFloorIcon, colorVar: "orange-color" }
-const BAR_LAMP: Tile = { name: "Bar lamp", state: "Off", icon: LightbulbIcon, colorVar: "disabled-color" }
-const BLINDS: Tile = { name: "Blinds", state: "Closed", icon: BlindsIcon, colorVar: "disabled-color" }
-const SPOTLIGHTS: Tile = { name: "Spotlights", state: "75%", icon: LampCeilingIcon, colorVar: "amber-color" }
-const NEST_MINI: Tile = { name: "Nest mini", state: "Playing", icon: SpeakerIcon, colorVar: "blue-color" }
+const FLOOR_LAMP: Tile = { name: "Floor lamp", state: "70%", icon: mdiFloorLamp, colorVar: "orange-color" }
+const BAR_LAMP: Tile = { name: "Bar lamp", state: "Off", icon: mdiLightbulbOff, colorVar: "disabled-color" }
+const BLINDS: Tile = { name: "Blinds", state: "Closed", icon: mdiBlindsHorizontalClosed, colorVar: "disabled-color" }
+const SPOTLIGHTS: Tile = { name: "Spotlights", state: "75%", icon: mdiCeilingLight, colorVar: "amber-color" }
+const NEST_MINI: Tile = { name: "Nest mini", state: "Playing", icon: mdiSpeaker, colorVar: "blue-color" }
 
 const TILE_STYLE = {
   background: "var(--card-background-color)",
@@ -38,16 +38,16 @@ export function RoomCard() {
       <div className="flex items-center justify-between px-1">
         {/* The header takes the body font: ha-card reads --ha-card-header-font-family, inherit. */}
         <div className="flex items-center gap-2">
-          <SofaIcon aria-hidden="true" className="size-[18px]" />
+          <MdiIcon path={mdiSofa} className="size-[18px]" />
           <span className="text-base">Living room</span>
         </div>
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--secondary-text-color)" }}>
           <span className="flex items-center gap-0.5">
-            <ThermometerIcon aria-hidden="true" className="size-4" style={{ color: "var(--red-color)" }} />
+            <MdiIcon path={mdiThermometer} className="size-4" style={{ color: "var(--red-color)" }} />
             22.8 °C
           </span>
           <span className="flex items-center gap-0.5">
-            <DropletIcon aria-hidden="true" className="size-4" style={{ color: "var(--light-blue-color)" }} />
+            <MdiIcon path={mdiWaterPercent} className="size-4" style={{ color: "var(--light-blue-color)" }} />
             57%
           </span>
         </div>
@@ -77,7 +77,7 @@ function TileLabel({ tile }: { tile: Tile }) {
 function EntityTile({ tile }: { tile: Tile }) {
   return (
     <div className="flex h-14 min-w-0 items-center gap-2.5 rounded-lg px-2.5" style={TILE_STYLE}>
-      <TileIcon icon={tile.icon} colorVar={tile.colorVar} />
+      <TileIcon path={tile.icon} colorVar={tile.colorVar} />
       <TileLabel tile={tile} />
     </div>
   )
@@ -87,7 +87,7 @@ function SliderTile({ tile, percent }: { tile: Tile; percent: number }) {
   return (
     <div className="row-span-2 flex min-w-0 flex-col justify-between gap-2 rounded-lg p-2.5" style={TILE_STYLE}>
       <div className="flex items-center gap-2.5">
-        <TileIcon icon={tile.icon} colorVar={tile.colorVar} />
+        <TileIcon path={tile.icon} colorVar={tile.colorVar} />
         <TileLabel tile={tile} />
       </div>
       {/* Inert mock of ha-control-slider: a 20% track, a solid fill and a thumb bar. */}
@@ -101,10 +101,11 @@ function SliderTile({ tile, percent }: { tile: Tile; percent: number }) {
           className="absolute inset-y-0 left-0 rounded-lg"
           style={{ width: `${percent}%`, background: "currentColor" }}
         />
-        {/* HA paints the thumb white. --text-primary-color is the theme's white on a color. */}
+        {/* HA hardcodes the thumb white in both modes (ha-control-slider.ts). */}
         <span
+          data-ha-hardcoded
           className="absolute inset-y-2.5 w-1 -translate-x-[9px] rounded-sm"
-          style={{ left: `${percent}%`, background: "var(--text-primary-color)" }}
+          style={{ left: `${percent}%`, background: "white" }}
         />
       </div>
     </div>

@@ -20,9 +20,13 @@ function renderSection() {
   )
 }
 
-/** Every element inside a preview panel, without the panels that hold the theme values. */
+/**
+ * Every element inside a preview panel, without the panels that hold the theme values.
+ *
+ * Elements marked `data-ha-hardcoded` copy a literal that Home Assistant itself hardcodes.
+ */
 function demoElements(container: HTMLElement) {
-  return [...container.querySelectorAll("[data-preview-mode] *")]
+  return [...container.querySelectorAll("[data-preview-mode] *:not([data-ha-hardcoded])")]
 }
 
 describe("LivingRoomSection", () => {
@@ -32,6 +36,12 @@ describe("LivingRoomSection", () => {
       .map((el) => el.getAttribute("style") ?? "")
       .filter((style) => COLOR_LITERAL.test(style))
     expect(offenders).toEqual([])
+  })
+
+  it("exempts only the slider thumb, which HA hardcodes white", () => {
+    const { container } = renderSection()
+    const exempt = [...container.querySelectorAll("[data-ha-hardcoded]")]
+    expect(exempt.map((el) => (el as HTMLElement).style.background)).toEqual(["white", "white"])
   })
 
   it("uses no Tailwind color utility inside a panel", () => {
