@@ -61,6 +61,7 @@ describe("LivingRoomSection", () => {
     const { getAllByText } = renderSection()
     expect(getAllByText("Spotlights")).toHaveLength(2)
     expect(getAllByText("Garage door")).toHaveLength(2)
-    expect(getAllByText("Backup completed")).toHaveLength(2)
+    expect(getAllByText("Configuration error")).toHaveLength(2)
+    expect(getAllByText(/^Entity not available:/)).toHaveLength(2)
   })
 })

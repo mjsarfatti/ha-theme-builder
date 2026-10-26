@@ -1,10 +1,6 @@
 import {
-  mdiAlertCircleOutline,
-  mdiAlertOutline,
-  mdiCheckboxMarkedCircleOutline,
   mdiGarage,
   mdiGauge,
-  mdiInformationOutline,
   mdiLightbulb,
   mdiLock,
   mdiThermostat,
@@ -20,15 +16,7 @@ const ENTITY_ICONS = [
   { label: "Sensor", icon: mdiGauge, colorVar: "green-color" },
 ] as const
 
-// Icons per alert type, as ha-alert.ts maps them.
-const ALERTS = [
-  { message: "Front door unlocked for 10 minutes", icon: mdiAlertCircleOutline, colorVar: "error-color" },
-  { message: "Hallway sensor battery at 15%", icon: mdiAlertOutline, colorVar: "warning-color" },
-  { message: "Backup completed", icon: mdiCheckboxMarkedCircleOutline, colorVar: "success-color" },
-  { message: "Update available", icon: mdiInformationOutline, colorVar: "info-color" },
-] as const
-
-/** Entity colors, buttons, status alerts and an unavailable entity row. */
+/** Entity colors, buttons and an unavailable entity row. */
 export function StatusCard() {
   return (
     <div
@@ -60,23 +48,6 @@ export function StatusCard() {
         >
           Cancel
         </span>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {ALERTS.map(({ message, icon, colorVar }) => (
-          <div
-            key={colorVar}
-            className="relative flex items-center gap-3 overflow-hidden rounded-md px-3 py-2"
-            style={{ color: `var(--${colorVar})` }}
-          >
-            {/* ha-alert.ts paints the alert color at 0.12 opacity behind the text. */}
-            <span aria-hidden="true" className="absolute inset-0 opacity-[0.12]" style={{ background: "currentColor" }} />
-            <MdiIcon path={icon} className="relative size-5 shrink-0" />
-            <span className="relative text-sm" style={{ color: "var(--primary-text-color)" }}>
-              {message}
-            </span>
-          </div>
-        ))}
       </div>
 
       <div

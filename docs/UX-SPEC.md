@@ -1,6 +1,6 @@
 # HA Theme Builder — UX Spec (M2)
 
-> Last updated: 2026-08-14
+> Last updated: 2026-10-26
 > Wireframe: [`docs/wireframe/index.html`](./wireframe/index.html). Open the file directly in a
 > browser (no server, no build step). The wireframe has deliberately low fidelity. It is a
 > communication device. Production code starts from this spec. **Real data:** all ten neutral ramps and all
@@ -1004,11 +1004,24 @@ M5 adds **one second card** below the room card, in the same two-panel grid:
   green sensor). It proves that the palette knob has a visible effect
 - a primary `Button` and a secondary `Button`. They prove `--text-primary-color` on
   `--primary-color`
-- one alert strip in each of error, warning, success, info. They prove those four knobs
 - one entity row in the disabled/unavailable text color
 
-That is one extra card. Everything in both cards MUST be built from theme
-variables, with zero hardcoded colors (M5 acceptance criterion).
+Below the second card, M5 adds the two status cards that a HA dashboard shows. They prove the
+warning and error knobs:
+
+- a `hui-warning` card: *"Entity not available: light.porch"*
+  (`ui.panel.lovelace.warning.entity_not_found` in `en.json`)
+- a `hui-error-card`: *"Configuration error"* (`ui.errors.config.configuration_error`)
+
+Both copy `hui-error-card.ts`: the severity color at 0.12 opacity over the card background, and
+the icon in the severity color. A dashboard has no success or info card, so the Living room
+section does not show these two knobs. The Brand & status chips (§4.3) show them.
+
+Every icon is an MDI path from `@mdi/js`, the icon set of Home Assistant.
+
+Everything in the Living room section MUST be built from theme variables, with zero hardcoded
+colors (M5 acceptance criterion). The one exception is the slider thumb. Home Assistant
+hardcodes it `white` in both modes (`ha-control-slider.ts`), so the demo does the same.
 
 ### 4.7 Generated values — **cut as a section**
 
