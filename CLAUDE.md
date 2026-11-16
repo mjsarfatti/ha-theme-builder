@@ -3,7 +3,11 @@
 A self-contained web app for building Home Assistant themes: a sidebar of knobs, a
 live preview of tokens and HA cards, and paste-ready YAML output.
 
-**Read `docs/PLAN.md` first.** Do not change it without a PM decision.
+**The Seeder project "HA Theme Builder" (HTB) is the roadmap and the task list.**
+Read its tasks and its project note first, through the Seeder MCP tools. Record new
+work, findings and backlog items there.
+
+`docs/PLAN.md` is frozen. It records the plan for M0 to M5. Do not change it.
 
 ## How to write — everything, always
 
