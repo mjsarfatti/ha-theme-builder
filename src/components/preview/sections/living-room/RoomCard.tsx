@@ -18,15 +18,29 @@ interface Tile {
   icon: string
   /** Home Assistant colors an inactive tile with `--disabled-color` (`ha-tile-icon.ts`). */
   colorVar: string
+  /** HA default for `colorVar`, written as HA writes it (`color.globals.ts`). */
+  colorFallback?: string
 }
 
 const FLOOR_LAMP: Tile = { name: "Floor lamp", state: "70%", icon: mdiFloorLamp, colorVar: "orange-color" }
 const BAR_LAMP: Tile = { name: "Bar lamp", state: "Off", icon: mdiLightbulbOff, colorVar: "disabled-color" }
 const BLINDS: Tile = { name: "Blinds", state: "Closed", icon: mdiBlindsHorizontalClosed, colorVar: "disabled-color" }
 const SPOTLIGHTS: Tile = { name: "Spotlights", state: "75%", icon: mdiCeilingLight, colorVar: "amber-color" }
-const NEST_MINI: Tile = { name: "Nest mini", state: "Playing", icon: mdiSpeaker, colorVar: "blue-color" }
+const NEST_MINI: Tile = {
+  name: "Nest mini",
+  state: "Playing",
+  icon: mdiSpeaker,
+  colorVar: "state-media_player-active-color",
+  colorFallback: "var(--light-blue-color)",
+}
+
+// ha-tile-container.ts:113
+const TILE_RADIUS = "var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px))"
+// ha-control-slider.ts:458
+const SLIDER_RADIUS = "var(--ha-border-radius-md, 8px)"
 
 const TILE_STYLE = {
+  borderRadius: TILE_RADIUS,
   background: "var(--card-background-color)",
   border: "1px solid var(--divider-color)",
 }
@@ -76,8 +90,8 @@ function TileLabel({ tile }: { tile: Tile }) {
 
 function EntityTile({ tile }: { tile: Tile }) {
   return (
-    <div className="flex h-14 min-w-0 items-center gap-2.5 rounded-lg px-2.5" style={TILE_STYLE}>
-      <TileIcon path={tile.icon} colorVar={tile.colorVar} />
+    <div className="flex h-14 min-w-0 items-center gap-2.5 px-2.5" style={TILE_STYLE}>
+      <TileIcon path={tile.icon} colorVar={tile.colorVar} colorFallback={tile.colorFallback} />
       <TileLabel tile={tile} />
     </div>
   )
@@ -85,7 +99,7 @@ function EntityTile({ tile }: { tile: Tile }) {
 
 function SliderTile({ tile, percent }: { tile: Tile; percent: number }) {
   return (
-    <div className="row-span-2 flex min-w-0 flex-col justify-between gap-2 rounded-lg p-2.5" style={TILE_STYLE}>
+    <div className="row-span-2 flex min-w-0 flex-col justify-between gap-2 p-2.5" style={TILE_STYLE}>
       <div className="flex items-center gap-2.5">
         <TileIcon path={tile.icon} colorVar={tile.colorVar} />
         <TileLabel tile={tile} />
@@ -93,19 +107,23 @@ function SliderTile({ tile, percent }: { tile: Tile; percent: number }) {
       {/* Inert mock of ha-control-slider: a 20% track, a solid fill and a thumb bar. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none relative h-10 overflow-hidden rounded-lg"
-        style={{ color: `var(--${tile.colorVar})` }}
+        className="pointer-events-none relative h-10 overflow-hidden"
+        style={{ color: `var(--${tile.colorVar})`, borderRadius: SLIDER_RADIUS }}
       >
         <span className="absolute inset-0 opacity-20" style={{ background: "currentColor" }} />
         <span
-          className="absolute inset-y-0 left-0 rounded-lg"
-          style={{ width: `${percent}%`, background: "currentColor" }}
+          className="absolute inset-y-0 left-0"
+          style={{ width: `${percent}%`, background: "currentColor", borderRadius: SLIDER_RADIUS }}
         />
         {/* HA hardcodes the thumb white in both modes (ha-control-slider.ts). */}
         <span
           data-ha-hardcoded
-          className="absolute inset-y-2.5 w-1 -translate-x-[9px] rounded-sm"
-          style={{ left: `${percent}%`, background: "white" }}
+          className="absolute inset-y-2.5 w-1 -translate-x-[9px]"
+          style={{
+            left: `${percent}%`,
+            background: "white",
+            borderRadius: "min(4px, var(--ha-border-radius-md, 8px))",
+          }}
         />
       </div>
     </div>

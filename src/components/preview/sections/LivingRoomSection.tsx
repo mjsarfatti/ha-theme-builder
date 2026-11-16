@@ -3,7 +3,7 @@ import { PreviewPanel } from "../Panel"
 import { PreviewSection } from "../PreviewSection"
 import type { PreviewSectionProps } from "../types"
 import { RoomCard } from "./living-room/RoomCard"
-import { StatusCard } from "./living-room/StatusCard"
+import { EntityCard } from "./living-room/EntityCard"
 
 export function LivingRoomSection({ lightVars, darkVars }: PreviewSectionProps) {
   return (
@@ -28,7 +28,7 @@ function LivingRoomDemo() {
   return (
     <div className="flex flex-col gap-6">
       <RoomCard />
-      <StatusCard />
+      <EntityCard />
     </div>
   )
 }

@@ -16,12 +16,23 @@ const ENTITY_ICONS = [
   { label: "Sensor", icon: mdiGauge, colorVar: "green-color" },
 ] as const
 
+// ha-button.ts:46-50
+const BUTTON_STYLE = {
+  fontWeight: "var(--ha-font-weight-medium, 500)",
+  borderRadius: "var(--ha-button-border-radius, var(--ha-border-radius-pill, 9999px))",
+}
+
 /** Entity colors, buttons and an unavailable entity row. */
-export function StatusCard() {
+export function EntityCard() {
   return (
     <div
-      className="flex flex-col gap-4 rounded-xl p-4"
-      style={{ background: "var(--card-background-color)", border: "1px solid var(--divider-color)" }}
+      className="flex flex-col gap-4 p-4"
+      style={{
+        // ha-card.ts:19
+        borderRadius: "var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px))",
+        background: "var(--card-background-color)",
+        border: "1px solid var(--divider-color)",
+      }}
     >
       <div className="grid grid-cols-4 gap-2">
         {ENTITY_ICONS.map(({ label, icon, colorVar }) => (
@@ -37,14 +48,14 @@ export function StatusCard() {
       {/* Mock buttons are spans: the preview has no focusable control. */}
       <div className="flex flex-wrap gap-2">
         <span
-          className="rounded-full px-4 py-2 text-sm font-medium"
-          style={{ background: "var(--primary-color)", color: "var(--text-primary-color)" }}
+          className="px-4 py-2 text-sm"
+          style={{ ...BUTTON_STYLE, background: "var(--primary-color)", color: "var(--text-primary-color)" }}
         >
           Turn on
         </span>
         <span
-          className="rounded-full px-4 py-2 text-sm font-medium"
-          style={{ border: "1px solid var(--divider-color)", color: "var(--primary-color)" }}
+          className="px-4 py-2 text-sm"
+          style={{ ...BUTTON_STYLE, border: "1px solid var(--divider-color)", color: "var(--primary-color)" }}
         >
           Cancel
         </span>
