@@ -5,6 +5,8 @@ interface TileIconProps {
   path: string
   /** Theme variable name without the leading `--`, for example `"amber-color"`. */
   colorVar: string
+  /** CSS color that applies when `colorVar` is undefined, as in `var(--name, fallback)`. */
+  colorFallback?: string
 }
 
 /**
@@ -17,15 +19,19 @@ interface TileIconProps {
  * @example
  * <TileIcon path={mdiFloorLamp} colorVar="orange-color" />
  */
-export function TileIcon({ path, colorVar }: TileIconProps) {
+export function TileIcon({ path, colorVar, colorFallback }: TileIconProps) {
   return (
     <span
-      className="relative flex size-9 shrink-0 items-center justify-center rounded-full"
-      style={{ color: `var(--${colorVar})` }}
+      className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden"
+      style={{
+        color: `var(--${colorVar}${colorFallback ? `, ${colorFallback}` : ""})`,
+        // ha-tile-icon.ts:83-86
+        borderRadius: "var(--ha-tile-icon-border-radius, var(--ha-border-radius-pill, 9999px))",
+      }}
     >
       <span
         aria-hidden="true"
-        className="absolute inset-0 rounded-full opacity-20"
+        className="absolute inset-0 opacity-20"
         style={{ background: "currentColor" }}
       />
       <MdiIcon path={path} className="relative size-5" />
